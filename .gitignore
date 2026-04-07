@@ -1,0 +1,10 @@
+node_modules
+.next
+dist
+coverage
+.turbo
+.env
+.env.local
+.vercel
+packages/db/prisma/dev.db
+packages/db/prisma/dev.db-journal

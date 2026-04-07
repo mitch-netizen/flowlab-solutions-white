@@ -1,0 +1,31 @@
+{
+  "name": "flowlab-solutions-white",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev:web": "npm run dev -w @flowlab/web",
+    "dev:portal": "npm run dev -w @flowlab/portal",
+    "dev:worker": "npm run dev -w @flowlab/worker",
+    "db:generate": "npm run prisma:generate -w @flowlab/db",
+    "db:push": "npm run prisma:push -w @flowlab/db",
+    "db:seed": "npm run seed -w @flowlab/db",
+    "test": "vitest run",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "prisma": "^6.5.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.9"
+  }
+}

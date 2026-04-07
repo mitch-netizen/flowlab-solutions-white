@@ -1,0 +1,42 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Web (flowlabsolutions.com.au)",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": [
+        "--env-file=/Users/mitch/FlowLab Solutions_White/.env.local",
+        "/Users/mitch/FlowLab Solutions_White/node_modules/next/dist/bin/next",
+        "dev",
+        "/Users/mitch/FlowLab Solutions_White/apps/web",
+        "--port",
+        "3000"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "Portal (tenant dashboard)",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": [
+        "--env-file=/Users/mitch/FlowLab Solutions_White/.env.local",
+        "/Users/mitch/FlowLab Solutions_White/node_modules/next/dist/bin/next",
+        "dev",
+        "/Users/mitch/FlowLab Solutions_White/apps/portal",
+        "--port",
+        "3001"
+      ],
+      "port": 3001
+    },
+    {
+      "name": "Worker (automation processor)",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": [
+        "--env-file=/Users/mitch/FlowLab Solutions_White/.env.local",
+        "/Users/mitch/FlowLab Solutions_White/node_modules/tsx/dist/cli.mjs",
+        "watch",
+        "/Users/mitch/FlowLab Solutions_White/apps/worker/src/index.ts"
+      ],
+      "port": 3002
+    }
+  ]
+}
