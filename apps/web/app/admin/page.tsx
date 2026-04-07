@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { getPlatformOverview } from "@flowlab/db";
+
+export const dynamic = "force-dynamic";
 import { getServiceLabel } from "@flowlab/contracts";
 import { requirePlatformSession } from "../../lib/session";
 
