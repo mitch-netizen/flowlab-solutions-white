@@ -1,0 +1,110 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FlowLab Internal API",
+    "version": "0.1.0",
+    "description": "Internal contract for auth, public customer routes, integration tests, and tenant automations."
+  },
+  "paths": {
+    "/api/auth/platform/login": {
+      "post": {
+        "summary": "Create superadmin session"
+      }
+    },
+    "/api/auth/tenant/login": {
+      "post": {
+        "summary": "Create tenant operator session"
+      }
+    },
+    "/api/public/enquiry": {
+      "post": {
+        "summary": "Create a customer enquiry and quoted job seed record"
+      }
+    },
+    "/api/tenant/integrations/{service}/test": {
+      "post": {
+        "summary": "Run a tenant integration test and persist health state"
+      }
+    },
+    "/api/tenant/quotes/generate": {
+      "post": {
+        "summary": "Generate a draft quote for a tenant customer"
+      }
+    },
+    "/api/tenant/invoices/create": {
+      "post": {
+        "summary": "Create an invoice draft and payment-ready public record"
+      }
+    },
+    "/api/tenant/agreements/create": {
+      "post": {
+        "summary": "Create or resend an agreement from an accepted quote"
+      }
+    },
+    "/api/tenant/settings/profile": {
+      "post": {
+        "summary": "Persist tenant business and branding settings"
+      }
+    },
+    "/api/tenant/mobile/sync": {
+      "post": {
+        "summary": "Sync queued mobile-job-app actions back into tenant job state and event logs"
+      }
+    },
+    "/api/tenant/scheduler/analyze": {
+      "post": {
+        "summary": "Queue schedule analysis and recommendation generation"
+      }
+    },
+    "/api/tenant/retention/run": {
+      "post": {
+        "summary": "Queue retention and reminder automations for a tenant"
+      }
+    },
+    "/api/tenant/blueprints/download": {
+      "get": {
+        "summary": "Download tenant automation blueprint templates as a zip archive"
+      }
+    },
+    "/api/public/quote/{token}/accept": {
+      "post": {
+        "summary": "Accept a public quote and prepare agreement handoff"
+      }
+    },
+    "/api/public/sign/{token}/complete": {
+      "post": {
+        "summary": "Record public signature completion"
+      }
+    },
+    "/api/public/invoice/{token}/pay": {
+      "post": {
+        "summary": "Record a public invoice payment confirmation"
+      }
+    },
+    "/api/webhooks/stripe": {
+      "post": {
+        "summary": "Receive Stripe webhook events for invoice reconciliation"
+      }
+    },
+    "/api/webhooks/docuseal": {
+      "post": {
+        "summary": "Receive DocuSeal signature completion events"
+      }
+    },
+    "/quote/{token}": {
+      "get": {
+        "summary": "Public quote access token route"
+      }
+    },
+    "/sign/{token}": {
+      "get": {
+        "summary": "Public agreement signature route"
+      }
+    },
+    "/invoice/{token}": {
+      "get": {
+        "summary": "Public invoice payment route"
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@flowlab/integrations",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./claude": "./src/claude.ts",
+    "./bom": "./src/bom.ts",
+    "./google-maps": "./src/google-maps.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.82.0",
+    "@flowlab/contracts": "*",
+    "stripe": "^18.5.0"
+  }
+}

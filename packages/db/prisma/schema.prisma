@@ -1,0 +1,442 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantStatus {
+  trial
+  active
+  suspended
+  cancelled
+}
+
+enum TenantPlan {
+  starter
+  professional
+  growth
+}
+
+enum BusinessType {
+  lawn_mowing
+  cleaning
+  pest_control
+  gardening
+  handyman
+  pool_service
+  other
+}
+
+enum IntegrationService {
+  twilio
+  sendgrid
+  stripe
+  docuseal
+  google_maps
+  xero
+  make_com
+  claude
+}
+
+enum IntegrationStatus {
+  not_configured
+  connected
+  error
+  disconnected
+}
+
+enum EventType {
+  api_call
+  webhook_fired
+  webhook_received
+  error
+  warning
+  info
+}
+
+enum EventDirection {
+  outbound
+  inbound
+}
+
+enum EventStatus {
+  success
+  failed
+  pending
+  timeout
+}
+
+enum AutomationJobStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+enum UserRole {
+  superadmin
+  support
+  billing
+  owner
+  staff
+}
+
+enum JobStatus {
+  quoted
+  scheduled
+  in_progress
+  complete
+  invoiced
+  paid
+}
+
+model Tenant {
+  id                    String              @id @default(uuid())
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  slug                  String              @unique
+  status                TenantStatus
+  plan                  TenantPlan
+  trialEndsAt           DateTime?
+  billingEmail          String
+  subscriptionStartDate DateTime?
+  monthlyFee            Float
+  stripeCustomerId      String?
+  notes                 String?
+  profile               TenantProfile?
+  integrations          TenantIntegration[]
+  users                 TenantUser[]
+  customers             Customer[]
+  services              Service[]
+  jobs                  Job[]
+  quotes                Quote[]
+  agreements            Agreement[]
+  invoices              Invoice[]
+  communications        Communication[]
+  feedback              Feedback[]
+  rebookReminders       RebookReminder[]
+  pricingRates          PricingRate[]
+  serviceRateTemplates  ServiceRateTemplate[]
+  timeEstimateHistory   TimeEstimateHistory[]
+  workSchedule          WorkSchedule[]
+  timeOff               TimeOff[]
+  personalCommitments   PersonalCommitment[]
+  events                PlatformEventLog[]
+  apiKeys               TenantApiKey[]
+  automationJobs        AutomationJob[]
+}
+
+model TenantProfile {
+  id                   String       @id @default(uuid())
+  tenantId             String       @unique
+  businessName         String
+  tagline              String?
+  logoUrl              String?
+  faviconUrl           String?
+  primaryColour        String
+  secondaryColour      String
+  accentColour         String
+  fontPreference       String?
+  customDomain         String?      @unique
+  customDomainVerified Boolean      @default(false)
+  abn                  String?
+  phone                String?
+  email                String?
+  address              String?
+  suburb               String?
+  state                String?
+  postcode             String?
+  serviceAreaSuburbs   String[]
+  businessType         BusinessType
+  timezone             String       @default("Australia/Brisbane")
+  tenant               Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model TenantIntegration {
+  id                String            @id @default(uuid())
+  tenantId          String
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  service           IntegrationService
+  status            IntegrationStatus @default(not_configured)
+  credentialsJson   String?
+  lastTestedAt      DateTime?
+  lastTestResult    String?
+  lastErrorMessage  String?
+  webhookUrl        String?
+  oauthAccessToken  String?
+  oauthRefreshToken String?
+  oauthExpiresAt    DateTime?
+  tenant            Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, service])
+}
+
+model PlatformEventLog {
+  id              String         @id @default(uuid())
+  createdAt       DateTime       @default(now())
+  tenantId        String?
+  eventType       EventType
+  service         String
+  direction       EventDirection
+  status          EventStatus
+  httpStatusCode  Int?
+  requestSummary  String?
+  responseSummary String?
+  durationMs      Int?
+  errorMessage    String?
+  jobId           String?
+  customerId      String?
+  triggeredBy     String?
+  reviewedAt      DateTime?
+  tenant          Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+}
+
+model PlatformUser {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  role         UserRole
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+}
+
+model TenantUser {
+  id                  String    @id @default(uuid())
+  tenantId            String
+  email               String
+  passwordHash        String
+  role                UserRole
+  firstName           String
+  lastName            String
+  createdAt           DateTime  @default(now())
+  lastLoginAt         DateTime?
+  onboardingCompleted Boolean   @default(false)
+  onboardingStep      Int       @default(1)
+  tenant              Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+}
+
+model Customer {
+  id            String           @id @default(uuid())
+  tenantId      String
+  createdAt     DateTime         @default(now())
+  firstName     String
+  lastName      String
+  email         String
+  phone         String?
+  address       String?
+  suburb        String?
+  notes         String?
+  ratingAverage Float?
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  jobs          Job[]
+  quotes        Quote[]
+  agreements    Agreement[]
+  invoices      Invoice[]
+}
+
+model Service {
+  id              String    @id @default(uuid())
+  tenantId        String
+  name            String
+  description     String?
+  defaultPrice    Float?
+  defaultDuration Int?
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Job {
+  id              String     @id @default(uuid())
+  tenantId        String
+  customerId      String
+  serviceId       String?
+  createdAt       DateTime   @default(now())
+  scheduledFor    DateTime?
+  status          JobStatus
+  address         String?
+  suburb          String?
+  summary         String
+  estimatedHours  Float?
+  actualHours     Float?
+  weatherRisk     Boolean    @default(false)
+  customer        Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Quote {
+  id             String    @id @default(uuid())
+  tenantId       String
+  customerId     String
+  createdAt      DateTime  @default(now())
+  title          String
+  description    String?
+  amount         Float
+  status         String
+  accessToken    String    @unique
+  acceptedAt     DateTime?
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Agreement {
+  id             String    @id @default(uuid())
+  tenantId       String
+  customerId     String
+  quoteId        String?
+  createdAt      DateTime  @default(now())
+  title          String
+  status         String
+  accessToken    String    @unique
+  signedAt       DateTime?
+  externalId     String?
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id             String    @id @default(uuid())
+  tenantId       String
+  customerId     String
+  createdAt      DateTime  @default(now())
+  number         String
+  amount         Float
+  status         String
+  dueAt          DateTime?
+  paidAt         DateTime?
+  paymentLink    String?
+  stripeSessionId String?
+  accessToken    String    @unique
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, number])
+}
+
+model Communication {
+  id          String   @id @default(uuid())
+  tenantId    String
+  customerId  String?
+  createdAt   DateTime @default(now())
+  channel     String
+  direction   String
+  subject     String?
+  body        String
+  status      String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Feedback {
+  id          String   @id @default(uuid())
+  tenantId    String
+  customerId  String
+  createdAt   DateTime @default(now())
+  rating      Int
+  comment     String?
+  source      String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model RebookReminder {
+  id          String   @id @default(uuid())
+  tenantId    String
+  customerId  String
+  dueAt       DateTime
+  sentAt      DateTime?
+  status      String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model PricingRate {
+  id                  String   @id @default(uuid())
+  tenantId            String
+  label               String
+  baseRatePerSquareM  Float?
+  overgrownRate       Float?
+  heavilyOvergrownRate Float?
+  minimumCharge       Float?
+  gstEnabled          Boolean  @default(true)
+  scheduleBufferPct   Float?   @default(10)
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model ServiceRateTemplate {
+  id              String   @id @default(uuid())
+  tenantId        String
+  serviceName     String
+  defaultPrice    Float?
+  defaultDuration Int?
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model TimeEstimateHistory {
+  id            String   @id @default(uuid())
+  tenantId      String
+  jobId         String?
+  createdAt     DateTime @default(now())
+  estimatedMins Int
+  actualMins    Int
+  variancePct   Float
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model WorkSchedule {
+  id          String   @id @default(uuid())
+  tenantId    String
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model TimeOff {
+  id          String   @id @default(uuid())
+  tenantId    String
+  title       String
+  startAt     DateTime
+  endAt       DateTime
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model PersonalCommitment {
+  id          String   @id @default(uuid())
+  tenantId    String
+  title       String
+  address     String?
+  notes       String?
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model TenantApiKey {
+  id          String   @id @default(uuid())
+  tenantId    String
+  label       String
+  hashedKey   String
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model AutomationJob {
+  id           String              @id @default(uuid())
+  tenantId     String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  kind         String
+  status       AutomationJobStatus @default(pending)
+  payloadJson  String
+  availableAt  DateTime            @default(now())
+  processedAt  DateTime?
+  attempts     Int                 @default(0)
+  lastError    String?
+  tenant       Tenant?             @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([status, availableAt])
+}
