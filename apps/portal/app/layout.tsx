@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import { DM_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
+export const dynamic = "force-dynamic";
+
 import { getCurrentTheme } from "../lib/tenant";
 import "./globals.css";
 
