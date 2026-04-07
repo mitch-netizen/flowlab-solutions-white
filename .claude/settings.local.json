@@ -38,7 +38,23 @@
       "Bash(find ~/.config -name *.json)",
       "Bash(python3 -m json.tool)",
       "Bash(grep -v \"^$\")",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({**d.get\\(''''devDependencies'''',{}\\), **d.get\\(''''dependencies'''',{}\\)}, indent=2\\)\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({**d.get\\(''''devDependencies'''',{}\\), **d.get\\(''''dependencies'''',{}\\)}, indent=2\\)\\)\")",
+      "Bash(npx vercel:*)",
+      "Bash(/usr/local/bin/node -e \"console.log\\(process.execPath\\)\")",
+      "Read(//usr/local/lib/node_modules/npm/bin/**)",
+      "Read(//usr/local/bin/**)",
+      "Bash(/usr/local/bin/npm install:*)",
+      "Bash(PATH=\"/usr/local/bin:$PATH\" /usr/local/bin/npm install -g vercel)",
+      "Bash(VERCEL_TOKEN=\"vcp_2TWgY87f7Om0gAhIqx92Tff0zIsuAwno6oezYljPVNk3SmN0Ur4Rx7Y4\" PATH=\"/usr/local/bin:$PATH\" /usr/local/bin/node /usr/local/lib/node_modules/vercel/dist/index.js --version)",
+      "Bash(VERCEL_TOKEN=\"vcp_2TWgY87f7Om0gAhIqx92Tff0zIsuAwno6oezYljPVNk3SmN0Ur4Rx7Y4\" PATH=\"/usr/local/bin:$PATH\" /usr/local/bin/node /usr/local/lib/node_modules/vercel/dist/index.js deploy --prod --yes --token \"vcp_2TWgY87f7Om0gAhIqx92Tff0zIsuAwno6oezYljPVNk3SmN0Ur4Rx7Y4\")",
+      "Bash(\"/Users/mitch/FlowLab Solutions_White/.vercel/project.json\")",
+      "Bash(grep -rl 'from @flowlab/db' '/Users/mitch/FlowLab Solutions_White/apps/portal/app' --include=*.tsx)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.stvrqepurmwalrecdlec:FlowLabSaaS2026%21%21@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true\" DIRECT_URL=\"postgresql://postgres.stvrqepurmwalrecdlec:FlowLabSaaS2026%21%21@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres\" PATH=\"/usr/local/bin:$PATH\" /usr/local/bin/node --env-file=.env.local -e \":*)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.stvrqepurmwalrecdlec:FlowLabSaaS2026!!@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres\" DIRECT_URL=\"postgresql://postgres.stvrqepurmwalrecdlec:FlowLabSaaS2026!!@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres\" PATH=\"/usr/local/bin:$PATH\" /usr/local/bin/node node_modules/.bin/tsx packages/db/prisma/seed.ts)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.stvrqepurmwalrecdlec:FlowLabSaaS2026!!@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true\" DIRECT_URL=\"postgresql://postgres:FlowLabSaaS2026!!@db.stvrqepurmwalrecdlec.supabase.co:5432/postgres\" PATH=\"/usr/local/bin:$PATH\" /usr/local/bin/node node_modules/.bin/tsx packages/db/prisma/seed.ts)",
+      "Bash(PATH=\"/usr/local/bin:$PATH\" /usr/local/bin/node --env-file=.env.local -e \":*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://flowlab-saas-web.vercel.app/\")",
+      "Bash(curl -s \"https://flowlab-saas-web.vercel.app/\")"
     ]
   }
 }
