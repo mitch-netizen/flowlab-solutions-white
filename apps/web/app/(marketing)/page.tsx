@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { listTenants } from "@flowlab/db";
 
+export const dynamic = "force-dynamic";
+
 export default async function MarketingPage() {
   const tenants = await listTenants();
 
