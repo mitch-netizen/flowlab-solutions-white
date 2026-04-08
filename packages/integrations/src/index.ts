@@ -568,6 +568,32 @@ function getDocuSealApiUrl(path: string) {
   return `${getDocuSealApiBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+function getDocuSealAppBaseUrl() {
+  if (process.env.DOCUSEAL_APP_BASE_URL) {
+    return process.env.DOCUSEAL_APP_BASE_URL.replace(/\/+$/, "");
+  }
+
+  const apiBase = getDocuSealApiBaseUrl();
+
+  if (apiBase === "https://api.docuseal.com") {
+    return "https://docuseal.com";
+  }
+
+  if (apiBase === "https://api.docuseal.eu") {
+    return "https://docuseal.eu";
+  }
+
+  try {
+    const url = new URL(apiBase);
+    if (url.hostname.startsWith("api.")) {
+      url.hostname = url.hostname.replace(/^api\./, "");
+    }
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return "https://docuseal.com";
+  }
+}
+
 function toBase64Url(input: Buffer | string) {
   return Buffer.from(input)
     .toString("base64")
@@ -1187,17 +1213,19 @@ export async function createDocuSealSubmissionFromTemplate(input: {
     throw new Error(getDocuSealErrorMessage(payload, "DocuSeal submission failed"));
   }
 
-  const customerSubmitter = payload?.submitters?.[0];
+  const submission = Array.isArray(payload) ? payload[0] : payload?.data?.[0] || payload?.submission || payload;
+  const customerSubmitter = submission?.submitters?.[0];
   const signingUrl =
     customerSubmitter?.embed_src ||
     customerSubmitter?.submission_url ||
     customerSubmitter?.url ||
+    (customerSubmitter?.slug ? `${getDocuSealAppBaseUrl()}/s/${customerSubmitter.slug}` : null) ||
     null;
 
   return {
-    id: String(payload?.id ?? ""),
+    id: String(submission?.id ?? ""),
     signingUrl: signingUrl ? String(signingUrl) : null,
-    payload
+    payload: submission
   };
 }
 
