@@ -1213,8 +1213,9 @@ export async function createDocuSealSubmissionFromTemplate(input: {
     throw new Error(getDocuSealErrorMessage(payload, "DocuSeal submission failed"));
   }
 
-  const submission = Array.isArray(payload) ? payload[0] : payload?.data?.[0] || payload?.submission || payload;
-  const customerSubmitter = submission?.submitters?.[0];
+  const submitterPayload = Array.isArray(payload) ? payload[0] : payload?.data?.[0]?.submitters?.[0] || payload?.submission?.submitters?.[0] || payload?.submitters?.[0];
+  const submission = Array.isArray(payload) ? null : payload?.data?.[0] || payload?.submission || payload;
+  const customerSubmitter = submitterPayload || submission?.submitters?.[0];
   const signingUrl =
     customerSubmitter?.embed_src ||
     customerSubmitter?.submission_url ||
@@ -1223,9 +1224,9 @@ export async function createDocuSealSubmissionFromTemplate(input: {
     null;
 
   return {
-    id: String(submission?.id ?? ""),
+    id: String(submission?.id ?? customerSubmitter?.submission_id ?? customerSubmitter?.id ?? ""),
     signingUrl: signingUrl ? String(signingUrl) : null,
-    payload: submission
+    payload: Array.isArray(payload) ? { submitter: customerSubmitter } : submission
   };
 }
 
