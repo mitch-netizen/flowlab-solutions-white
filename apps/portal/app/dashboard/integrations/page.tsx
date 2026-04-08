@@ -49,7 +49,7 @@ export default async function IntegrationsPage() {
               </form>
             ) : (
               <div className="surface-soft" style={{ marginBottom: 16 }}>
-                FlowLab manages this service for the tenant. No credential entry is required here.
+                Managed by FlowLab — no setup needed on your end.
               </div>
             )}
             <form action={`/api/tenant/integrations/${integration.service}/test`} method="post" className="form-grid" style={{ marginTop: 16 }}>

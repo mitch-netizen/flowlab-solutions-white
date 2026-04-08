@@ -17,8 +17,8 @@ export default async function AgreementsPage() {
     <div className="stack">
       <div className="surface">
         <div className="eyebrow">Agreements</div>
-        <h1>Send branded agreements through the external signature provider.</h1>
-        <p style={{ color: "#cbd5e1" }}>FlowLab owns the agreement records, status, and customer experience around the signing flow, while DocuSeal remains the signature backend.</p>
+        <h1>Get your agreements signed — fast.</h1>
+        <p style={{ color: "#cbd5e1" }}>Once a customer accepts a quote, send them a branded agreement to sign. They get a link, you get a signature. No paperwork, no back-and-forth.</p>
       </div>
       <div className="cards-2">
         <div className="surface">

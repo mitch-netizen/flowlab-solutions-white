@@ -1886,42 +1886,47 @@ export async function resolveRateSuggestions(tenantId: string, action: "applied"
 }
 
 export async function ensureDemoSeed() {
-  const existing = await prisma.tenant.findUnique({ where: { slug: "quinnys" } });
-
-  if (existing) {
-    return existing;
-  }
+  const existing = await prisma.tenant.findUnique({ where: { slug: "lawnorder" } });
 
   const [platformPassword, ownerPassword] = await Promise.all([
     hashPassword("FlowLab123!"),
-    hashPassword("Quinny123!")
+    hashPassword("LawnOrder123!")
   ]);
 
-  const tenant = await prisma.tenant.create({
-    data: {
-      slug: "quinnys",
-      status: "trial",
-      plan: "professional",
-      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-      billingEmail: "owner@quinnysmowing.com.au",
-      subscriptionStartDate: new Date(),
-      monthlyFee: 149,
-      notes: "Demo reference tenant"
-    }
-  });
+  const tenant =
+    existing ??
+    (await prisma.tenant.create({
+      data: {
+        slug: "lawnorder",
+        status: "trial",
+        plan: "professional",
+        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        billingEmail: "owner@lawnorder.com.au",
+        subscriptionStartDate: new Date(),
+        monthlyFee: 149,
+        notes: "Demo reference tenant"
+      }
+    }));
 
-  await prisma.platformUser.create({
-    data: {
+  await prisma.platformUser.upsert({
+    where: {
+      email: "admin@flowlabsolutions.com.au"
+    },
+    update: {
+      passwordHash: platformPassword,
+      role: "superadmin"
+    },
+    create: {
       email: "admin@flowlabsolutions.com.au",
       passwordHash: platformPassword,
       role: "superadmin"
     }
   });
 
-  await prisma.tenantProfile.create({
-    data: {
-      tenantId: tenant.id,
-      businessName: "Quinny's Mowing Service",
+  await prisma.tenantProfile.upsert({
+    where: { tenantId: tenant.id },
+    update: {
+      businessName: "Lawn & Order Mowing",
       tagline: "Professional lawns. Zero hassle.",
       primaryColour: "#2D5016",
       secondaryColour: "#1F2937",
@@ -1930,93 +1935,158 @@ export async function ensureDemoSeed() {
       suburb: "Tannum Sands",
       state: "QLD",
       phone: "+61 499 000 111",
-      email: "owner@quinnysmowing.com.au",
+      email: "owner@lawnorder.com.au",
+      serviceAreaSuburbs: ["Tannum Sands", "Boyne Island", "Gladstone"],
+      timezone: "Australia/Brisbane"
+    },
+    create: {
+      tenantId: tenant.id,
+      businessName: "Lawn & Order Mowing",
+      tagline: "Professional lawns. Zero hassle.",
+      primaryColour: "#2D5016",
+      secondaryColour: "#1F2937",
+      accentColour: "#84CC16",
+      businessType: "lawn_mowing",
+      suburb: "Tannum Sands",
+      state: "QLD",
+      phone: "+61 499 000 111",
+      email: "owner@lawnorder.com.au",
       serviceAreaSuburbs: ["Tannum Sands", "Boyne Island", "Gladstone"],
       timezone: "Australia/Brisbane"
     }
   });
 
-  await prisma.tenantUser.create({
-    data: {
-      tenantId: tenant.id,
-      email: "owner@quinnysmowing.com.au",
+  await prisma.tenantUser.upsert({
+    where: {
+      tenantId_email: {
+        tenantId: tenant.id,
+        email: "owner@lawnorder.com.au"
+      }
+    },
+    update: {
       passwordHash: ownerPassword,
       role: "owner",
-      firstName: "Quinn",
-      lastName: "Harper"
-    }
-  });
-
-  await prisma.service.createMany({
-    data: [
-      { tenantId: tenant.id, name: "Mow & edge", defaultPrice: 75, defaultDuration: 60 },
-      { tenantId: tenant.id, name: "Garden beds", defaultPrice: 55, defaultDuration: 45 },
-      { tenantId: tenant.id, name: "Hedge trim", defaultPrice: 85, defaultDuration: 75 },
-      { tenantId: tenant.id, name: "Gutter clean", defaultPrice: 120, defaultDuration: 90 },
-      { tenantId: tenant.id, name: "Palm removal", defaultPrice: 180, defaultDuration: 120 }
-    ]
-  });
-
-  await prisma.pricingRate.create({
-    data: {
+      firstName: "Jordan",
+      lastName: "Webb"
+    },
+    create: {
       tenantId: tenant.id,
-      label: "Default",
-      baseRatePerSquareM: 2.2,
-      overgrownRate: 3.1,
-      heavilyOvergrownRate: 4.2,
-      minimumCharge: 55,
-      gstEnabled: true,
-      scheduleBufferPct: 12
+      email: "owner@lawnorder.com.au",
+      passwordHash: ownerPassword,
+      role: "owner",
+      firstName: "Jordan",
+      lastName: "Webb"
     }
   });
 
-  await prisma.workSchedule.createMany({
-    data: [
-      { tenantId: tenant.id, dayOfWeek: 1, startTime: "07:00", endTime: "16:00" },
-      { tenantId: tenant.id, dayOfWeek: 2, startTime: "07:00", endTime: "16:00" },
-      { tenantId: tenant.id, dayOfWeek: 3, startTime: "07:00", endTime: "16:00" },
-      { tenantId: tenant.id, dayOfWeek: 4, startTime: "07:00", endTime: "16:00" },
-      { tenantId: tenant.id, dayOfWeek: 5, startTime: "07:00", endTime: "14:00" }
-    ]
-  });
+  if ((await prisma.service.count({ where: { tenantId: tenant.id } })) === 0) {
+    await prisma.service.createMany({
+      data: [
+        { tenantId: tenant.id, name: "Mow & edge", defaultPrice: 75, defaultDuration: 60 },
+        { tenantId: tenant.id, name: "Garden beds", defaultPrice: 55, defaultDuration: 45 },
+        { tenantId: tenant.id, name: "Hedge trim", defaultPrice: 85, defaultDuration: 75 },
+        { tenantId: tenant.id, name: "Gutter clean", defaultPrice: 120, defaultDuration: 90 },
+        { tenantId: tenant.id, name: "Palm removal", defaultPrice: 180, defaultDuration: 120 }
+      ]
+    });
+  }
 
-  await prisma.personalCommitment.create({
-    data: {
-      tenantId: tenant.id,
-      title: "School pickup",
-      address: "Tannum Sands State School",
-      notes: "Build routes around this pickup window.",
-      dayOfWeek: 3,
-      startTime: "14:30",
-      endTime: "15:30"
-    }
-  });
+  if ((await prisma.pricingRate.count({ where: { tenantId: tenant.id } })) === 0) {
+    await prisma.pricingRate.create({
+      data: {
+        tenantId: tenant.id,
+        label: "Default",
+        baseRatePerSquareM: 2.2,
+        overgrownRate: 3.1,
+        heavilyOvergrownRate: 4.2,
+        minimumCharge: 55,
+        gstEnabled: true,
+        scheduleBufferPct: 12
+      }
+    });
+  }
 
-  await prisma.timeOff.create({
-    data: {
-      tenantId: tenant.id,
-      title: "Family long weekend",
-      startAt: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000),
-      endAt: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
-    }
-  });
+  if ((await prisma.workSchedule.count({ where: { tenantId: tenant.id } })) === 0) {
+    await prisma.workSchedule.createMany({
+      data: [
+        { tenantId: tenant.id, dayOfWeek: 1, startTime: "07:00", endTime: "16:00" },
+        { tenantId: tenant.id, dayOfWeek: 2, startTime: "07:00", endTime: "16:00" },
+        { tenantId: tenant.id, dayOfWeek: 3, startTime: "07:00", endTime: "16:00" },
+        { tenantId: tenant.id, dayOfWeek: 4, startTime: "07:00", endTime: "16:00" },
+        { tenantId: tenant.id, dayOfWeek: 5, startTime: "07:00", endTime: "14:00" }
+      ]
+    });
+  }
 
-  const customers = await Promise.all([
-    prisma.customer.create({ data: { tenantId: tenant.id, firstName: "Sarah", lastName: "Johnson", email: "sarah@example.com", phone: "+61 400 111 111", suburb: "Tannum Sands", address: "12 Beach Ave" } }),
-    prisma.customer.create({ data: { tenantId: tenant.id, firstName: "Michael", lastName: "Tran", email: "michael@example.com", phone: "+61 400 222 222", suburb: "Boyne Island", address: "4 Willow St" } }),
-    prisma.customer.create({ data: { tenantId: tenant.id, firstName: "Leah", lastName: "Smith", email: "leah@example.com", phone: "+61 400 333 333", suburb: "Gladstone", address: "8 Harbour Rd" } }),
-    prisma.customer.create({ data: { tenantId: tenant.id, firstName: "Owen", lastName: "Frost", email: "owen@example.com", phone: "+61 400 444 444", suburb: "Boyne Island", address: "19 Marina Ct" } }),
-    prisma.customer.create({ data: { tenantId: tenant.id, firstName: "Priya", lastName: "Shah", email: "priya@example.com", phone: "+61 400 555 555", suburb: "Tannum Sands", address: "31 Ocean Dr" } })
-  ]);
+  if ((await prisma.personalCommitment.count({ where: { tenantId: tenant.id } })) === 0) {
+    await prisma.personalCommitment.create({
+      data: {
+        tenantId: tenant.id,
+        title: "School pickup",
+        address: "Tannum Sands State School",
+        notes: "Build routes around this pickup window.",
+        dayOfWeek: 3,
+        startTime: "14:30",
+        endTime: "15:30"
+      }
+    });
+  }
+
+  if ((await prisma.timeOff.count({ where: { tenantId: tenant.id } })) === 0) {
+    await prisma.timeOff.create({
+      data: {
+        tenantId: tenant.id,
+        title: "Family long weekend",
+        startAt: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000),
+        endAt: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
+      }
+    });
+  }
+
+  const demoCustomers = [
+    { firstName: "Sarah", lastName: "Johnson", email: "sarah@example.com", phone: "+61 400 111 111", suburb: "Tannum Sands", address: "12 Beach Ave" },
+    { firstName: "Michael", lastName: "Tran", email: "michael@example.com", phone: "+61 400 222 222", suburb: "Boyne Island", address: "4 Willow St" },
+    { firstName: "Leah", lastName: "Smith", email: "leah@example.com", phone: "+61 400 333 333", suburb: "Gladstone", address: "8 Harbour Rd" },
+    { firstName: "Owen", lastName: "Frost", email: "owen@example.com", phone: "+61 400 444 444", suburb: "Boyne Island", address: "19 Marina Ct" },
+    { firstName: "Priya", lastName: "Shah", email: "priya@example.com", phone: "+61 400 555 555", suburb: "Tannum Sands", address: "31 Ocean Dr" }
+  ] as const;
+
+  const customers = await Promise.all(
+    demoCustomers.map(async (customer) => {
+      const existingCustomer = await prisma.customer.findFirst({
+        where: { tenantId: tenant.id, email: customer.email }
+      });
+
+      if (existingCustomer) {
+        return existingCustomer;
+      }
+
+      return prisma.customer.create({
+        data: {
+          tenantId: tenant.id,
+          ...customer
+        }
+      });
+    })
+  );
 
   await Promise.all(
-    customers.map((customer, index) =>
-      prisma.job.create({
+    customers.map(async (customer, index) => {
+      const summary = `Recurring lawn service for ${customer.firstName}`;
+      const existingJob = await prisma.job.findFirst({
+        where: { tenantId: tenant.id, customerId: customer.id, summary }
+      });
+
+      if (existingJob) {
+        return existingJob;
+      }
+
+      return prisma.job.create({
         data: {
           tenantId: tenant.id,
           customerId: customer.id,
           status: index % 2 === 0 ? "scheduled" : "complete",
-          summary: `Recurring lawn service for ${customer.firstName}`,
+          summary,
           address: customer.address,
           suburb: customer.suburb,
           scheduledFor: new Date(Date.now() + index * 24 * 60 * 60 * 1000),
@@ -2024,13 +2094,22 @@ export async function ensureDemoSeed() {
           actualHours: index % 2 === 0 ? null : 1 + index * 0.2,
           weatherRisk: index === 3
         }
-      })
-    )
+      });
+    })
   );
 
   await Promise.all(
-    customers.slice(0, 3).map((customer, index) =>
-      prisma.quote.create({
+    customers.slice(0, 3).map(async (customer, index) => {
+      const accessToken = `quote-${tenant.slug}-demo-token-${index + 1}`;
+      const existingQuote = await prisma.quote.findUnique({
+        where: { accessToken }
+      });
+
+      if (existingQuote) {
+        return existingQuote;
+      }
+
+      return prisma.quote.create({
         data: {
           tenantId: tenant.id,
           customerId: customer.id,
@@ -2038,33 +2117,55 @@ export async function ensureDemoSeed() {
           description: "AI-assisted quote draft pending operator approval.",
           amount: 90 + index * 25,
           status: index === 0 ? "accepted" : "draft",
-          accessToken: `quote-demo-token-${index + 1}`
+          accessToken
         }
-      })
-    )
+      });
+    })
   );
 
   await Promise.all(
-    customers.slice(0, 3).map((customer, index) =>
-      prisma.invoice.create({
+    customers.slice(0, 3).map(async (customer, index) => {
+      const number = `LNO-10${index + 1}`;
+      const existingInvoice = await prisma.invoice.findUnique({
+        where: {
+          tenantId_number: {
+            tenantId: tenant.id,
+            number
+          }
+        }
+      });
+
+      if (existingInvoice) {
+        return existingInvoice;
+      }
+
+      return prisma.invoice.create({
         data: {
           tenantId: tenant.id,
           customerId: customer.id,
-          number: `QMS-10${index + 1}`,
+          number,
           amount: 75 + index * 30,
           status: index === 0 ? "paid" : "sent",
           dueAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           paidAt: index === 0 ? new Date() : null,
           paymentLink: "https://example.com/pay/demo",
-          accessToken: `invoice-demo-token-${index + 1}`
+          accessToken: `invoice-${tenant.slug}-demo-token-${index + 1}`
         }
-      })
-    )
+      });
+    })
   );
 
-  await prisma.communication.createMany({
-    data: [
-      {
+  const existingReminderSms = await prisma.communication.findFirst({
+    where: {
+      tenantId: tenant.id,
+      customerId: customers[0]!.id,
+      subject: "Job reminder"
+    }
+  });
+
+  if (!existingReminderSms) {
+    await prisma.communication.create({
+      data: {
         tenantId: tenant.id,
         customerId: customers[0]!.id,
         channel: "sms",
@@ -2072,8 +2173,21 @@ export async function ensureDemoSeed() {
         subject: "Job reminder",
         body: "Reminder: your lawn service is booked for tomorrow morning.",
         status: "sent"
-      },
-      {
+      }
+    });
+  }
+
+  const existingInvoiceEmail = await prisma.communication.findFirst({
+    where: {
+      tenantId: tenant.id,
+      customerId: customers[1]!.id,
+      subject: "Invoice issued"
+    }
+  });
+
+  if (!existingInvoiceEmail) {
+    await prisma.communication.create({
+      data: {
         tenantId: tenant.id,
         customerId: customers[1]!.id,
         channel: "email",
@@ -2082,82 +2196,123 @@ export async function ensureDemoSeed() {
         body: "Your invoice is ready for payment.",
         status: "delivered"
       }
-    ]
+    });
+  }
+
+  const existingPositiveFeedback = await prisma.feedback.findFirst({
+    where: {
+      tenantId: tenant.id,
+      customerId: customers[0]!.id,
+      comment: "Always reliable and tidy."
+    }
   });
 
-  await prisma.feedback.createMany({
-    data: [
-      {
+  if (!existingPositiveFeedback) {
+    await prisma.feedback.create({
+      data: {
         tenantId: tenant.id,
         customerId: customers[0]!.id,
         rating: 5,
         comment: "Always reliable and tidy.",
         source: "sms"
-      },
-      {
+      }
+    });
+  }
+
+  const existingTimingFeedback = await prisma.feedback.findFirst({
+    where: {
+      tenantId: tenant.id,
+      customerId: customers[2]!.id,
+      comment: "Good job, but arrived later than expected."
+    }
+  });
+
+  if (!existingTimingFeedback) {
+    await prisma.feedback.create({
+      data: {
         tenantId: tenant.id,
         customerId: customers[2]!.id,
         rating: 3,
         comment: "Good job, but arrived later than expected.",
         source: "email"
       }
-    ]
+    });
+  }
+
+  const existingFirstReminder = await prisma.rebookReminder.findFirst({
+    where: {
+      tenantId: tenant.id,
+      customerId: customers[0]!.id,
+      status: "pending"
+    }
   });
 
-  await prisma.rebookReminder.createMany({
-    data: [
-      {
+  if (!existingFirstReminder) {
+    await prisma.rebookReminder.create({
+      data: {
         tenantId: tenant.id,
         customerId: customers[0]!.id,
         dueAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
         status: "pending"
-      },
-      {
+      }
+    });
+  }
+
+  const existingSecondReminder = await prisma.rebookReminder.findFirst({
+    where: {
+      tenantId: tenant.id,
+      customerId: customers[3]!.id,
+      status: "pending"
+    }
+  });
+
+  if (!existingSecondReminder) {
+    await prisma.rebookReminder.create({
+      data: {
         tenantId: tenant.id,
         customerId: customers[3]!.id,
         dueAt: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
         status: "pending"
       }
-    ]
+    });
+  }
+
+  await prisma.tenantIntegration.createMany({
+    data: ["twilio", "sendgrid", "stripe", "docuseal", "google_maps", "xero", "make_com", "claude"].map((service) => ({
+      tenantId: tenant.id,
+      service: service as any,
+      status: service === "claude" ? "connected" : "not_configured"
+    })),
+    skipDuplicates: true
   });
 
-  await Promise.all(
-    ["twilio", "sendgrid", "stripe", "docuseal", "google_maps", "xero", "make_com", "claude"].map((service) =>
-      prisma.tenantIntegration.create({
-        data: {
+  if ((await prisma.platformEventLog.count({ where: { tenantId: tenant.id, triggeredBy: "seed" } })) === 0) {
+    await prisma.platformEventLog.createMany({
+      data: [
+        {
           tenantId: tenant.id,
-          service: service as any,
-          status: service === "claude" ? "connected" : "not_configured"
+          eventType: "info",
+          service: "internal",
+          direction: "outbound",
+          status: "success",
+          requestSummary: "Tenant seeded",
+          responseSummary: "Demo tenant ready",
+          triggeredBy: "seed"
+        },
+        {
+          tenantId: tenant.id,
+          eventType: "warning",
+          service: "make",
+          direction: "outbound",
+          status: "failed",
+          requestSummary: "Webhook test",
+          responseSummary: "No webhook configured",
+          errorMessage: "Missing webhook URL",
+          triggeredBy: "seed"
         }
-      })
-    )
-  );
-
-  await prisma.platformEventLog.createMany({
-    data: [
-      {
-        tenantId: tenant.id,
-        eventType: "info",
-        service: "internal",
-        direction: "outbound",
-        status: "success",
-        requestSummary: "Tenant seeded",
-        responseSummary: "Demo tenant ready",
-        triggeredBy: "seed"
-      },
-      {
-        tenantId: tenant.id,
-        eventType: "warning",
-        service: "make",
-        direction: "outbound",
-        status: "failed",
-        requestSummary: "Webhook test",
-        responseSummary: "No webhook configured",
-        errorMessage: "Missing webhook URL",
-        triggeredBy: "seed"
-      }
-    ]
-  });
+      ]
+    });
+  }
 
   return tenant;
 }

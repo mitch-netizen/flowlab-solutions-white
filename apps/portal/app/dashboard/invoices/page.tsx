@@ -15,8 +15,8 @@ export default async function InvoicesPage() {
     <div className="stack">
       <div className="surface">
         <div className="eyebrow">Invoicing</div>
-        <h1>Create invoice drafts and send payment-ready public links.</h1>
-        <p style={{ color: "#cbd5e1" }}>The current flow creates invoice records, demo payment links, and payment events that feed the system-health timeline.</p>
+        <h1>Invoice a customer and get paid faster.</h1>
+        <p style={{ color: "#cbd5e1" }}>Create an invoice and send the customer a secure payment link. Automated reminders chase it up at 3, 7, and 14 days if needed.</p>
       </div>
       <div className="cards-2">
         <form className="surface form-grid" action="/api/tenant/invoices/create" method="post">

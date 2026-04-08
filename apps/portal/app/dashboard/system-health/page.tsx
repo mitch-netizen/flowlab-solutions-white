@@ -14,8 +14,8 @@ export default async function SystemHealthPage() {
     <div className="stack">
       <div className="surface">
         <div className="eyebrow">System health</div>
-        <h1>Tenant-side event visibility</h1>
-        <p style={{ color: "#cbd5e1" }}>Integration health, recent failures, and the last 100 system events are exposed here for operators.</p>
+        <h1>Everything working as it should?</h1>
+        <p style={{ color: "#cbd5e1" }}>Check the status of your connected services and review recent activity across your account — SMS, email, payments, and more.</p>
       </div>
       <div className="cards-3">
         {integrations.map((integration) => (

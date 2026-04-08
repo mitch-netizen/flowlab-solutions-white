@@ -15,10 +15,7 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
       <section className="surface">
         <div className="eyebrow">{agreement.tenant.profile?.businessName}</div>
         <h1>{agreement.title}</h1>
-        <p style={{ color: "#cbd5e1" }}>Agreement status: {agreement.status}</p>
-        <p style={{ color: "#cbd5e1" }}>
-          This page represents the branded signing entrypoint. In a live tenant setup, DocuSeal will redirect the signer back here after signature completion.
-        </p>
+        <p style={{ color: "#cbd5e1" }}>Please review the agreement below and complete your signature to confirm the job.</p>
         {agreement.status !== "signed" ? (
           <form action={`/api/public/sign/${agreement.accessToken}/complete`} method="post" style={{ marginTop: 24 }}>
             <button className="cta" type="submit">
@@ -26,7 +23,7 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
             </button>
           </form>
         ) : (
-          <div style={{ color: "#86efac", marginTop: 24 }}>Agreement signed. The post-signature automation chain is now queued.</div>
+          <div style={{ color: "#86efac", marginTop: 24 }}>All signed — you&apos;re good to go. We&apos;ll be in touch with the job details.</div>
         )}
       </section>
     </main>

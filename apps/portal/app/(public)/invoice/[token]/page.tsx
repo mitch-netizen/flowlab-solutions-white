@@ -16,7 +16,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ token:
         <div className="eyebrow">{invoice.tenant.profile?.businessName}</div>
         <h1>Invoice {invoice.number}</h1>
         <div style={{ fontSize: 40, fontWeight: 700 }}>${invoice.amount}</div>
-        <p style={{ color: "#cbd5e1" }}>Status: {invoice.status}</p>
+        <p style={{ color: "#cbd5e1" }}>Due: {invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" }) : "On receipt"}</p>
         {invoice.status !== "paid" ? (
           <form action={`/api/public/invoice/${invoice.accessToken}/pay`} method="post" style={{ marginTop: 24 }}>
             <button className="cta" type="submit">
@@ -24,7 +24,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ token:
             </button>
           </form>
         ) : (
-          <div style={{ color: "#86efac", marginTop: 24 }}>Payment received. Thank you.</div>
+          <div style={{ color: "#86efac", marginTop: 24 }}>Payment received — thanks for that! See you next time.</div>
         )}
       </section>
     </main>

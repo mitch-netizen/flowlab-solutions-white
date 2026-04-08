@@ -15,8 +15,8 @@ export default async function QuotesPage() {
     <div className="stack">
       <div className="surface">
         <div className="eyebrow">AI quoting</div>
-        <h1>Generate draft quotes from tenant pricing and enquiry context.</h1>
-        <p style={{ color: "#cbd5e1" }}>This uses the tenant pricing profile to create review-ready draft quotes and customer-facing token links.</p>
+        <h1>Price up a job and send the customer a link.</h1>
+        <p style={{ color: "#cbd5e1" }}>Pick a customer, describe the work, and we&apos;ll crunch the numbers based on your pricing. The customer gets a branded link to review and accept.</p>
       </div>
       <div className="cards-2">
         <form className="surface form-grid" action="/api/tenant/quotes/generate" method="post">
@@ -55,12 +55,12 @@ export default async function QuotesPage() {
           </button>
         </form>
         <div className="surface">
-          <h2 style={{ marginTop: 0 }}>Drafting notes</h2>
+          <h2 style={{ marginTop: 0 }}>How it works</h2>
           <div className="surface-soft">
-            The current implementation uses tenant pricing rates and site condition to produce a draft amount, then logs an AI event so the health dashboard and usage reporting stay connected.
+            Your pricing rates and site condition are used to calculate a draft figure. Review it, adjust if needed, then fire it off.
           </div>
           <div className="surface-soft" style={{ marginTop: 18 }}>
-            Customer links are public, token-based, and white-labelled. Accepted quotes can create downstream agreement records automatically.
+            The customer gets a secure, branded link — no login required. Once they accept, you can send an agreement with one click.
           </div>
         </div>
       </div>
