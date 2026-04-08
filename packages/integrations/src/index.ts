@@ -4,6 +4,7 @@ import Stripe from "stripe";
 
 import type { AutomationBlueprintDescriptor, IntegrationService, IntegrationTestResult } from "@flowlab/contracts";
 import { automationBlueprints, serviceLabels } from "@flowlab/contracts";
+export { generateServiceAgreementTemplateDocx } from "./generated-service-agreement.js";
 
 const algorithm = "aes-256-gcm";
 const BREVO_API_BASE = "https://api.brevo.com/v3";
@@ -582,7 +583,7 @@ export function validateDocuSealTemplateFields(input: {
   fields: Array<{ name?: string; type?: string; role?: string }>;
   submitters: Array<{ name?: string; role?: string }>;
   requiredRoles: string[];
-  requiredFields: Array<{ name: string; type: string; role?: string }>;
+  requiredFields: Array<{ name: string; type: string | string[]; role?: string }>;
 }) {
   const submitterRoles = new Set(
     input.submitters
@@ -595,7 +596,10 @@ export function validateDocuSealTemplateFields(input: {
   );
 
   const missingRoles = input.requiredRoles.filter((role) => !submitterRoles.has(role));
-  const missingFields = input.requiredFields.filter((field) => !fieldKeys.has(`${field.name}::${field.type}::${field.role || ""}`));
+  const missingFields = input.requiredFields.filter((field) => {
+    const types = Array.isArray(field.type) ? field.type : [field.type];
+    return !types.some((type) => fieldKeys.has(`${field.name}::${type}::${field.role || ""}`));
+  });
 
   return {
     ok: missingRoles.length === 0 && missingFields.length === 0,
@@ -614,6 +618,11 @@ export async function createDocuSealSubmissionFromTemplate(input: {
     name: string;
     email: string;
     role: string;
+    fields?: Array<{
+      name: string;
+      defaultValue: string;
+      readonly?: boolean;
+    }>;
   }>;
 }) {
   const response = await fetch(getDocuSealApiUrl("/submissions"), {
@@ -629,9 +638,16 @@ export async function createDocuSealSubmissionFromTemplate(input: {
       external_id: input.accessToken,
       webhook_url: input.callbackUrl,
       submitters: input.submitters.map((submitter, index) => ({
-        ...submitter,
+        name: submitter.name,
+        email: submitter.email,
+        role: submitter.role,
         external_id: index === 0 ? input.accessToken : `${input.accessToken}:${submitter.role.toLowerCase()}`,
-        completed_redirect_url: index === 0 ? input.completedRedirectUrl : undefined
+        completed_redirect_url: index === 0 ? input.completedRedirectUrl : undefined,
+        fields: submitter.fields?.map((field) => ({
+          name: field.name,
+          default_value: field.defaultValue,
+          readonly: field.readonly ?? true
+        }))
       }))
     })
   });

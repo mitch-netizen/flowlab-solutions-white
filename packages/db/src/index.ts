@@ -17,6 +17,7 @@ import {
   createDocuSealSubmissionFromTemplate,
   createDocuSealTemplateFromFile,
   decryptJson,
+  generateServiceAgreementTemplateDocx,
   getDocuSealTemplate,
   getStripeClient,
   sendDocuSealSignatureRequest,
@@ -842,7 +843,7 @@ async function getTenantDocuSealConfig(tenantId: string) {
 function getAgreementTemplateRequirements(signerMode: string) {
   const requiredFields = [
     { name: "customer_signature", type: "signature", role: "Customer" },
-    { name: "customer_signed_at", type: "date", role: "Customer" }
+    { name: "customer_signed_at", type: ["date", "datenow"], role: "Customer" }
   ];
 
   const requiredRoles = ["Customer"];
@@ -853,6 +854,71 @@ function getAgreementTemplateRequirements(signerMode: string) {
   }
 
   return { requiredRoles, requiredFields };
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency: "AUD"
+  }).format(amount);
+}
+
+function formatShortDate(value: Date | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-AU", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  }).format(value);
+}
+
+function compactText(input: string | null | undefined, fallback = "") {
+  return (input || fallback).replace(/\s+/g, " ").trim();
+}
+
+function buildAgreementFieldValues(input: {
+  quote: {
+    title: string;
+    description: string | null;
+    amount: number;
+    acceptedAt?: Date | null;
+    customer: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string | null;
+      address?: string | null;
+      suburb?: string | null;
+    };
+  };
+  tenant: {
+    profile: {
+      businessName: string;
+    } | null;
+  };
+}) {
+  const customerName = `${input.quote.customer.firstName} ${input.quote.customer.lastName}`.trim();
+  const acceptedDate = formatShortDate(input.quote.acceptedAt ?? new Date());
+
+  return {
+    customer_name: customerName,
+    customer_full_name: customerName,
+    customer_address: compactText(input.quote.customer.address, "To be confirmed"),
+    customer_suburb: compactText(input.quote.customer.suburb, "To be confirmed"),
+    customer_phone: compactText(input.quote.customer.phone, "Not provided"),
+    customer_email: compactText(input.quote.customer.email),
+    agreement_date: acceptedDate || formatShortDate(new Date()),
+    commencement_date: acceptedDate || "To be confirmed",
+    service_summary: compactText(input.quote.title, "Quoted field service"),
+    quote_scope: compactText(input.quote.description, "Quote scope confirmed in FlowLab."),
+    quote_amount: `${formatCurrency(input.quote.amount)} per visit`,
+    service_frequency: "As quoted in FlowLab",
+    preferred_day: "To be confirmed",
+    business_signer_name: compactText(input.tenant.profile?.businessName, "Business representative")
+  };
 }
 
 export async function uploadTenantAgreementTemplate(input: {
@@ -919,6 +985,49 @@ export async function uploadTenantAgreementTemplate(input: {
   });
 
   return template;
+}
+
+export async function createGeneratedTenantAgreementTemplate(input: {
+  tenantId: string;
+  templateName?: string;
+  signerMode?: "customer_only" | "customer_and_business";
+}) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: input.tenantId },
+    include: { profile: true }
+  });
+
+  if (!tenant) {
+    throw new Error("Tenant not found");
+  }
+
+  const signerMode = input.signerMode ?? "customer_only";
+  const fileBuffer = await generateServiceAgreementTemplateDocx({
+    businessName: tenant.profile?.businessName ?? tenant.slug,
+    primaryColour: tenant.profile?.primaryColour,
+    abn: tenant.profile?.abn,
+    phone: tenant.profile?.phone,
+    email: tenant.profile?.email || tenant.billingEmail,
+    address: tenant.profile?.address,
+    suburb: tenant.profile?.suburb,
+    state: tenant.profile?.state,
+    postcode: tenant.profile?.postcode,
+    signerMode
+  });
+
+  const template = await uploadTenantAgreementTemplate({
+    tenantId: input.tenantId,
+    templateName: input.templateName?.trim() || "FlowLab Smart Service Agreement",
+    fileName: "flowlab-smart-service-agreement.docx",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    fileBuffer,
+    signerMode
+  });
+
+  await validateTenantAgreementTemplate(input.tenantId, template.id);
+  return prisma.tenantAgreementTemplate.findUniqueOrThrow({
+    where: { id: template.id }
+  });
 }
 
 export async function setDefaultTenantAgreementTemplate(tenantId: string, templateId: string) {
@@ -1637,6 +1746,10 @@ export async function createAgreementForQuote(quoteId: string) {
   let externalRequestId = signRequestBase.externalRequestId;
   let signingUrl = signRequestBase.embeddedSignUrl;
   const defaultTemplate = quote.tenant.agreementTemplates[0] ?? null;
+  const agreementFieldValues = buildAgreementFieldValues({
+    quote,
+    tenant: quote.tenant
+  });
 
   if (docuSealConfig.apiKey) {
     const callbackUrl = `https://${quote.tenant.slug}.${process.env.DEFAULT_ROOT_DOMAIN ?? "flowlabsolutions.com.au"}/api/webhooks/docuseal`;
@@ -1666,14 +1779,30 @@ export async function createAgreementForQuote(quoteId: string) {
             {
               name: `${quote.customer.firstName} ${quote.customer.lastName}`,
               email: quote.customer.email,
-              role: "Customer"
+              role: "Customer",
+              fields: [
+                { name: "customer_name", defaultValue: agreementFieldValues.customer_name },
+                { name: "customer_full_name", defaultValue: agreementFieldValues.customer_full_name },
+                { name: "customer_address", defaultValue: agreementFieldValues.customer_address },
+                { name: "customer_suburb", defaultValue: agreementFieldValues.customer_suburb },
+                { name: "customer_phone", defaultValue: agreementFieldValues.customer_phone },
+                { name: "customer_email", defaultValue: agreementFieldValues.customer_email },
+                { name: "agreement_date", defaultValue: agreementFieldValues.agreement_date },
+                { name: "commencement_date", defaultValue: agreementFieldValues.commencement_date },
+                { name: "service_summary", defaultValue: agreementFieldValues.service_summary },
+                { name: "quote_scope", defaultValue: agreementFieldValues.quote_scope },
+                { name: "quote_amount", defaultValue: agreementFieldValues.quote_amount },
+                { name: "service_frequency", defaultValue: agreementFieldValues.service_frequency },
+                { name: "preferred_day", defaultValue: agreementFieldValues.preferred_day }
+              ]
             },
             ...(defaultTemplate.signerMode === "customer_and_business" && (quote.tenant.profile?.email || quote.tenant.billingEmail)
               ? [
                   {
                     name: businessName,
                     email: quote.tenant.profile?.email || quote.tenant.billingEmail,
-                    role: "Business"
+                    role: "Business",
+                    fields: [{ name: "business_signer_name", defaultValue: agreementFieldValues.business_signer_name }]
                   }
                 ]
               : [])

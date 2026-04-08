@@ -6,7 +6,7 @@ import { createElement } from "react";
 export default function DocuSealBuilderEmbed(props: {
   token: string;
   roles: string[];
-  requiredFields: Array<{ name: string; type: string; role?: string }>;
+  requiredFields: Array<{ name: string; type: string | string[]; role?: string }>;
   submitters: Array<{ role: string; name?: string; email?: string }>;
 }) {
   return (

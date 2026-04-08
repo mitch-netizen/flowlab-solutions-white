@@ -12,6 +12,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
     "@flowlab/contracts": "*",
+    "docx": "^9.5.1",
     "stripe": "^18.5.0"
   }
 }
