@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.redirect(new URL("/dashboard/agreements", request.url), 303);
   }
 
-  await uploadTenantAgreementTemplate({
+  const template = await uploadTenantAgreementTemplate({
     tenantId: session.tenantId,
     templateName: String(formData.get("templateName") ?? "").trim() || file.name.replace(/\.[^.]+$/, ""),
     fileName: file.name,
@@ -28,5 +28,5 @@ export async function POST(request: Request) {
     signerMode: String(formData.get("signerMode") ?? "customer_only") === "customer_and_business" ? "customer_and_business" : "customer_only"
   });
 
-  return NextResponse.redirect(new URL("/dashboard/agreements", request.url), 303);
+  return NextResponse.redirect(new URL(`/dashboard/agreements/templates/${template.id}/builder`, request.url), 303);
 }

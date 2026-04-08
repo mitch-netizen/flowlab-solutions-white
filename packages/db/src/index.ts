@@ -13,11 +13,14 @@ import { getPlanFeatures } from "@flowlab/contracts";
 import {
   buildDocuSealRequest,
   buildStripePaymentLink,
+  createDocuSealBuilderToken,
   createDocuSealSubmissionFromTemplate,
   createDocuSealTemplateFromFile,
   decryptJson,
+  getDocuSealTemplate,
   getStripeClient,
-  sendDocuSealSignatureRequest
+  sendDocuSealSignatureRequest,
+  validateDocuSealTemplateFields
 } from "@flowlab/integrations";
 import { generateAIQuote } from "@flowlab/integrations/claude";
 import { assessJobWeatherRisks } from "@flowlab/integrations/bom";
@@ -836,6 +839,22 @@ async function getTenantDocuSealConfig(tenantId: string) {
   };
 }
 
+function getAgreementTemplateRequirements(signerMode: string) {
+  const requiredFields = [
+    { name: "customer_signature", type: "signature", role: "Customer" },
+    { name: "customer_signed_at", type: "date", role: "Customer" }
+  ];
+
+  const requiredRoles = ["Customer"];
+
+  if (signerMode === "customer_and_business") {
+    requiredRoles.push("Business");
+    requiredFields.push({ name: "business_signature", type: "signature", role: "Business" });
+  }
+
+  return { requiredRoles, requiredFields };
+}
+
 export async function uploadTenantAgreementTemplate(input: {
   tenantId: string;
   templateName: string;
@@ -844,15 +863,12 @@ export async function uploadTenantAgreementTemplate(input: {
   fileBuffer: Buffer;
   signerMode?: "customer_only" | "customer_and_business";
 }) {
-  const [tenant, docuSealConfig, existingDefaultCount] = await Promise.all([
+  const [tenant, docuSealConfig] = await Promise.all([
     prisma.tenant.findUnique({
       where: { id: input.tenantId },
       include: { profile: true }
     }),
-    getTenantDocuSealConfig(input.tenantId),
-    prisma.tenantAgreementTemplate.count({
-      where: { tenantId: input.tenantId, isDefault: true }
-    })
+    getTenantDocuSealConfig(input.tenantId)
   ]);
 
   if (!tenant) {
@@ -883,8 +899,8 @@ export async function uploadTenantAgreementTemplate(input: {
       signerRoles,
       docusealTemplateId: created.id,
       docusealTemplateSlug: created.slug,
-      isDefault: existingDefaultCount === 0,
-      status: "ready",
+      isDefault: false,
+      status: "draft",
       lastSyncedAt: new Date()
     }
   });
@@ -917,6 +933,10 @@ export async function setDefaultTenantAgreementTemplate(tenantId: string, templa
     throw new Error("Agreement template not found");
   }
 
+  if (template.status !== "ready") {
+    throw new Error("Template must be completed in the builder before it can be the default.");
+  }
+
   await prisma.$transaction([
     prisma.tenantAgreementTemplate.updateMany({
       where: { tenantId },
@@ -940,6 +960,136 @@ export async function setDefaultTenantAgreementTemplate(tenantId: string, templa
       triggeredBy: "tenant_agreement_template_default"
     }
   });
+}
+
+export async function getTenantAgreementTemplateBuilderState(input: {
+  tenantId: string;
+  templateId: string;
+  integrationEmail?: string;
+}) {
+  const [template, docuSealConfig] = await Promise.all([
+    prisma.tenantAgreementTemplate.findFirst({
+      where: { id: input.templateId, tenantId: input.tenantId }
+    }),
+    getTenantDocuSealConfig(input.tenantId)
+  ]);
+
+  if (!template) {
+    throw new Error("Agreement template not found");
+  }
+
+  if (!docuSealConfig.apiKey) {
+    throw new Error("Connect DocuSeal before editing agreement templates.");
+  }
+
+  const remoteTemplate = await getDocuSealTemplate({
+    apiKey: docuSealConfig.apiKey,
+    templateId: template.docusealTemplateId
+  });
+
+  const adminEmail = remoteTemplate.author?.email || process.env.DOCUSEAL_ADMIN_EMAIL || process.env.BREVO_FROM_EMAIL || "";
+  if (!adminEmail) {
+    throw new Error("DocuSeal admin email could not be determined for embedded builder access.");
+  }
+
+  const builderToken = createDocuSealBuilderToken({
+    apiKey: docuSealConfig.apiKey,
+    adminEmail,
+    integrationEmail: input.integrationEmail,
+    templateId: template.docusealTemplateId,
+    externalId: template.id
+  });
+
+  const requirements = getAgreementTemplateRequirements(template.signerMode);
+  return {
+    template,
+    remoteTemplate,
+    builderToken,
+    requirements
+  };
+}
+
+export async function validateTenantAgreementTemplate(tenantId: string, templateId: string) {
+  const [template, docuSealConfig] = await Promise.all([
+    prisma.tenantAgreementTemplate.findFirst({
+      where: { id: templateId, tenantId }
+    }),
+    getTenantDocuSealConfig(tenantId)
+  ]);
+
+  if (!template) {
+    throw new Error("Agreement template not found");
+  }
+
+  if (!docuSealConfig.apiKey) {
+    throw new Error("Connect DocuSeal before validating agreement templates.");
+  }
+
+  const remoteTemplate = await getDocuSealTemplate({
+    apiKey: docuSealConfig.apiKey,
+    templateId: template.docusealTemplateId
+  });
+
+  const requirements = getAgreementTemplateRequirements(template.signerMode);
+  const validation = validateDocuSealTemplateFields({
+    fields: remoteTemplate.fields ?? [],
+    submitters: remoteTemplate.submitters ?? [],
+    requiredRoles: requirements.requiredRoles,
+    requiredFields: requirements.requiredFields
+  });
+
+  const message = validation.ok
+    ? null
+    : [
+        validation.missingRoles.length > 0 ? `Missing roles: ${validation.missingRoles.join(", ")}` : null,
+        validation.missingFields.length > 0
+          ? `Missing fields: ${validation.missingFields.map((field) => `${field.name} (${field.role})`).join(", ")}`
+          : null
+      ]
+        .filter(Boolean)
+        .join(" · ");
+
+  const updated = await prisma.tenantAgreementTemplate.update({
+    where: { id: template.id },
+    data: {
+      status: validation.ok ? "ready" : "draft",
+      lastSyncedAt: new Date(),
+      lastErrorMessage: message
+    }
+  });
+
+  if (validation.ok) {
+    const existingDefault = await prisma.tenantAgreementTemplate.count({
+      where: { tenantId, isDefault: true, status: "ready" }
+    });
+
+    if (existingDefault === 0) {
+      await prisma.tenantAgreementTemplate.update({
+        where: { id: template.id },
+        data: { isDefault: true }
+      });
+      updated.isDefault = true;
+    }
+  }
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId,
+      eventType: validation.ok ? "info" : "warning",
+      service: "docuseal",
+      direction: "outbound",
+      status: validation.ok ? "success" : "failed",
+      requestSummary: `Validated agreement template ${template.name}`,
+      responseSummary: validation.ok ? "Template is ready for signing" : null,
+      errorMessage: message,
+      triggeredBy: "tenant_agreement_template_validate"
+    }
+  });
+
+  return {
+    template: updated,
+    validation
+  };
 }
 
 export async function createQuoteDraft(input: {
@@ -1459,7 +1609,7 @@ export async function createAgreementForQuote(quoteId: string) {
         include: {
           profile: true,
           agreementTemplates: {
-            where: { isDefault: true },
+            where: { isDefault: true, status: "ready" },
             take: 1
           }
         }

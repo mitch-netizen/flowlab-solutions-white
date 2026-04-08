@@ -20,13 +20,13 @@ export default async function AgreementsPage() {
       <div className="surface">
         <div className="eyebrow">Agreements</div>
         <h1>Get your agreements signed — fast.</h1>
-        <p style={{ color: "#cbd5e1" }}>Upload your own service agreement once, make it the default, and FlowLab will send that contract for signature whenever a customer approves a quote.</p>
+        <p style={{ color: "#cbd5e1" }}>Upload your own contract, place the required signer fields in the builder, then mark it ready. Once a default template is ready, FlowLab will use it automatically whenever a customer accepts a quote.</p>
       </div>
       <div className="cards-2">
         <form action="/api/tenant/agreements/templates/upload" method="post" encType="multipart/form-data" className="surface form-grid">
           <h2 style={{ marginTop: 0 }}>Upload your agreement template</h2>
           <div className="surface-soft">
-            Upload a PDF or DOCX version of your legal contract. For the best result, include DocuSeal fields or tags for a <strong>Customer</strong> signer, and optionally a <strong>Business</strong> countersigner.
+            Upload a PDF or DOCX version of your legal contract. FlowLab will send you straight into the builder so you can place the required signature and date fields before the template goes live.
           </div>
           <label className="label">
             Template name
@@ -53,23 +53,37 @@ export default async function AgreementsPage() {
             {templates.length > 0 ? (
               templates.map((template) => (
                 <div key={template.id} className="surface-soft">
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
                     <div>
                       <strong>{template.name}</strong>
                       <div style={{ color: "#cbd5e1", marginTop: 8 }}>
-                        {template.sourceFileName} · {template.signerMode === "customer_and_business" ? "Customer + business" : "Customer only"} · {template.status}
+                        {template.sourceFileName} · {template.signerMode === "customer_and_business" ? "Customer + business" : "Customer only"}
+                      </div>
+                      <div style={{ color: template.status === "ready" ? "#86efac" : "#fbbf24", marginTop: 8 }}>
+                        {template.status === "ready" ? "Ready for signing" : "Draft — builder setup still required"}
                       </div>
                       {template.isDefault ? <div style={{ color: "#86efac", marginTop: 8 }}>Default template</div> : null}
                       {template.lastErrorMessage ? <div style={{ color: "#fca5a5", marginTop: 8 }}>{template.lastErrorMessage}</div> : null}
                     </div>
-                    {!template.isDefault ? (
-                      <form action="/api/tenant/agreements/templates/default" method="post">
+                    <div className="stack" style={{ minWidth: 180 }}>
+                      <Link className="ghost" href={`/dashboard/agreements/templates/${template.id}/builder`}>
+                        Open builder
+                      </Link>
+                      <form action="/api/tenant/agreements/templates/validate" method="post">
                         <input type="hidden" name="templateId" value={template.id} />
                         <button className="ghost" type="submit">
-                          Make default
+                          Validate template
                         </button>
                       </form>
-                    ) : null}
+                      {!template.isDefault && template.status === "ready" ? (
+                        <form action="/api/tenant/agreements/templates/default" method="post">
+                          <input type="hidden" name="templateId" value={template.id} />
+                          <button className="ghost" type="submit">
+                            Make default
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               ))
@@ -83,9 +97,9 @@ export default async function AgreementsPage() {
         <div className="surface">
           <h2 style={{ marginTop: 0 }}>Accepted quotes ready for agreements</h2>
           <div className="stack">
-            {!defaultTemplate ? (
+            {!defaultTemplate || defaultTemplate.status !== "ready" ? (
               <div className="surface-soft">
-                Upload and set a default agreement template first. Once that&apos;s done, accepted quotes here can be sent for signature in one click.
+                Upload a contract, finish the builder step, and validate it before sending agreements from accepted quotes.
               </div>
             ) : null}
             {acceptedQuotes.length > 0 ? (
@@ -99,7 +113,7 @@ export default async function AgreementsPage() {
                   <div style={{ color: "#94a3b8", fontSize: 13 }}>
                     Using: {defaultTemplate?.name ?? "Legacy generated agreement"}
                   </div>
-                  <button className="cta" type="submit" disabled={!defaultTemplate}>
+                  <button className="cta" type="submit" disabled={!defaultTemplate || defaultTemplate.status !== "ready"}>
                     Send agreement
                   </button>
                 </form>
