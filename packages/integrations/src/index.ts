@@ -46,6 +46,22 @@ function getDocuSealApiUrl(path: string) {
   return `${getDocuSealApiBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+function toBase64Url(input: Buffer | string) {
+  return Buffer.from(input)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function signHs256Jwt(payload: Record<string, unknown>, secret: string) {
+  const header = { alg: "HS256", typ: "JWT" };
+  const encodedHeader = toBase64Url(JSON.stringify(header));
+  const encodedPayload = toBase64Url(JSON.stringify(payload));
+  const signature = crypto.createHmac("sha256", secret).update(`${encodedHeader}.${encodedPayload}`).digest();
+  return `${encodedHeader}.${encodedPayload}.${toBase64Url(signature)}`;
+}
+
 export const integrationHelpText: Record<IntegrationService, string> = {
   twilio: "Send transactional SMS confirmations, reminders, and ETA updates through Brevo.",
   sendgrid: "Deliver branded transactional emails and invoices through Brevo.",
@@ -515,6 +531,76 @@ export async function createDocuSealTemplateFromFile(input: {
     id: String(payload?.id ?? ""),
     slug: payload?.slug ? String(payload.slug) : null,
     payload
+  };
+}
+
+export async function getDocuSealTemplate(input: {
+  apiKey: string;
+  templateId: string;
+}) {
+  const response = await fetch(getDocuSealApiUrl(`/templates/${input.templateId}`), {
+    headers: {
+      "X-Auth-Token": input.apiKey
+    }
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(getDocuSealErrorMessage(payload, "DocuSeal template lookup failed"));
+  }
+
+  return payload as {
+    id: number | string;
+    name?: string;
+    slug?: string;
+    fields?: Array<{ name?: string; type?: string; role?: string }>;
+    submitters?: Array<{ name?: string; role?: string; uuid?: string }>;
+    author?: { email?: string };
+    documents?: Array<{ url?: string; filename?: string }>;
+  };
+}
+
+export function createDocuSealBuilderToken(input: {
+  apiKey: string;
+  adminEmail: string;
+  integrationEmail?: string;
+  templateId: string;
+  externalId?: string;
+}) {
+  return signHs256Jwt(
+    {
+      user_email: input.adminEmail,
+      integration_email: input.integrationEmail,
+      template_id: Number.isFinite(Number(input.templateId)) ? Number(input.templateId) : input.templateId,
+      external_id: input.externalId ?? `flowlab-template-${input.templateId}`
+    },
+    input.apiKey
+  );
+}
+
+export function validateDocuSealTemplateFields(input: {
+  fields: Array<{ name?: string; type?: string; role?: string }>;
+  submitters: Array<{ name?: string; role?: string }>;
+  requiredRoles: string[];
+  requiredFields: Array<{ name: string; type: string; role?: string }>;
+}) {
+  const submitterRoles = new Set(
+    input.submitters
+      .map((submitter) => submitter.role || submitter.name || "")
+      .filter(Boolean)
+  );
+
+  const fieldKeys = new Set(
+    input.fields.map((field) => `${field.name || ""}::${field.type || ""}::${field.role || ""}`)
+  );
+
+  const missingRoles = input.requiredRoles.filter((role) => !submitterRoles.has(role));
+  const missingFields = input.requiredFields.filter((field) => !fieldKeys.has(`${field.name}::${field.type}::${field.role || ""}`));
+
+  return {
+    ok: missingRoles.length === 0 && missingFields.length === 0,
+    missingRoles,
+    missingFields
   };
 }
 
