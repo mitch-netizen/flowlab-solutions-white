@@ -115,6 +115,7 @@ model Tenant {
   jobs                  Job[]
   quotes                Quote[]
   agreements            Agreement[]
+  agreementTemplates    TenantAgreementTemplate[]
   invoices              Invoice[]
   communications        Communication[]
   feedback              Feedback[]
@@ -289,14 +290,40 @@ model Agreement {
   tenantId       String
   customerId     String
   quoteId        String?
+  contractTemplateId String?
   createdAt      DateTime  @default(now())
   title          String
   status         String
   accessToken    String    @unique
   signedAt       DateTime?
   externalId     String?
+  signingUrl     String?
   customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  contractTemplate TenantAgreementTemplate? @relation(fields: [contractTemplateId], references: [id], onDelete: SetNull)
   tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model TenantAgreementTemplate {
+  id                  String      @id @default(uuid())
+  tenantId            String
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  name                String
+  sourceFileName      String
+  sourceMimeType      String?
+  signerMode          String      @default("customer_only")
+  signerRoles         String[]
+  docusealTemplateId  String
+  docusealTemplateSlug String?
+  isDefault           Boolean     @default(false)
+  status              String      @default("ready")
+  lastSyncedAt        DateTime?
+  lastErrorMessage    String?
+  agreements          Agreement[]
+  tenant              Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, docusealTemplateId])
+  @@index([tenantId, isDefault])
 }
 
 model Invoice {
