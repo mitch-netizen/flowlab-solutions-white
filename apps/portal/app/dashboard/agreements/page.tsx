@@ -23,30 +23,52 @@ export default async function AgreementsPage() {
         <p style={{ color: "#cbd5e1" }}>Upload your own contract, place the required signer fields in the builder, then mark it ready. Once a default template is ready, FlowLab will use it automatically whenever a customer accepts a quote.</p>
       </div>
       <div className="cards-2">
-        <form action="/api/tenant/agreements/templates/upload" method="post" encType="multipart/form-data" className="surface form-grid">
-          <h2 style={{ marginTop: 0 }}>Upload your agreement template</h2>
-          <div className="surface-soft">
-            Upload a PDF or DOCX version of your legal contract. FlowLab will send you straight into the builder so you can place the required signature and date fields before the template goes live.
-          </div>
-          <label className="label">
-            Template name
-            <input className="input" name="templateName" placeholder="Standard service agreement" required />
-          </label>
-          <label className="label">
-            Signer setup
-            <select className="input" name="signerMode" defaultValue="customer_only">
-              <option value="customer_only">Customer signs only</option>
-              <option value="customer_and_business">Customer plus business countersign</option>
-            </select>
-          </label>
-          <label className="label">
-            Contract file
-            <input className="input" name="templateFile" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required />
-          </label>
-          <button className="cta" type="submit">
-            Upload to DocuSeal
-          </button>
-        </form>
+        <div className="surface stack">
+          <form action="/api/tenant/agreements/templates/upload" method="post" encType="multipart/form-data" className="form-grid">
+            <h2 style={{ marginTop: 0 }}>Upload your agreement template</h2>
+            <div className="surface-soft">
+              Upload a PDF or DOCX version of your legal contract. FlowLab will send you straight into the builder so you can place the required signature and date fields before the template goes live.
+            </div>
+            <label className="label">
+              Template name
+              <input className="input" name="templateName" placeholder="Standard service agreement" required />
+            </label>
+            <label className="label">
+              Signer setup
+              <select className="input" name="signerMode" defaultValue="customer_only">
+                <option value="customer_only">Customer signs only</option>
+                <option value="customer_and_business">Customer plus business countersign</option>
+              </select>
+            </label>
+            <label className="label">
+              Contract file
+              <input className="input" name="templateFile" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required />
+            </label>
+            <button className="cta" type="submit">
+              Upload to DocuSeal
+            </button>
+          </form>
+          <form action="/api/tenant/agreements/templates/generate" method="post" className="form-grid">
+            <h2 style={{ marginTop: 0 }}>Generate a smart agreement</h2>
+            <div className="surface-soft">
+              Start with a FlowLab-built service agreement that already includes customer, property, quote amount, and signing fields. You can still open the builder afterward to tweak wording or layout.
+            </div>
+            <label className="label">
+              Smart template name
+              <input className="input" name="templateName" placeholder="FlowLab Smart Service Agreement" />
+            </label>
+            <label className="label">
+              Smart signer setup
+              <select className="input" name="signerMode" defaultValue="customer_only">
+                <option value="customer_only">Customer signs only</option>
+                <option value="customer_and_business">Customer plus business countersign</option>
+              </select>
+            </label>
+            <button className="ghost" type="submit">
+              Generate smart template
+            </button>
+          </form>
+        </div>
         <div className="surface">
           <h2 style={{ marginTop: 0 }}>Saved agreement templates</h2>
           <div className="stack">
