@@ -4,14 +4,14 @@ import { getBrandingTheme, toStyleAttribute } from "@flowlab/branding";
 import { getTenantBySlug, resolveTenantContext } from "@flowlab/db";
 
 export async function getCurrentTenantContext() {
-  const host = (await headers()).get("x-flowlab-host") ?? (await headers()).get("host") ?? "quinnys.flowlabsolutions.com.au";
+  const host = (await headers()).get("x-flowlab-host") ?? (await headers()).get("host") ?? "lawnorder.flowlabsolutions.com.au";
   const resolved = await resolveTenantContext(host);
 
   if (resolved) {
     return resolved;
   }
 
-  const fallback = await getTenantBySlug("quinnys");
+  const fallback = await getTenantBySlug("lawnorder");
 
   if (!fallback?.profile) {
     return null;

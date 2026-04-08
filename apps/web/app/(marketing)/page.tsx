@@ -30,16 +30,16 @@ export default async function MarketingPage() {
           </div>
           <div className="metrics">
             <div className="metric">
-              <span className="muted">Reference tenant</span>
-              <strong>Quinny&apos;s</strong>
-            </div>
-            <div className="metric">
-              <span className="muted">Current tenants</span>
+              <span className="muted">Active tenants</span>
               <strong>{tenants.length}</strong>
             </div>
             <div className="metric">
-              <span className="muted">Core layers</span>
-              <strong>3</strong>
+              <span className="muted">Built for</span>
+              <strong>Tradies</strong>
+            </div>
+            <div className="metric">
+              <span className="muted">Setup time</span>
+              <strong>~10 min</strong>
             </div>
           </div>
         </div>

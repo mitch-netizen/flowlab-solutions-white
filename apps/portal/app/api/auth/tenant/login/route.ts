@@ -5,11 +5,18 @@ import { TENANT_SESSION_COOKIE, signTenantSession, verifyPassword } from "@flowl
 import { findTenantUser } from "@flowlab/db";
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  const contentType = request.headers.get("content-type") ?? "";
+  const body = contentType.includes("application/json")
+    ? await request.json()
+    : Object.fromEntries((await request.formData()).entries());
   const user = await findTenantUser(body.email);
 
   if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
-    return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
+    if (contentType.includes("application/json")) {
+      return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
+    }
+
+    return NextResponse.redirect(new URL("/login?error=invalid", request.url), 303);
   }
 
   const token = signTenantSession({
@@ -23,9 +30,13 @@ export async function POST(request: Request) {
   store.set(TENANT_SESSION_COOKIE, token, {
     httpOnly: true,
     path: "/",
-    sameSite: "lax",
+    sameSite: "strict",
     secure: process.env.NODE_ENV === "production"
   });
 
-  return NextResponse.json({ ok: true });
+  if (contentType.includes("application/json")) {
+    return NextResponse.json({ ok: true });
+  }
+
+  return NextResponse.redirect(new URL("/dashboard", request.url), 303);
 }

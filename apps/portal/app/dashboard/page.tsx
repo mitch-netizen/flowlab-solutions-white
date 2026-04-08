@@ -11,7 +11,7 @@ export default async function DashboardPage() {
       <div className="surface">
         <div className="eyebrow">Operator dashboard</div>
         <h1 style={{ marginBottom: 10 }}>Welcome back, {snapshot.tenant?.profile?.businessName ?? "operator"}.</h1>
-        <p style={{ color: "#cbd5e1" }}>This shell already exposes the core product lanes: onboarding, integrations, health, public enquiry intake, and white-label public token routes.</p>
+        <p style={{ color: "#cbd5e1" }}>Here&apos;s where things are at — jobs, invoices, and customers all in one place.</p>
       </div>
       <div className="cards-3">
         <div className="surface-soft">

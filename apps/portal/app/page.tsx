@@ -26,18 +26,18 @@ export default async function PortalHomePage() {
           </div>
         </div>
         <div className="surface">
-          <h2 style={{ marginTop: 0 }}>Reference environment</h2>
+          <h2 style={{ marginTop: 0 }}>Everything under your brand</h2>
           <p style={{ color: "#cbd5e1" }}>
-            Local development falls back to Quinny&apos;s Mowing Service so the white-label flows render even before wildcard DNS is configured.
+            Customers only see your logo, your colours, and your business name. From the first enquiry through to the signed agreement and paid invoice — it&apos;s all yours.
           </p>
           <div className="cards-2">
             <div className="surface-soft">
-              <strong>Host</strong>
-              <div style={{ color: "#cbd5e1", marginTop: 8 }}>{tenant?.host ?? "localhost:3001"}</div>
+              <strong>Enquiry intake</strong>
+              <div style={{ color: "#cbd5e1", marginTop: 8 }}>Branded quote request form, live on your domain.</div>
             </div>
             <div className="surface-soft">
-              <strong>Plan</strong>
-              <div style={{ color: "#cbd5e1", marginTop: 8 }}>{tenant?.plan ?? "professional"}</div>
+              <strong>Automated follow-up</strong>
+              <div style={{ color: "#cbd5e1", marginTop: 8 }}>SMS reminders, payment nudges, and rebook prompts — hands-free.</div>
             </div>
           </div>
         </div>

@@ -20,13 +20,13 @@ describe("platform foundation", () => {
 
   it("builds all automation blueprint payloads", () => {
     const payloads = buildAutomationBlueprintPayloads({
-      tenantSlug: "quinnys",
-      businessName: "Quinny's Mowing Service"
+      tenantSlug: "lawnorder",
+      businessName: "Lawn & Order Mowing"
     });
 
     expect(payloads).toHaveLength(16);
     expect(payloads[0]?.filename).toBe("new_enquiry.json");
-    expect(payloads[0]?.contents).toContain("quinnys.flowlabsolutions.com.au");
+    expect(payloads[0]?.contents).toContain("lawnorder.flowlabsolutions.com.au");
   });
 
   it("verifies DocuSeal optional webhook secrets", () => {

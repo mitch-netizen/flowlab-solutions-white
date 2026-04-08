@@ -13,7 +13,7 @@ export default async function CrmPage() {
       <div className="surface">
         <div className="eyebrow">CRM</div>
         <h1>Customers, communications, feedback, and overdue risk in one view.</h1>
-        <p style={{ color: "#cbd5e1" }}>The CRM slice now surfaces relationship health alongside quoting and invoicing workflows.</p>
+        <p style={{ color: "#cbd5e1" }}>Keep tabs on every customer — who&apos;s overdue, who&apos;s loyal, and who might need a nudge to rebook.</p>
       </div>
       <div className="cards-3">
         <div className="surface-soft">

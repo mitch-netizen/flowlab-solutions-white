@@ -55,7 +55,7 @@ export const integrationFieldDefinitions: Record<
   twilio: [
     { name: "apiKey", label: "Brevo API key", placeholder: "xkeysib-...", type: "password" },
     { name: "sender", label: "SMS sender", placeholder: "FlowLabSMS" },
-    { name: "organisationPrefix", label: "Organisation prefix", placeholder: "Quinnys" }
+    { name: "organisationPrefix", label: "Organisation prefix", placeholder: "LawnOrder" }
   ],
   sendgrid: [
     { name: "apiKey", label: "Brevo API key", placeholder: "xkeysib-...", type: "password" },

@@ -16,7 +16,7 @@ export default async function SchedulerPage() {
       <div className="surface">
         <div className="eyebrow">Scheduler</div>
         <h1>Work windows, life commitments, weather flags, and upcoming jobs.</h1>
-        <p style={{ color: "#cbd5e1" }}>This module gives the routing engine the right substrate: work schedule, time off, personal commitments, and scheduled jobs.</p>
+        <p style={{ color: "#cbd5e1" }}>Set your available hours, block out personal commitments, and let the system flag any jobs that clash or carry weather risk.</p>
         <form action="/api/tenant/scheduler/analyze" method="post" style={{ marginTop: 18 }}>
           <button className="cta" type="submit">
             Queue schedule analysis

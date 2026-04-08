@@ -11,7 +11,7 @@ export default async function RetentionPage() {
       <div className="surface">
         <div className="eyebrow">Retention</div>
         <h1>Feedback, rebooking, overdue payments, and review outreach.</h1>
-        <p style={{ color: "#cbd5e1" }}>This dashboard turns customer history into queued follow-up automations.</p>
+        <p style={{ color: "#cbd5e1" }}>Stay on top of customers who haven&apos;t rebooked, chase overdue invoices, and follow up on your best reviews — all automated.</p>
         <form action="/api/tenant/retention/run" method="post" style={{ marginTop: 18 }}>
           <button className="cta" type="submit">
             Queue retention automations

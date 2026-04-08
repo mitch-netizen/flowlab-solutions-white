@@ -9,7 +9,7 @@ export default async function EnquiryPage() {
         <div className="surface">
           <div className="eyebrow">{tenant?.branding.businessName ?? "Enquiry"}</div>
           <h1>Tell us what you need done.</h1>
-          <p style={{ color: "#cbd5e1" }}>This page stays fully white-labelled and creates customer + quoted-job records inside the tenant workspace.</p>
+          <p style={{ color: "#cbd5e1" }}>Fill in your details below and we&apos;ll get back to you with a quote shortly.</p>
         </div>
         <form action="/api/public/enquiry" method="post" className="surface form-grid">
           <input type="hidden" name="tenantId" value={tenant?.tenantId ?? ""} />

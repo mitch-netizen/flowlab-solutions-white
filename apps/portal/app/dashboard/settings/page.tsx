@@ -16,7 +16,7 @@ export default async function SettingsPage() {
       <div className="surface">
         <div className="eyebrow">Settings</div>
         <h1>Business profile, branding, territory, and automation downloads.</h1>
-        <p style={{ color: "#cbd5e1" }}>This page now persists white-label profile changes and exposes a Make.com blueprint export route for tenant operators.</p>
+        <p style={{ color: "#cbd5e1" }}>Update your business details, set your brand colours, and download automation templates for Make.com.</p>
       </div>
       <div className="cards-2">
         <form className="surface form-grid" action="/api/tenant/settings/profile" method="post">
