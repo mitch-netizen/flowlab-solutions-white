@@ -1054,16 +1054,17 @@ export async function validateTenantAgreementTemplate(tenantId: string, template
     data: {
       status: validation.ok ? "ready" : "draft",
       lastSyncedAt: new Date(),
-      lastErrorMessage: message
+      lastErrorMessage: message,
+      isDefault: validation.ok ? template.isDefault : false
     }
   });
 
   if (validation.ok) {
     const existingDefault = await prisma.tenantAgreementTemplate.count({
-      where: { tenantId, isDefault: true, status: "ready" }
+      where: { tenantId, isDefault: true, status: "ready", id: { not: template.id } }
     });
 
-    if (existingDefault === 0) {
+    if (existingDefault === 0 && !updated.isDefault) {
       await prisma.tenantAgreementTemplate.update({
         where: { id: template.id },
         data: { isDefault: true }
