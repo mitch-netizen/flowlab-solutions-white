@@ -7,6 +7,7 @@ import { automationBlueprints, serviceLabels } from "@flowlab/contracts";
 
 const algorithm = "aes-256-gcm";
 const BREVO_API_BASE = "https://api.brevo.com/v3";
+const DOCUSEAL_DEFAULT_API_BASE = "https://api.docuseal.com";
 
 function getMasterKey() {
   const source = process.env.ENCRYPTION_MASTER_KEY ?? "development-master-key";
@@ -35,6 +36,14 @@ export function decryptJson(input: string | null | undefined) {
   decipher.setAuthTag(authTag);
   const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
   return JSON.parse(decrypted) as Record<string, string>;
+}
+
+export function getDocuSealApiBaseUrl() {
+  return (process.env.DOCUSEAL_API_BASE_URL || DOCUSEAL_DEFAULT_API_BASE).replace(/\/+$/, "");
+}
+
+function getDocuSealApiUrl(path: string) {
+  return `${getDocuSealApiBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 export const integrationHelpText: Record<IntegrationService, string> = {
@@ -188,7 +197,7 @@ export async function testIntegration(service: IntegrationService, credentials: 
     }
 
     try {
-      const response = await fetch("https://api.docuseal.com/submissions?limit=1", {
+      const response = await fetch(getDocuSealApiUrl("/submissions?limit=1"), {
         headers: {
           "X-Auth-Token": apiKey
         }
@@ -463,6 +472,103 @@ export function verifyDocuSealEventSecret(input: {
   return actual === input.expectedHeaderValue;
 }
 
+function getDocuSealErrorMessage(payload: any, fallback: string) {
+  return payload?.message || payload?.error || payload?.errors?.[0]?.message || fallback;
+}
+
+export async function createDocuSealTemplateFromFile(input: {
+  apiKey: string;
+  templateName: string;
+  fileName: string;
+  mimeType?: string;
+  fileBuffer: Buffer;
+}) {
+  const lowerName = input.fileName.toLowerCase();
+  const isDocx =
+    lowerName.endsWith(".docx") ||
+    input.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  const isPdf = lowerName.endsWith(".pdf") || input.mimeType === "application/pdf";
+
+  if (!isDocx && !isPdf) {
+    throw new Error("Only PDF and DOCX agreement templates are supported.");
+  }
+
+  const endpoint = isDocx ? "/templates/docx" : "/templates/pdf";
+  const response = await fetch(getDocuSealApiUrl(endpoint), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Auth-Token": input.apiKey
+    },
+    body: JSON.stringify({
+      name: input.templateName,
+      file: input.fileBuffer.toString("base64")
+    })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(getDocuSealErrorMessage(payload, "DocuSeal template upload failed"));
+  }
+
+  return {
+    id: String(payload?.id ?? ""),
+    slug: payload?.slug ? String(payload.slug) : null,
+    payload
+  };
+}
+
+export async function createDocuSealSubmissionFromTemplate(input: {
+  apiKey: string;
+  templateId: string;
+  accessToken: string;
+  callbackUrl: string;
+  completedRedirectUrl?: string;
+  submitters: Array<{
+    name: string;
+    email: string;
+    role: string;
+  }>;
+}) {
+  const response = await fetch(getDocuSealApiUrl("/submissions"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Auth-Token": input.apiKey
+    },
+    body: JSON.stringify({
+      template_id: Number.isFinite(Number(input.templateId)) ? Number(input.templateId) : input.templateId,
+      send_email: true,
+      order: "preserved",
+      external_id: input.accessToken,
+      webhook_url: input.callbackUrl,
+      submitters: input.submitters.map((submitter, index) => ({
+        ...submitter,
+        external_id: index === 0 ? input.accessToken : `${input.accessToken}:${submitter.role.toLowerCase()}`,
+        completed_redirect_url: index === 0 ? input.completedRedirectUrl : undefined
+      }))
+    })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(getDocuSealErrorMessage(payload, "DocuSeal submission failed"));
+  }
+
+  const customerSubmitter = payload?.submitters?.[0];
+  const signingUrl =
+    customerSubmitter?.embed_src ||
+    customerSubmitter?.submission_url ||
+    customerSubmitter?.url ||
+    null;
+
+  return {
+    id: String(payload?.id ?? ""),
+    signingUrl: signingUrl ? String(signingUrl) : null,
+    payload
+  };
+}
+
 export async function sendDocuSealSignatureRequest(input: {
   apiKey: string;
   businessName: string;
@@ -498,7 +604,7 @@ export async function sendDocuSealSignatureRequest(input: {
     </html>
   `;
 
-  const response = await fetch("https://api.docuseal.com/submissions/html", {
+  const response = await fetch(getDocuSealApiUrl("/submissions/html"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

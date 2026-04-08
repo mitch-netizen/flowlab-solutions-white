@@ -10,7 +10,15 @@ import type {
   TenantProfile
 } from "@flowlab/contracts";
 import { getPlanFeatures } from "@flowlab/contracts";
-import { buildDocuSealRequest, buildStripePaymentLink, decryptJson, getStripeClient, sendDocuSealSignatureRequest } from "@flowlab/integrations";
+import {
+  buildDocuSealRequest,
+  buildStripePaymentLink,
+  createDocuSealSubmissionFromTemplate,
+  createDocuSealTemplateFromFile,
+  decryptJson,
+  getStripeClient,
+  sendDocuSealSignatureRequest
+} from "@flowlab/integrations";
 import { generateAIQuote } from "@flowlab/integrations/claude";
 import { assessJobWeatherRisks } from "@flowlab/integrations/bom";
 import { optimiseJobRoute, resolveGoogleMapsApiKey } from "@flowlab/integrations/google-maps";
@@ -374,14 +382,22 @@ export async function getTenantAgreements(tenantId: string) {
   return prisma.agreement.findMany({
     where: { tenantId },
     include: {
-      customer: true
+      customer: true,
+      contractTemplate: true
     },
     orderBy: { createdAt: "desc" }
   });
 }
 
+export async function getTenantAgreementTemplates(tenantId: string) {
+  return prisma.tenantAgreementTemplate.findMany({
+    where: { tenantId },
+    orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }]
+  });
+}
+
 export async function getTenantSettingsSnapshot(tenantId: string) {
-  const [tenant, profile, pricingRates, serviceTemplates, workSchedule, commitments] = await Promise.all([
+  const [tenant, profile, pricingRates, serviceTemplates, workSchedule, commitments, agreementTemplates] = await Promise.all([
     prisma.tenant.findUnique({
       where: { id: tenantId }
     }),
@@ -403,10 +419,14 @@ export async function getTenantSettingsSnapshot(tenantId: string) {
     prisma.personalCommitment.findMany({
       where: { tenantId },
       orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }]
+    }),
+    prisma.tenantAgreementTemplate.findMany({
+      where: { tenantId },
+      orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }]
     })
   ]);
 
-  return { tenant, profile, pricingRates, serviceTemplates, workSchedule, commitments };
+  return { tenant, profile, pricingRates, serviceTemplates, workSchedule, commitments, agreementTemplates };
 }
 
 function timeStringToMinutes(value: string) {
@@ -814,6 +834,112 @@ async function getTenantDocuSealConfig(tenantId: string) {
     webhookSecretKey: saved.webhookSecretKey || process.env.DOCUSEAL_WEBHOOK_SECRET_KEY || "",
     webhookSecretValue: saved.webhookSecretValue || process.env.DOCUSEAL_WEBHOOK_SECRET_VALUE || ""
   };
+}
+
+export async function uploadTenantAgreementTemplate(input: {
+  tenantId: string;
+  templateName: string;
+  fileName: string;
+  mimeType?: string;
+  fileBuffer: Buffer;
+  signerMode?: "customer_only" | "customer_and_business";
+}) {
+  const [tenant, docuSealConfig, existingDefaultCount] = await Promise.all([
+    prisma.tenant.findUnique({
+      where: { id: input.tenantId },
+      include: { profile: true }
+    }),
+    getTenantDocuSealConfig(input.tenantId),
+    prisma.tenantAgreementTemplate.count({
+      where: { tenantId: input.tenantId, isDefault: true }
+    })
+  ]);
+
+  if (!tenant) {
+    throw new Error("Tenant not found");
+  }
+
+  if (!docuSealConfig.apiKey) {
+    throw new Error("Connect DocuSeal before uploading agreement templates.");
+  }
+
+  const created = await createDocuSealTemplateFromFile({
+    apiKey: docuSealConfig.apiKey,
+    templateName: input.templateName,
+    fileName: input.fileName,
+    mimeType: input.mimeType,
+    fileBuffer: input.fileBuffer
+  });
+
+  const signerMode = input.signerMode ?? "customer_only";
+  const signerRoles = signerMode === "customer_and_business" ? ["Customer", "Business"] : ["Customer"];
+  const template = await prisma.tenantAgreementTemplate.create({
+    data: {
+      tenantId: input.tenantId,
+      name: input.templateName,
+      sourceFileName: input.fileName,
+      sourceMimeType: input.mimeType,
+      signerMode,
+      signerRoles,
+      docusealTemplateId: created.id,
+      docusealTemplateSlug: created.slug,
+      isDefault: existingDefaultCount === 0,
+      status: "ready",
+      lastSyncedAt: new Date()
+    }
+  });
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId: input.tenantId,
+      eventType: "api_call",
+      service: "docuseal",
+      direction: "outbound",
+      status: "success",
+      requestSummary: `Uploaded agreement template ${input.templateName}`,
+      responseSummary: `DocuSeal template ${created.id}`,
+      triggeredBy: "tenant_agreement_template_upload"
+    }
+  });
+
+  return template;
+}
+
+export async function setDefaultTenantAgreementTemplate(tenantId: string, templateId: string) {
+  const template = await prisma.tenantAgreementTemplate.findFirst({
+    where: {
+      id: templateId,
+      tenantId
+    }
+  });
+
+  if (!template) {
+    throw new Error("Agreement template not found");
+  }
+
+  await prisma.$transaction([
+    prisma.tenantAgreementTemplate.updateMany({
+      where: { tenantId },
+      data: { isDefault: false }
+    }),
+    prisma.tenantAgreementTemplate.update({
+      where: { id: templateId },
+      data: { isDefault: true }
+    })
+  ]);
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId,
+      eventType: "info",
+      service: "docuseal",
+      direction: "outbound",
+      status: "success",
+      requestSummary: `Set default agreement template to ${template.name}`,
+      responseSummary: `Template ${template.docusealTemplateId} is now default`,
+      triggeredBy: "tenant_agreement_template_default"
+    }
+  });
 }
 
 export async function createQuoteDraft(input: {
@@ -1331,7 +1457,11 @@ export async function createAgreementForQuote(quoteId: string) {
       customer: true,
       tenant: {
         include: {
-          profile: true
+          profile: true,
+          agreementTemplates: {
+            where: { isDefault: true },
+            take: 1
+          }
         }
       }
     }
@@ -1354,9 +1484,12 @@ export async function createAgreementForQuote(quoteId: string) {
   });
   const docuSealConfig = await getTenantDocuSealConfig(quote.tenantId);
   let externalRequestId = signRequestBase.externalRequestId;
+  let signingUrl = signRequestBase.embeddedSignUrl;
+  const defaultTemplate = quote.tenant.agreementTemplates[0] ?? null;
 
   if (docuSealConfig.apiKey) {
     const callbackUrl = `https://${quote.tenant.slug}.${process.env.DEFAULT_ROOT_DOMAIN ?? "flowlabsolutions.com.au"}/api/webhooks/docuseal`;
+    const completedRedirectUrl = `https://${quote.tenant.slug}.${process.env.DEFAULT_ROOT_DOMAIN ?? "flowlabsolutions.com.au"}/sign/${accessToken}?completed=1`;
     const agreementText = [
       `${businessName} Service Agreement`,
       "",
@@ -1371,17 +1504,45 @@ export async function createAgreementForQuote(quoteId: string) {
     ].join("\n");
 
     try {
-      const liveRequest = await sendDocuSealSignatureRequest({
-        apiKey: docuSealConfig.apiKey,
-        businessName,
-        customerName: `${quote.customer.firstName} ${quote.customer.lastName}`,
-        customerEmail: quote.customer.email,
-        agreementTitle: `${quote.title} agreement`,
-        agreementText,
-        accessToken,
-        callbackUrl
-      });
-      externalRequestId = liveRequest.externalRequestId;
+      if (defaultTemplate) {
+        const liveSubmission = await createDocuSealSubmissionFromTemplate({
+          apiKey: docuSealConfig.apiKey,
+          templateId: defaultTemplate.docusealTemplateId,
+          accessToken,
+          callbackUrl,
+          completedRedirectUrl,
+          submitters: [
+            {
+              name: `${quote.customer.firstName} ${quote.customer.lastName}`,
+              email: quote.customer.email,
+              role: "Customer"
+            },
+            ...(defaultTemplate.signerMode === "customer_and_business" && (quote.tenant.profile?.email || quote.tenant.billingEmail)
+              ? [
+                  {
+                    name: businessName,
+                    email: quote.tenant.profile?.email || quote.tenant.billingEmail,
+                    role: "Business"
+                  }
+                ]
+              : [])
+          ]
+        });
+        externalRequestId = liveSubmission.id || externalRequestId;
+        signingUrl = liveSubmission.signingUrl || signingUrl;
+      } else {
+        const liveRequest = await sendDocuSealSignatureRequest({
+          apiKey: docuSealConfig.apiKey,
+          businessName,
+          customerName: `${quote.customer.firstName} ${quote.customer.lastName}`,
+          customerEmail: quote.customer.email,
+          agreementTitle: `${quote.title} agreement`,
+          agreementText,
+          accessToken,
+          callbackUrl
+        });
+        externalRequestId = liveRequest.externalRequestId;
+      }
     } catch (error) {
       await prisma.platformEventLog.create({
         data: {
@@ -1403,7 +1564,9 @@ export async function createAgreementForQuote(quoteId: string) {
     update: {
       status: "sent_for_signature",
       externalId: externalRequestId,
-      title: `${quote.title} agreement`
+      title: `${quote.title} agreement`,
+      signingUrl,
+      contractTemplateId: defaultTemplate?.id ?? null
     },
     create: {
       tenantId: quote.tenantId,
@@ -1412,7 +1575,9 @@ export async function createAgreementForQuote(quoteId: string) {
       title: `${quote.title} agreement`,
       status: "sent_for_signature",
       accessToken,
-      externalId: externalRequestId
+      externalId: externalRequestId,
+      signingUrl,
+      contractTemplateId: defaultTemplate?.id ?? null
     }
   });
 
@@ -1424,7 +1589,7 @@ export async function createAgreementForQuote(quoteId: string) {
       direction: "outbound",
       status: "success",
       requestSummary: `Prepared agreement ${agreement.title}`,
-      responseSummary: `Signature request ${externalRequestId}`,
+      responseSummary: `${defaultTemplate ? `Template ${defaultTemplate.name}` : "Legacy agreement"} · Signature request ${externalRequestId}`,
       triggeredBy: "agreement_dispatch",
       customerId: quote.customerId
     }
@@ -1819,7 +1984,8 @@ export async function getAgreementByToken(token: string) {
     where: { accessToken: token },
     include: {
       customer: true,
-      tenant: { include: { profile: true } }
+      tenant: { include: { profile: true } },
+      contractTemplate: true
     }
   });
 }
