@@ -1101,11 +1101,17 @@ export function createDocuSealBuilderToken(input: {
 }
 
 export function validateDocuSealTemplateFields(input: {
-  fields: Array<{ name?: string; type?: string; role?: string }>;
-  submitters: Array<{ name?: string; role?: string }>;
+  fields: Array<{ name?: string; type?: string; role?: string; submitter_uuid?: string }>;
+  submitters: Array<{ name?: string; role?: string; uuid?: string }>;
   requiredRoles: string[];
   requiredFields: Array<{ name: string; type: string | string[]; role?: string }>;
 }) {
+  const submitterRoleByUuid = new Map(
+    input.submitters
+      .filter((submitter) => submitter.uuid)
+      .map((submitter) => [submitter.uuid as string, submitter.role || submitter.name || ""])
+  );
+
   const submitterRoles = new Set(
     input.submitters
       .map((submitter) => submitter.role || submitter.name || "")
@@ -1113,7 +1119,10 @@ export function validateDocuSealTemplateFields(input: {
   );
 
   const fieldKeys = new Set(
-    input.fields.map((field) => `${field.name || ""}::${field.type || ""}::${field.role || ""}`)
+    input.fields.map((field) => {
+      const role = field.role || (field.submitter_uuid ? submitterRoleByUuid.get(field.submitter_uuid) : "") || "";
+      return `${field.name || ""}::${field.type || ""}::${role}`;
+    })
   );
 
   const missingRoles = input.requiredRoles.filter((role) => !submitterRoles.has(role));
