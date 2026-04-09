@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 
 import type { AuthClaims, CustomerTokenPayload, PlatformSession, TenantSession } from "@flowlab/contracts";
+import { isProductionRuntime } from "@flowlab/contracts/server";
 
 export const PLATFORM_SESSION_COOKIE = "flowlab_platform_session";
 export const TENANT_SESSION_COOKIE = "flowlab_tenant_session";
@@ -24,7 +25,13 @@ const customerTokenSchema = z.object({
 });
 
 function getJwtSecret() {
-  return process.env.JWT_SECRET ?? "development-only-secret";
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret && isProductionRuntime()) {
+    throw new Error("JWT_SECRET is required in production");
+  }
+
+  return secret ?? "development-only-secret";
 }
 
 export async function hashPassword(password: string) {

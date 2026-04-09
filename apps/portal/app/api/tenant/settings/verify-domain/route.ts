@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
 import { prisma } from "@flowlab/db";
+import { getExpectedTenantCname } from "@flowlab/contracts/server";
 
 export async function POST(request: Request) {
   const token = (await cookies()).get(TENANT_SESSION_COOKIE)?.value;
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
   }
 
-  const expectedCname = `${tenant.slug}.flowlabsolutions.com.au`;
+  const expectedCname = getExpectedTenantCname(tenant.slug);
 
   let verified = false;
   let cnameTarget: string | null = null;

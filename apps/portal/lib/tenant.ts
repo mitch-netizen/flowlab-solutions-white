@@ -1,55 +1,16 @@
 import { headers } from "next/headers";
 
 import { getBrandingTheme, toStyleAttribute } from "@flowlab/branding";
-import { getTenantBySlug, resolveTenantContext } from "@flowlab/db";
+import { resolveTenantContext } from "@flowlab/db";
+import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 
 export async function getCurrentTenantContext() {
-  const host = (await headers()).get("x-flowlab-host") ?? (await headers()).get("host") ?? "lawnorder.flowlabsolutions.com.au";
+  const host =
+    (await headers()).get("x-flowlab-host") ??
+    (await headers()).get("host") ??
+    `tenant.${getCanonicalRootDomain()}`;
   const resolved = await resolveTenantContext(host);
-
-  if (resolved) {
-    return resolved;
-  }
-
-  const fallback = await getTenantBySlug("lawnorder");
-
-  if (!fallback?.profile) {
-    return null;
-  }
-
-  return {
-    tenantId: fallback.id,
-    slug: fallback.slug,
-    host,
-    customDomain: fallback.profile.customDomain,
-    isCustomDomain: false,
-    plan: fallback.plan,
-    status: fallback.status,
-    branding: {
-      tenantId: fallback.id,
-      slug: fallback.slug,
-      businessName: fallback.profile.businessName,
-      tagline: fallback.profile.tagline,
-      logoUrl: fallback.profile.logoUrl,
-      faviconUrl: fallback.profile.faviconUrl,
-      primaryColour: fallback.profile.primaryColour,
-      secondaryColour: fallback.profile.secondaryColour,
-      accentColour: fallback.profile.accentColour,
-      fontPreference: fallback.profile.fontPreference,
-      customDomain: fallback.profile.customDomain,
-      customDomainVerified: fallback.profile.customDomainVerified,
-      abn: fallback.profile.abn,
-      phone: fallback.profile.phone,
-      email: fallback.profile.email,
-      address: fallback.profile.address,
-      suburb: fallback.profile.suburb,
-      state: fallback.profile.state,
-      postcode: fallback.profile.postcode,
-      serviceAreaSuburbs: fallback.profile.serviceAreaSuburbs,
-      businessType: fallback.profile.businessType,
-      timezone: fallback.profile.timezone
-    }
-  };
+  return resolved ?? null;
 }
 
 export async function getCurrentTheme() {

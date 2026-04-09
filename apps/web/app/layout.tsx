@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { ensureAppEnv } from "@flowlab/contracts/server";
 import "./globals.css";
 
 const headingFont = Plus_Jakarta_Sans({
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  ensureAppEnv("web");
   return (
     <html lang="en" className={`${headingFont.variable} ${monoFont.variable}`}>
       <body>{children}</body>

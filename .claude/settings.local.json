@@ -54,7 +54,25 @@
       "Bash(DATABASE_URL=\"postgresql://postgres.stvrqepurmwalrecdlec:FlowLabSaaS2026!!@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true\" DIRECT_URL=\"postgresql://postgres:FlowLabSaaS2026!!@db.stvrqepurmwalrecdlec.supabase.co:5432/postgres\" PATH=\"/usr/local/bin:$PATH\" /usr/local/bin/node node_modules/.bin/tsx packages/db/prisma/seed.ts)",
       "Bash(PATH=\"/usr/local/bin:$PATH\" /usr/local/bin/node --env-file=.env.local -e \":*)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://flowlab-saas-web.vercel.app/\")",
-      "Bash(curl -s \"https://flowlab-saas-web.vercel.app/\")"
+      "Bash(curl -s \"https://flowlab-saas-web.vercel.app/\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://flowlab-saas-jkdhgck0n-mitch-netizens-projects.vercel.app/\")",
+      "Bash(curl -sv \"https://flowlab-saas-jkdhgck0n-mitch-netizens-projects.vercel.app/\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://flowlab-saas-nfx5l1vo1-mitch-netizens-projects.vercel.app/\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://flowlab-saas-a7964dmuy-mitch-netizens-projects.vercel.app/\")",
+      "Bash(curl -sv \"https://flowlab-saas-4lzrrexvo-mitch-netizens-projects.vercel.app/\")",
+      "Bash(find '/Users/mitch/FlowLab Solutions_White/.git' -name *.lock)",
+      "Bash(GIT_AUTHOR_NAME=\"Mitch Harris\" GIT_AUTHOR_EMAIL=\"mitch@mediawisesolutions.com.au\" GIT_COMMITTER_NAME=\"Mitch Harris\" GIT_COMMITTER_EMAIL=\"mitch@mediawisesolutions.com.au\" git commit --no-gpg-sign -m \"temp: debug-db endpoint\")",
+      "Bash(curl -s \"https://flowlab-saas-clltbw1je-mitch-netizens-projects.vercel.app/api/debug-db\")",
+      "Bash(curl -s \"https://flowlab-saas-h2i5chdal-mitch-netizens-projects.vercel.app/api/debug-db\")",
+      "Bash(node -e \":*)",
+      "Bash(ls /usr/local/bin/node*)",
+      "Bash(ls ~/.nvm/versions/node/*/bin/node)",
+      "Bash(/usr/local/bin/node -e \":*)",
+      "Bash(PGPASSWORD=FlowLabProd2026 psql \"postgresql://postgres.stvrqepurmwalrecdlec:FlowLabProd2026@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require\" -c \"SELECT count\\(*\\) FROM tenant;\")",
+      "Bash(/usr/local/bin/psql --version)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//usr/local/opt/libpq/bin/**)",
+      "Bash(open -a \"Google Chrome\" \"https://supabase.com/dashboard/project/stvrqepurmwalrecdlec/settings/database\")"
     ]
   }
 }

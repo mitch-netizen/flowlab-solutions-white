@@ -2,8 +2,15 @@ import { notFound } from "next/navigation";
 
 import { getQuoteByToken } from "@flowlab/db";
 
-export default async function QuotePage({ params }: { params: Promise<{ token: string }> }) {
+export default async function QuotePage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ accepted?: string; error?: string }>;
+}) {
   const { token } = await params;
+  const query = await searchParams;
   const quote = await getQuoteByToken(token);
 
   if (!quote) {
@@ -17,6 +24,13 @@ export default async function QuotePage({ params }: { params: Promise<{ token: s
         <h1>{quote.title}</h1>
         <p style={{ color: "#cbd5e1" }}>{quote.description}</p>
         <div style={{ fontSize: 40, fontWeight: 700 }}>${quote.amount}</div>
+        {query.error ? (
+          <div className="surface-soft" style={{ marginTop: 24, color: "#fca5a5" }}>
+            {query.error === "rate_limited"
+              ? "Too many acceptance attempts were made. Please wait a moment and try again."
+              : "This quote is no longer available to accept."}
+          </div>
+        ) : null}
         {quote.status !== "accepted" ? (
           <form action={`/api/public/quote/${quote.accessToken}/accept`} method="post" style={{ marginTop: 24 }}>
             <button className="cta" type="submit">

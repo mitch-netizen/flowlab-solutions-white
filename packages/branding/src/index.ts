@@ -1,4 +1,5 @@
 import type { TenantContext } from "@flowlab/contracts";
+import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 
 export interface BrandingTheme {
   companyName: string;
@@ -45,7 +46,7 @@ export function getBrandingTheme(context: TenantContext | null): BrandingTheme {
 
 export function getTenantSlugFromHost(host: string) {
   const normalizedHost = host.split(":")[0].toLowerCase();
-  const rootDomain = process.env.DEFAULT_ROOT_DOMAIN ?? "flowlabsolutions.com.au";
+  const rootDomain = getCanonicalRootDomain();
 
   if (normalizedHost.endsWith(`.${rootDomain}`)) {
     return normalizedHost.replace(`.${rootDomain}`, "");

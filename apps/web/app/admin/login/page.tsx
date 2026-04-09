@@ -1,60 +1,33 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+export default async function PlatformLoginPage({
+  searchParams
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const query = await searchParams;
 
-import { PLATFORM_SESSION_COOKIE, signPlatformSession, verifyPassword } from "@flowlab/auth";
-import { findPlatformUser } from "@flowlab/db";
-
-async function login(formData: FormData) {
-  "use server";
-
-  const email = String(formData.get("email") ?? "");
-  const password = String(formData.get("password") ?? "");
-  const user = await findPlatformUser(email);
-
-  if (!user) {
-    redirect("/admin/login?error=invalid");
-  }
-
-  const ok = await verifyPassword(password, user.passwordHash);
-
-  if (!ok) {
-    redirect("/admin/login?error=invalid");
-  }
-
-  const token = signPlatformSession({
-    sub: user.id,
-    email: user.email,
-    role: user.role
-  });
-
-  const store = await cookies();
-  store.set(PLATFORM_SESSION_COOKIE, token, {
-    httpOnly: true,
-    path: "/",
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production"
-  });
-
-  redirect("/admin");
-}
-
-export default function PlatformLoginPage() {
   return (
     <main className="shell">
       <section className="hero" style={{ gridTemplateColumns: "0.9fr 1.1fr" }}>
         <div className="panel">
           <div className="pill">Superadmin access</div>
           <h1>Manage tenants, billing, health, and platform settings.</h1>
-          <p className="muted">Demo login after seed: `admin@flowlabsolutions.com.au` / `FlowLab123!`</p>
+          <p className="muted">Use your FlowLab platform credentials to manage tenants, integrations, and launch readiness.</p>
+          {query.error ? (
+            <div className="panel-soft" style={{ marginTop: 16, color: "#fca5a5" }}>
+              {query.error === "rate_limited"
+                ? "Too many login attempts. Please wait a few minutes and try again."
+                : "Invalid email or password."}
+            </div>
+          ) : null}
         </div>
-        <form action={login} className="hero-card form-grid">
+        <form action="/api/auth/platform/login" method="post" className="hero-card form-grid">
           <label className="label">
             Email
-            <input className="input" name="email" type="email" defaultValue="admin@flowlabsolutions.com.au" required />
+            <input className="input" name="email" type="email" autoComplete="email" required />
           </label>
           <label className="label">
             Password
-            <input className="input" name="password" type="password" defaultValue="FlowLab123!" required />
+            <input className="input" name="password" type="password" autoComplete="current-password" required />
           </label>
           <button type="submit" className="cta">
             Open superadmin

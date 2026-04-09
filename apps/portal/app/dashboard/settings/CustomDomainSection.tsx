@@ -8,6 +8,8 @@ interface Props {
   tenantSlug: string;
 }
 
+const CANONICAL_ROOT_DOMAIN = "flowlabsolutions.au";
+
 export default function CustomDomainSection({ currentDomain, isVerified: initialVerified, tenantSlug }: Props) {
   const [domain, setDomain] = useState(currentDomain ?? "");
   const [status, setStatus] = useState<"idle" | "checking" | "done">("idle");
@@ -15,7 +17,7 @@ export default function CustomDomainSection({ currentDomain, isVerified: initial
   const [cnameTarget, setCnameTarget] = useState<string | null>(null);
   const [verifyError, setVerifyError] = useState<string | null>(null);
 
-  const expectedCname = `${tenantSlug}.flowlabsolutions.com.au`;
+  const expectedCname = `${tenantSlug}.${CANONICAL_ROOT_DOMAIN}`;
 
   const handleVerify = async () => {
     if (!domain) return;

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getPlatformOverview } from "@flowlab/db";
+import { buildTenantUrl } from "@flowlab/contracts/server";
 
 export const dynamic = "force-dynamic";
 import { getServiceLabel } from "@flowlab/contracts";
@@ -38,7 +39,7 @@ export default async function AdminPage() {
             <div>
               <h2 style={{ marginBottom: 8 }}>Platform integrations</h2>
               <p className="muted" style={{ marginTop: 0 }}>
-                Services connected to FlowLab itself, not to an individual tenant.
+                Services connected to FlowLab itself, not to an individual tenant business.
               </p>
             </div>
             <a href="/api/admin/integrations/xero" className="cta">
@@ -46,7 +47,7 @@ export default async function AdminPage() {
             </a>
           </div>
           <div className="panel-soft" style={{ marginBottom: 20 }}>
-            <strong>Xero</strong>
+            <strong>FlowLab Xero</strong>
             <div className="muted" style={{ marginTop: 8 }}>
               Status: <span style={{ color: platformXero?.status === "connected" ? "#16a34a" : "#94a3b8" }}>{platformXero?.status ?? "not_configured"}</span>
             </div>
@@ -62,7 +63,7 @@ export default async function AdminPage() {
             ) : null}
             {platformXero?.credentialsJson ? (
               <div className="muted" style={{ marginTop: 6 }}>
-                Platform Xero credentials are stored and ready for FlowLab-wide accounting features.
+                FlowLab's own Xero connection is stored here for platform accounting and finance workflows.
               </div>
             ) : null}
           </div>
@@ -110,7 +111,7 @@ export default async function AdminPage() {
                   <td>{tenant._count.invoices}</td>
                   <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <Link href={`/admin/tenant/${tenant.id}`}>View</Link>
-                    <Link href={`http://${tenant.slug}.localhost:3001/dashboard`} target="_blank">Portal</Link>
+                    <Link href={process.env.NODE_ENV === "production" ? buildTenantUrl(tenant.slug, "/dashboard") : `http://${tenant.slug}.localhost:3001/dashboard`} target="_blank">Portal</Link>
                   </td>
                 </tr>
               ))}

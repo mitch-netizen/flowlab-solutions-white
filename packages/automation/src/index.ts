@@ -1,4 +1,5 @@
 import { signCustomerToken } from "@flowlab/auth";
+import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 import {
   claimPendingAutomationJobs,
   completeAutomationJob,
@@ -39,7 +40,7 @@ async function getInvoice(invoiceId: string) {
 }
 
 function buildFeedbackLink(input: { tenantSlug: string; tenantId: string; jobId: string }) {
-  const rootDomain = process.env.DEFAULT_ROOT_DOMAIN ?? "flowlabsolutions.com.au";
+  const rootDomain = getCanonicalRootDomain();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
   const token = signCustomerToken({
     tenantId: input.tenantId,
@@ -810,7 +811,21 @@ export async function processAutomationBatch(limit = 25) {
       await completeAutomationJob(job.id);
       completed += 1;
     } catch (error) {
-      await failAutomationJob(job.id, error instanceof Error ? error.message : "Unknown worker error");
+      const message = error instanceof Error ? error.message : "Unknown worker error";
+      const failedJob = await failAutomationJob(job.id, message);
+
+      await logPlatformEvent({
+        tenantId: job.tenantId ?? null,
+        eventType: failedJob.status === "failed" ? "error" : "warning",
+        service: "worker",
+        direction: "outbound",
+        status: failedJob.status === "failed" ? "failed" : "pending",
+        requestSummary: `Automation ${job.kind} ${failedJob.status === "failed" ? "failed permanently" : "scheduled for retry"}`,
+        responseSummary: failedJob.status === "failed" ? null : `Retry ${failedJob.attempts}/${5} queued`,
+        errorMessage: message,
+        triggeredBy: "worker_retry_manager"
+      });
+
       failed += 1;
     }
   }

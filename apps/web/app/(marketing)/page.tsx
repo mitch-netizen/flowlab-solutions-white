@@ -1,11 +1,11 @@
 import Link from "next/link";
 
-import { listTenants } from "@flowlab/db";
+import { countPublicTenantTrials } from "@flowlab/db";
 
 export const dynamic = "force-dynamic";
 
 export default async function MarketingPage() {
-  const tenants = await listTenants();
+  const tenantCount = await countPublicTenantTrials();
 
   return (
     <main className="shell">
@@ -31,7 +31,7 @@ export default async function MarketingPage() {
           <div className="metrics">
             <div className="metric">
               <span className="muted">Active tenants</span>
-              <strong>{tenants.length}</strong>
+              <strong>{tenantCount}</strong>
             </div>
             <div className="metric">
               <span className="muted">Built for</span>
