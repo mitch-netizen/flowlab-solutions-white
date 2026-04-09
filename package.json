@@ -15,9 +15,11 @@
     "db:push": "npm run prisma:push -w @flowlab/db",
     "db:seed": "npm run seed -w @flowlab/db",
     "test": "vitest run",
+    "test:e2e": "playwright test tests/e2e/smoke.test.ts",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.10.2",

@@ -826,6 +826,19 @@ export async function processAutomationBatch(limit = 25) {
         triggeredBy: "worker_retry_manager"
       });
 
+      if (failedJob.status === "failed") {
+        // Structured alert for log-based monitoring (grep: AUTOMATION_TERMINAL_FAILURE)
+        console.error(JSON.stringify({
+          alert: "AUTOMATION_TERMINAL_FAILURE",
+          jobId: job.id,
+          kind: job.kind,
+          tenantId: job.tenantId,
+          attempts: failedJob.attempts,
+          errorMessage: message,
+          timestamp: new Date().toISOString()
+        }));
+      }
+
       failed += 1;
     }
   }

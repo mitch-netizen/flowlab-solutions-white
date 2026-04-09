@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getPlatformOverview } from "@flowlab/db";
+import { getPlatformOverview, getAdminHealthSummary } from "@flowlab/db";
 import { buildTenantUrl } from "@flowlab/contracts/server";
 
 export const dynamic = "force-dynamic";
@@ -9,8 +9,13 @@ import { requirePlatformSession } from "../../lib/session";
 
 export default async function AdminPage() {
   await requirePlatformSession();
-  const overview = await getPlatformOverview();
+  const [overview, healthSummary] = await Promise.all([
+    getPlatformOverview(),
+    getAdminHealthSummary()
+  ]);
   const platformXero = overview.platformIntegrations.find((integration: { service: string }) => integration.service === "xero");
+  const xeroExpiresAt = (platformXero as { oauthExpiresAt?: string | null } | undefined)?.oauthExpiresAt;
+  const xeroDaysLeft = xeroExpiresAt ? Math.floor((new Date(xeroExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
 
   return (
     <main className="shell">
@@ -33,37 +38,66 @@ export default async function AdminPage() {
             <span className="muted">Platform revenue</span>
             <strong>${overview.stats.totalRevenue}</strong>
           </div>
+          {healthSummary.totalFailedJobs > 0 ? (
+            <div className="metric" style={{ borderColor: "#dc2626" }}>
+              <span className="muted">Failed jobs</span>
+              <strong style={{ color: "#dc2626" }}>{healthSummary.totalFailedJobs}</strong>
+            </div>
+          ) : null}
         </div>
+
+        {healthSummary.totalFailedJobs > 0 || (xeroDaysLeft !== null && xeroDaysLeft < 7) ? (
+          <div className="panel" style={{ borderLeft: "3px solid #dc2626" }}>
+            <h2 style={{ marginTop: 0 }}>Platform alerts</h2>
+            {xeroDaysLeft !== null && xeroDaysLeft < 7 ? (
+              <div className="panel-soft" style={{ marginBottom: 12, color: "#fbbf24" }}>
+                ⚠ FlowLab's Xero token expires {xeroDaysLeft <= 0 ? "today" : `in ${xeroDaysLeft} day${xeroDaysLeft === 1 ? "" : "s"}`} — reconnect to avoid accounting disruption.
+              </div>
+            ) : null}
+            {healthSummary.totalFailedJobs > 0 ? (
+              <div className="panel-soft" style={{ color: "#fca5a5" }}>
+                {healthSummary.totalFailedJobs} automation job{healthSummary.totalFailedJobs === 1 ? "" : "s"} across {healthSummary.tenantsWithFailures} tenant{healthSummary.tenantsWithFailures === 1 ? "" : "s"} failed and need attention. View each tenant's system health to retry.
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="panel">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
             <div>
               <h2 style={{ marginBottom: 8 }}>Platform integrations</h2>
               <p className="muted" style={{ marginTop: 0 }}>
-                Services connected to FlowLab itself, not to an individual tenant business.
+                Services connected to FlowLab itself — separate from each tenant's own business integrations.
               </p>
             </div>
             <a href="/api/admin/integrations/xero" className="cta">
-              {platformXero?.status === "connected" ? "Reconnect Xero" : "Connect Xero"}
+              {platformXero?.status === "connected" ? "Reconnect FlowLab's Xero" : "Connect FlowLab's Xero"}
             </a>
           </div>
           <div className="panel-soft" style={{ marginBottom: 20 }}>
-            <strong>FlowLab Xero</strong>
-            <div className="muted" style={{ marginTop: 8 }}>
-              Status: <span style={{ color: platformXero?.status === "connected" ? "#16a34a" : "#94a3b8" }}>{platformXero?.status ?? "not_configured"}</span>
+            <strong>FlowLab Xero (platform accounting)</strong>
+            <p className="muted" style={{ marginTop: 6, marginBottom: 12 }}>
+              This is FlowLab's own Xero account for platform-level accounting and finance workflows. Tenants connect their own Xero separately from their integrations page.
+            </p>
+            <div className="muted">
+              Status:{" "}
+              <span style={{ color: platformXero?.status === "connected" ? "#16a34a" : platformXero?.status === "error" ? "#dc2626" : "#94a3b8", fontWeight: 600 }}>
+                {platformXero?.status ?? "not_configured"}
+              </span>
             </div>
+            {xeroDaysLeft !== null && xeroDaysLeft < 7 ? (
+              <div style={{ marginTop: 8, color: "#fbbf24", fontWeight: 600 }}>
+                ⚠ Token expires {xeroDaysLeft <= 0 ? "today" : `in ${xeroDaysLeft} day${xeroDaysLeft === 1 ? "" : "s"}`}
+              </div>
+            ) : null}
             {platformXero?.lastTestedAt ? (
               <div className="muted" style={{ marginTop: 6 }}>
-                Last updated: {new Date(platformXero.lastTestedAt).toLocaleString()}
+                Last connected: {new Date(platformXero.lastTestedAt as unknown as string).toLocaleString()}
               </div>
             ) : null}
-            {platformXero?.lastErrorMessage ? (
-              <div className="muted" style={{ marginTop: 6, color: "#fca5a5" }}>
-                {platformXero.lastErrorMessage}
-              </div>
-            ) : null}
-            {platformXero?.credentialsJson ? (
-              <div className="muted" style={{ marginTop: 6 }}>
-                FlowLab's own Xero connection is stored here for platform accounting and finance workflows.
+            {(platformXero as unknown as { lastErrorMessage?: string | null } | undefined)?.lastErrorMessage ? (
+              <div style={{ marginTop: 8, color: "#fca5a5" }}>
+                {(platformXero as unknown as { lastErrorMessage: string }).lastErrorMessage}
               </div>
             ) : null}
           </div>
@@ -128,7 +162,9 @@ export default async function AdminPage() {
                   <span className="muted">{new Date(event.createdAt).toLocaleString()}</span>
                 </div>
                 <p className="muted">{event.requestSummary}</p>
-                <div>{event.status}</div>
+                <div style={{ color: event.status === "failed" ? "#fca5a5" : event.status === "success" ? "#16a34a" : "#94a3b8" }}>
+                  {event.status}
+                </div>
               </div>
             ))}
           </div>
