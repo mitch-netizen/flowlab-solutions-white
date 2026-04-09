@@ -288,7 +288,7 @@ export async function getTenantById(id: string) {
 }
 
 export async function getTenantDashboardSnapshot(tenantId: string) {
-  const [tenant, integrations, events, customers, jobs, invoices, automationHealth] = await Promise.all([
+  const [tenant, integrations, events, customers, jobs, invoices, automationHealth, monthlyJobCount] = await Promise.all([
     prisma.tenant.findUnique({
       where: { id: tenantId },
       select: {
@@ -296,6 +296,8 @@ export async function getTenantDashboardSnapshot(tenantId: string) {
         slug: true,
         status: true,
         plan: true,
+        trialEndsAt: true,
+        monthlyFee: true,
         profile: true,
         users: {
           select: {
@@ -338,10 +340,16 @@ export async function getTenantDashboardSnapshot(tenantId: string) {
     prisma.customer.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, take: 5 }),
     prisma.job.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, take: 10 }),
     prisma.invoice.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, take: 10 }),
-    getTenantAutomationHealth(tenantId)
+    getTenantAutomationHealth(tenantId),
+    prisma.job.count({
+      where: {
+        tenantId,
+        createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
+      }
+    })
   ]);
 
-  return { tenant, integrations, events, customers, jobs, invoices, automationHealth };
+  return { tenant, integrations, events, customers, jobs, invoices, automationHealth, monthlyJobCount };
 }
 
 export async function getTenantQuotes(tenantId: string) {
