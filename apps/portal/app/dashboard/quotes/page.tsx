@@ -1,15 +1,22 @@
 import Link from "next/link";
 
-import { getTenantCustomers, getTenantQuotes } from "@flowlab/db";
+import { getTenantCustomers, getTenantQuotes, getTenantSettingsSnapshot } from "@flowlab/db";
+import { prisma } from "@flowlab/db";
 
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function QuotesPage() {
   const session = await requireTenantSession();
-  const [quotes, customers] = await Promise.all([
+  const [quotes, customers, settings, tenantUser] = await Promise.all([
     getTenantQuotes(session.tenantId),
-    getTenantCustomers(session.tenantId)
+    getTenantCustomers(session.tenantId),
+    getTenantSettingsSnapshot(session.tenantId),
+    prisma.tenantUser.findFirst({ where: { tenantId: session.tenantId }, select: { onboardingStep: true, onboardingCompleted: true } })
   ]);
+
+  const pricingConfigured = settings.pricingRates.length > 0 && settings.pricingRates[0]?.baseRatePerSquareM;
+  const onboardingComplete = tenantUser?.onboardingCompleted ?? false;
+  const needsPricingSetup = !pricingConfigured && !onboardingComplete;
 
   return (
     <div className="stack">
@@ -18,6 +25,19 @@ export default async function QuotesPage() {
         <h1>Price up a job and send the customer a link.</h1>
         <p style={{ color: "#cbd5e1" }}>Pick a customer, describe the work, and we&apos;ll crunch the numbers based on your pricing. The customer gets a branded link to review and accept.</p>
       </div>
+
+      {needsPricingSetup && (
+        <div className="surface" style={{ borderLeft: "3px solid #f59e0b" }}>
+          <h2 style={{ marginTop: 0, color: "#fde68a" }}>Set up your pricing first</h2>
+          <p style={{ color: "#cbd5e1", marginBottom: 16 }}>
+            AI quoting uses your pricing rates to calculate job figures. Complete the pricing step in onboarding before generating your first quote.
+          </p>
+          <Link href="/dashboard/onboarding" className="cta" style={{ display: "inline-block" }}>
+            Complete setup →
+          </Link>
+        </div>
+      )}
+
       <div className="cards-2">
         <form className="surface form-grid" action="/api/tenant/quotes/generate" method="post">
           <h2 style={{ marginTop: 0 }}>Create draft quote</h2>
@@ -50,7 +70,7 @@ export default async function QuotesPage() {
               <option value="heavily_overgrown">Heavily overgrown</option>
             </select>
           </label>
-          <button className="cta" type="submit">
+          <button className="cta" type="submit" disabled={needsPricingSetup || undefined}>
             Generate draft quote
           </button>
         </form>
@@ -62,8 +82,17 @@ export default async function QuotesPage() {
           <div className="surface-soft" style={{ marginTop: 18 }}>
             The customer gets a secure, branded link — no login required. Once they accept, you can send an agreement with one click.
           </div>
+          {settings.pricingRates[0] && (
+            <div className="surface-soft" style={{ marginTop: 18 }}>
+              <strong>Your rates</strong>
+              <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 8 }}>
+                Base: ${settings.pricingRates[0].baseRatePerSquareM ?? "—"}/m² · Min charge: ${settings.pricingRates[0].minimumCharge ?? "—"}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
       <div className="surface">
         <h2>Recent quotes</h2>
         <table className="table">
@@ -90,6 +119,14 @@ export default async function QuotesPage() {
                 </td>
               </tr>
             ))}
+            {quotes.length === 0 && (
+              <tr>
+                <td colSpan={5} style={{ color: "#64748b", textAlign: "center" }}>
+                  No quotes yet.{" "}
+                  {customers.length === 0 ? "Add a customer in CRM first." : "Create your first one above."}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
