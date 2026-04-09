@@ -9,6 +9,7 @@ import { requirePlatformSession } from "../../lib/session";
 export default async function AdminPage() {
   await requirePlatformSession();
   const overview = await getPlatformOverview();
+  const platformXero = overview.platformIntegrations.find((integration: { service: string }) => integration.service === "xero");
 
   return (
     <main className="shell">
@@ -33,6 +34,39 @@ export default async function AdminPage() {
           </div>
         </div>
         <div className="panel">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 18, flexWrap: "wrap" }}>
+            <div>
+              <h2 style={{ marginBottom: 8 }}>Platform integrations</h2>
+              <p className="muted" style={{ marginTop: 0 }}>
+                Services connected to FlowLab itself, not to an individual tenant.
+              </p>
+            </div>
+            <a href="/api/admin/integrations/xero" className="cta">
+              {platformXero?.status === "connected" ? "Reconnect Xero" : "Connect Xero"}
+            </a>
+          </div>
+          <div className="panel-soft" style={{ marginBottom: 20 }}>
+            <strong>Xero</strong>
+            <div className="muted" style={{ marginTop: 8 }}>
+              Status: <span style={{ color: platformXero?.status === "connected" ? "#16a34a" : "#94a3b8" }}>{platformXero?.status ?? "not_configured"}</span>
+            </div>
+            {platformXero?.lastTestedAt ? (
+              <div className="muted" style={{ marginTop: 6 }}>
+                Last updated: {new Date(platformXero.lastTestedAt).toLocaleString()}
+              </div>
+            ) : null}
+            {platformXero?.lastErrorMessage ? (
+              <div className="muted" style={{ marginTop: 6, color: "#fca5a5" }}>
+                {platformXero.lastErrorMessage}
+              </div>
+            ) : null}
+            {platformXero?.credentialsJson ? (
+              <div className="muted" style={{ marginTop: 6 }}>
+                Platform Xero credentials are stored and ready for FlowLab-wide accounting features.
+              </div>
+            ) : null}
+          </div>
+
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
             <div>
               <h2 style={{ marginBottom: 8 }}>Tenant management</h2>
@@ -57,7 +91,7 @@ export default async function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {overview.tenants.map((tenant) => (
+              {overview.tenants.map((tenant: (typeof overview.tenants)[number]) => (
                 <tr key={tenant.id}>
                   <td>
                     <Link href={`/admin/tenant/${tenant.id}`} style={{ fontWeight: 600 }}>
@@ -86,7 +120,7 @@ export default async function AdminPage() {
         <div className="panel">
           <h2>Platform-wide event log</h2>
           <div className="grid">
-            {overview.events.map((event) => (
+            {overview.events.map((event: (typeof overview.events)[number]) => (
               <div key={event.id} className="panel-soft">
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
                   <strong>{getServiceLabel(event.service)}</strong>

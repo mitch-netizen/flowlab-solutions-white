@@ -19,7 +19,7 @@ const authClaimsSchema = z.object({
 const customerTokenSchema = z.object({
   tenantId: z.string(),
   resourceId: z.string(),
-  resourceType: z.enum(["quote", "agreement", "invoice"]),
+  resourceType: z.enum(["quote", "agreement", "invoice", "feedback"]),
   expiresAt: z.string()
 });
 

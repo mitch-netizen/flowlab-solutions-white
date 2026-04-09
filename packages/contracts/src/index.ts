@@ -131,7 +131,7 @@ export interface TenantSession extends AuthClaims {
 export interface CustomerTokenPayload {
   tenantId: string;
   resourceId: string;
-  resourceType: "quote" | "agreement" | "invoice";
+  resourceType: "quote" | "agreement" | "invoice" | "feedback";
   expiresAt: string;
 }
 
