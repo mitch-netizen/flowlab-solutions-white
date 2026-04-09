@@ -1,15 +1,20 @@
 import Link from "next/link";
 
+import TenantUnavailable from "../components/tenant-unavailable";
 import { getCurrentTenantContext } from "../lib/tenant";
 
 export default async function PortalHomePage() {
   const tenant = await getCurrentTenantContext();
 
+  if (!tenant) {
+    return <TenantUnavailable />;
+  }
+
   return (
     <main>
       <section className="hero-grid">
         <div className="surface">
-          <div className="eyebrow">{tenant?.branding.businessName ?? "Tenant portal"}</div>
+          <div className="eyebrow">{tenant.branding.businessName}</div>
           <h1 style={{ fontSize: "clamp(3rem, 8vw, 4.8rem)", lineHeight: 1, marginBottom: 12 }}>
             White-label operations that feel like your own software.
           </h1>

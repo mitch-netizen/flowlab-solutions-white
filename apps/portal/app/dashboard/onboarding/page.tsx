@@ -1,4 +1,5 @@
 import { getTenantDashboardSnapshot, getTenantSettingsSnapshot } from "@flowlab/db";
+import { buildTenantUrl } from "@flowlab/contracts/server";
 import { requireTenantSession } from "../../../lib/session";
 import OnboardingWizard from "./OnboardingWizard";
 
@@ -13,11 +14,10 @@ export default async function OnboardingPage() {
   const isCompleted = snapshot.tenant?.users[0]?.onboardingCompleted ?? false;
 
   const tenantSlug = snapshot.tenant?.slug ?? "";
-  const rootDomain = process.env.ROOT_DOMAIN ?? "flowlabsolutions.com.au";
   const enquiryUrl =
     process.env.NODE_ENV === "development"
       ? `http://${tenantSlug}.localhost:3001/enquiry`
-      : `https://${tenantSlug}.${rootDomain}/enquiry`;
+      : buildTenantUrl(tenantSlug, "/enquiry");
 
   return (
     <OnboardingWizard

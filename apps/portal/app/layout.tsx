@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 export const dynamic = "force-dynamic";
 
+import { ensureAppEnv } from "@flowlab/contracts/server";
 import { getCurrentTheme } from "../lib/tenant";
 import "./globals.css";
 
@@ -20,17 +21,20 @@ const monoFont = DM_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  ensureAppEnv("portal");
   const theme = await getCurrentTheme();
   const host = (await headers()).get("host");
+  const protocol = (await headers()).get("x-forwarded-proto") ?? "https";
 
   return {
     title: `${theme.companyName} | Portal`,
     description: theme.tagline,
-    metadataBase: host ? new URL(`http://${host}`) : undefined
+    metadataBase: host ? new URL(`${protocol}://${host}`) : undefined
   };
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
+  ensureAppEnv("portal");
   const theme = await getCurrentTheme();
 
   return (

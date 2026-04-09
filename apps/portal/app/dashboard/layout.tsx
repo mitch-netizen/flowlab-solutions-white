@@ -2,12 +2,17 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { prisma } from "@flowlab/db";
+import TenantUnavailable from "../../components/tenant-unavailable";
 import { getCurrentTenantContext } from "../../lib/tenant";
 import { getTenantSession, requireTenantSession } from "../../lib/session";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const session = await requireTenantSession();
   const tenant = await getCurrentTenantContext();
+
+  if (!tenant) {
+    return <TenantUnavailable title="Tenant dashboard unavailable" message="Your session is valid, but this host is not mapped to your tenant. Sign in through the correct tenant domain." />;
+  }
 
   // Onboarding completion status
   const tenantUser = session?.sub
@@ -38,7 +43,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           gap: 16
         }}>
           <span>
-            ⚡ Superadmin view — you are browsing as <strong>{tenant?.branding.businessName ?? "this tenant"}</strong>
+            ⚡ Superadmin view — you are browsing as <strong>{tenant.branding.businessName}</strong>
           </span>
           <a href="/api/auth/tenant/logout" style={{ color: "#e9d5ff", textDecoration: "underline", fontSize: 13 }}>
             Exit impersonation
@@ -78,9 +83,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
       <main className="portal-shell">
         <aside className="sidebar">
-          <div className="eyebrow">{tenant?.branding.businessName ?? "Tenant"}</div>
-          <h2 style={{ marginTop: 8 }}>{tenant?.branding.tagline ?? "Your business, automated."}</h2>
-          <p style={{ color: "#cbd5e1" }}>Plan: {tenant?.plan}</p>
+          <div className="eyebrow">{tenant.branding.businessName}</div>
+          <h2 style={{ marginTop: 8 }}>{tenant.branding.tagline ?? "Your business, automated."}</h2>
+          <p style={{ color: "#cbd5e1" }}>Plan: {tenant.plan}</p>
           <nav style={{ marginTop: 28 }}>
             <Link className="nav-link" href="/dashboard">
               Overview

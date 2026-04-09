@@ -1,26 +1,44 @@
 import { NextResponse } from "next/server";
 
 import { processAutomationBatch } from "@flowlab/automation";
-import { submitFeedbackByToken } from "@flowlab/db";
+import { consumeRateLimit, submitFeedbackByToken } from "@flowlab/db";
+import { feedbackSubmissionSchema, getClientIpFromRequest, publicRouteTokenSchema } from "@flowlab/contracts/server";
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
-  const formData = await request.formData();
-  const rating = Number(formData.get("rating"));
-  const comment = String(formData.get("comment") ?? "");
+  const parsedParams = publicRouteTokenSchema.safeParse(await params);
 
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+  if (!parsedParams.success) {
+    return NextResponse.redirect(new URL("/?error=invalid_feedback", request.url), 303);
+  }
+
+  const { token } = parsedParams.data;
+  const throttle = await consumeRateLimit({
+    scope: "feedback_submit",
+    key: `feedback_submit:${token}:${getClientIpFromRequest(request)}`,
+    limit: 6,
+    windowMs: 1000 * 60 * 30,
+    blockMs: 1000 * 60 * 30
+  });
+
+  if (!throttle.allowed) {
+    return NextResponse.redirect(new URL(`/feedback/${token}?error=rate_limited`, request.url), 303);
+  }
+
+  const formData = await request.formData();
+  const parsed = feedbackSubmissionSchema.safeParse(Object.fromEntries(formData.entries()));
+
+  if (!parsed.success) {
     return NextResponse.redirect(new URL(`/feedback/${token}?error=rating`, request.url), 303);
   }
 
   try {
-    const result = await submitFeedbackByToken(token, { rating, comment });
+    const result = await submitFeedbackByToken(token, parsed.data);
 
     if (result.reviewRequestQueued) {
       await processAutomationBatch(5);
     }
 
-    return NextResponse.redirect(new URL(`/feedback/${token}?submitted=1&rating=${rating}`, request.url), 303);
+    return NextResponse.redirect(new URL(`/feedback/${token}?submitted=1&rating=${parsed.data.rating}`, request.url), 303);
   } catch {
     return NextResponse.redirect(new URL(`/feedback/${token}?error=expired`, request.url), 303);
   }

@@ -22,6 +22,7 @@ export default async function FeedbackPage(
   const { tenant, customer, job } = feedbackRequest;
   const submitted = query.submitted === "1";
   const submittedRating = Number(query.rating ?? "0");
+  const alreadySubmitted = !!feedbackRequest.existingFeedback;
 
   return (
     <main>
@@ -37,11 +38,21 @@ export default async function FeedbackPage(
           <div style={{ marginTop: 8, color: "#94a3b8" }}>{job.address ?? customer.address ?? "Service address on file"}</div>
         </div>
 
-        {submitted ? (
+        {query.error ? (
+          <div className="surface-soft" style={{ marginTop: 24, color: "#fca5a5" }}>
+            {query.error === "rate_limited"
+              ? "Too many feedback attempts were made. Please wait a little and try again."
+              : query.error === "rating"
+                ? "Please choose a rating between 1 and 5."
+                : "This feedback link has expired or is no longer available."}
+          </div>
+        ) : null}
+
+        {submitted || alreadySubmitted ? (
           <div className="surface-soft" style={{ marginTop: 24 }}>
             <h2 style={{ marginTop: 0 }}>Thanks for the feedback</h2>
             <p style={{ color: "#cbd5e1", marginBottom: 0 }}>
-              {submittedRating === 5
+              {(submitted ? submittedRating : feedbackRequest.existingFeedback?.rating ?? 0) === 5
                 ? "We’re glad the job hit the mark. If there’s anything else you need, Lawn & Order would love to help again."
                 : "Your note has been recorded and shared with the team."}
             </p>

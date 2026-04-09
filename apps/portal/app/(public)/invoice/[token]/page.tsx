@@ -2,8 +2,15 @@ import { notFound } from "next/navigation";
 
 import { getInvoiceByToken } from "@flowlab/db";
 
-export default async function InvoicePage({ params }: { params: Promise<{ token: string }> }) {
+export default async function InvoicePage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ error?: string; paid?: string }>;
+}) {
   const { token } = await params;
+  const query = await searchParams;
   const invoice = await getInvoiceByToken(token);
 
   if (!invoice) {
@@ -17,6 +24,15 @@ export default async function InvoicePage({ params }: { params: Promise<{ token:
         <h1>Invoice {invoice.number}</h1>
         <div style={{ fontSize: 40, fontWeight: 700 }}>${invoice.amount}</div>
         <p style={{ color: "#cbd5e1" }}>Due: {invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" }) : "On receipt"}</p>
+        {query.error ? (
+          <div className="surface-soft" style={{ marginTop: 24, color: "#fca5a5" }}>
+            {query.error === "rate_limited"
+              ? "Too many payment attempts were made. Please wait a moment and try again."
+              : query.error === "unavailable"
+                ? "A secure payment link is not available right now. Please contact the business for help."
+                : "This invoice link is no longer available."}
+          </div>
+        ) : null}
         {invoice.status !== "paid" ? (
           <form action={`/api/public/invoice/${invoice.accessToken}/pay`} method="post" style={{ marginTop: 24 }}>
             <button className="cta" type="submit">

@@ -90,6 +90,7 @@ export interface TenantIntegration {
   lastTestResult: "success" | "failed" | null;
   lastErrorMessage: string | null;
   webhookUrl: string | null;
+  oauthExpiresAt?: string | null;
   usageThisMonth?: number;
 }
 

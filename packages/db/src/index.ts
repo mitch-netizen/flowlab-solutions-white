@@ -11,6 +11,11 @@ import type {
 } from "@flowlab/contracts";
 import { getPlanFeatures } from "@flowlab/contracts";
 import {
+  buildTenantUrl,
+  getCanonicalRootDomain,
+  getExpectedTenantCname
+} from "@flowlab/contracts/server";
+import {
   buildDocuSealRequest,
   buildStripePaymentLink,
   createDocuSealBuilderToken,
@@ -28,6 +33,7 @@ import { assessJobWeatherRisks } from "@flowlab/integrations/bom";
 import { optimiseJobRoute, resolveGoogleMapsApiKey } from "@flowlab/integrations/google-maps";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const AUTOMATION_MAX_ATTEMPTS = 5;
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
@@ -166,9 +172,19 @@ export async function getPlatformOverview() {
   };
 }
 
+export async function countPublicTenantTrials() {
+  return prisma.tenant.count({
+    where: {
+      status: {
+        in: ["trial", "active"]
+      }
+    }
+  });
+}
+
 export async function resolveTenantContext(host: string): Promise<TenantContext | null> {
   const normalizedHost = host.split(":")[0].toLowerCase();
-  const rootDomain = process.env.DEFAULT_ROOT_DOMAIN ?? "flowlabsolutions.com.au";
+  const rootDomain = getCanonicalRootDomain();
   const profile = await prisma.tenantProfile.findFirst({
     where: {
       OR: [
@@ -208,6 +224,17 @@ export async function getTenantBySlug(slug: string) {
       status: true,
       plan: true,
       profile: true
+    }
+  });
+}
+
+export async function findTenantUserInTenant(email: string, tenantId: string) {
+  return prisma.tenantUser.findFirst({
+    where: { email, tenantId },
+    include: {
+      tenant: {
+        include: { profile: true }
+      }
     }
   });
 }
@@ -261,7 +288,7 @@ export async function getTenantById(id: string) {
 }
 
 export async function getTenantDashboardSnapshot(tenantId: string) {
-  const [tenant, integrations, events, customers, jobs, invoices] = await Promise.all([
+  const [tenant, integrations, events, customers, jobs, invoices, automationHealth] = await Promise.all([
     prisma.tenant.findUnique({
       where: { id: tenantId },
       select: {
@@ -310,10 +337,11 @@ export async function getTenantDashboardSnapshot(tenantId: string) {
     }),
     prisma.customer.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, take: 5 }),
     prisma.job.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, take: 10 }),
-    prisma.invoice.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, take: 10 })
+    prisma.invoice.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, take: 10 }),
+    getTenantAutomationHealth(tenantId)
   ]);
 
-  return { tenant, integrations, events, customers, jobs, invoices };
+  return { tenant, integrations, events, customers, jobs, invoices, automationHealth };
 }
 
 export async function getTenantQuotes(tenantId: string) {
@@ -685,7 +713,8 @@ export async function getTenantIntegrations(tenantId: string): Promise<TenantInt
     lastTestedAt: integration.lastTestedAt?.toISOString() ?? null,
     lastTestResult: integration.lastTestResult as "success" | "failed" | null,
     lastErrorMessage: integration.lastErrorMessage,
-    webhookUrl: integration.webhookUrl
+    webhookUrl: integration.webhookUrl,
+    oauthExpiresAt: integration.oauthExpiresAt?.toISOString() ?? null
   }));
 }
 
@@ -756,6 +785,74 @@ export async function getTenantEvents(tenantId: string): Promise<PlatformEventLo
     errorMessage: event.errorMessage,
     triggeredBy: event.triggeredBy
   }));
+}
+
+export async function consumeRateLimit(input: {
+  scope: string;
+  key: string;
+  limit: number;
+  windowMs: number;
+  blockMs?: number;
+}) {
+  const now = new Date();
+  const windowStart = new Date(now.getTime() - input.windowMs);
+  const blockMs = input.blockMs ?? input.windowMs;
+  const bucket = await prisma.rateLimitBucket.findUnique({
+    where: { key: input.key }
+  });
+
+  if (!bucket) {
+    await prisma.rateLimitBucket.create({
+      data: {
+        key: input.key,
+        scope: input.scope,
+        count: 1,
+        windowStart: now
+      }
+    });
+
+    return { allowed: true, remaining: Math.max(input.limit - 1, 0), retryAfterMs: 0 };
+  }
+
+  if (bucket.blockedUntil && bucket.blockedUntil > now) {
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfterMs: Math.max(bucket.blockedUntil.getTime() - now.getTime(), 0)
+    };
+  }
+
+  if (bucket.windowStart < windowStart) {
+    await prisma.rateLimitBucket.update({
+      where: { key: input.key },
+      data: {
+        scope: input.scope,
+        count: 1,
+        windowStart: now,
+        blockedUntil: null
+      }
+    });
+
+    return { allowed: true, remaining: Math.max(input.limit - 1, 0), retryAfterMs: 0 };
+  }
+
+  const nextCount = bucket.count + 1;
+  const blockedUntil = nextCount > input.limit ? new Date(now.getTime() + blockMs) : null;
+
+  await prisma.rateLimitBucket.update({
+    where: { key: input.key },
+    data: {
+      scope: input.scope,
+      count: nextCount,
+      blockedUntil
+    }
+  });
+
+  return {
+    allowed: nextCount <= input.limit,
+    remaining: Math.max(input.limit - Math.min(nextCount, input.limit), 0),
+    retryAfterMs: blockedUntil ? blockMs : 0
+  };
 }
 
 export async function createEnquiry(input: {
@@ -1397,12 +1494,12 @@ export async function createInvoiceDraft(input: {
     invoiceToken: invoice.accessToken,
     invoiceNumber: invoice.number,
     amount: invoice.amount,
-    rootDomain: process.env.DEFAULT_ROOT_DOMAIN
+    rootDomain: getCanonicalRootDomain()
   });
 
   if (stripeSecretKey) {
     const stripe = getStripeClient(stripeSecretKey);
-    const publicUrl = `https://${tenant?.slug ?? "tenant"}.${process.env.DEFAULT_ROOT_DOMAIN ?? "flowlabsolutions.com.au"}/invoice/${invoice.accessToken}`;
+    const publicUrl = buildTenantUrl(tenant?.slug ?? "tenant", `/invoice/${invoice.accessToken}`);
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       success_url: `${publicUrl}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
@@ -1618,6 +1715,10 @@ export async function acceptQuoteByToken(token: string) {
     throw new Error("Quote not found");
   }
 
+  if (quote.status === "accepted") {
+    return quote;
+  }
+
   const updated = await prisma.quote.update({
     where: { accessToken: token },
     data: {
@@ -1663,6 +1764,10 @@ export async function markInvoicePaidByToken(token: string) {
 
   if (!invoice) {
     throw new Error("Invoice not found");
+  }
+
+  if (invoice.status === "paid") {
+    return invoice;
   }
 
   const updated = await prisma.invoice.update({
@@ -1758,7 +1863,7 @@ export async function createAgreementForQuote(quoteId: string) {
     agreementTitle: `${quote.title} agreement`,
     accessToken,
     tenantSlug: quote.tenant.slug,
-    rootDomain: process.env.DEFAULT_ROOT_DOMAIN
+    rootDomain: getCanonicalRootDomain()
   });
   const docuSealConfig = await getTenantDocuSealConfig(quote.tenantId);
   let externalRequestId = signRequestBase.externalRequestId;
@@ -1770,8 +1875,8 @@ export async function createAgreementForQuote(quoteId: string) {
   });
 
   if (docuSealConfig.apiKey) {
-    const callbackUrl = `https://${quote.tenant.slug}.${process.env.DEFAULT_ROOT_DOMAIN ?? "flowlabsolutions.com.au"}/api/webhooks/docuseal`;
-    const completedRedirectUrl = `https://${quote.tenant.slug}.${process.env.DEFAULT_ROOT_DOMAIN ?? "flowlabsolutions.com.au"}/sign/${accessToken}?completed=1`;
+    const callbackUrl = buildTenantUrl(quote.tenant.slug, "/api/webhooks/docuseal");
+    const completedRedirectUrl = buildTenantUrl(quote.tenant.slug, `/sign/${accessToken}?completed=1`);
     const agreementText = [
       `${businessName} Service Agreement`,
       "",
@@ -2127,23 +2232,100 @@ export async function claimPendingAutomationJobs(limit = 10) {
   return claimed;
 }
 
+export function getAutomationRetryDelayMs(attempts: number) {
+  const cappedAttempts = Math.max(1, attempts);
+  return Math.min(1000 * 60 * 15, 15000 * 2 ** (cappedAttempts - 1));
+}
+
 export async function completeAutomationJob(id: string) {
   return prisma.automationJob.update({
     where: { id },
     data: {
       status: "completed",
       processedAt: new Date(),
-      lastError: null
+      lastError: null,
+      availableAt: new Date()
     }
   });
 }
 
 export async function failAutomationJob(id: string, error: string) {
+  const job = await prisma.automationJob.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      attempts: true
+    }
+  });
+
+  if (!job) {
+    throw new Error("Automation job not found");
+  }
+
+  const terminal = job.attempts >= AUTOMATION_MAX_ATTEMPTS;
+
   return prisma.automationJob.update({
     where: { id },
+    data: terminal
+      ? {
+          status: "failed",
+          lastError: error,
+          processedAt: new Date()
+        }
+      : {
+          status: "pending",
+          lastError: error,
+          availableAt: new Date(Date.now() + getAutomationRetryDelayMs(job.attempts))
+        }
+  });
+}
+
+export async function getTenantAutomationHealth(tenantId: string) {
+  const [failed, pending, processing, recentFailedJobs] = await Promise.all([
+    prisma.automationJob.count({
+      where: { tenantId, status: "failed" }
+    }),
+    prisma.automationJob.count({
+      where: { tenantId, status: "pending" }
+    }),
+    prisma.automationJob.count({
+      where: { tenantId, status: "processing" }
+    }),
+    prisma.automationJob.findMany({
+      where: { tenantId, status: "failed" },
+      orderBy: { updatedAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        kind: true,
+        attempts: true,
+        lastError: true,
+        updatedAt: true
+      }
+    })
+  ]);
+
+  return {
+    failed,
+    pending,
+    processing,
+    recentFailedJobs
+  };
+}
+
+export async function retryAutomationJob(input: { tenantId: string; jobId: string }) {
+  return prisma.automationJob.updateMany({
+    where: {
+      id: input.jobId,
+      tenantId: input.tenantId,
+      status: "failed"
+    },
     data: {
-      status: "failed",
-      lastError: error
+      status: "pending",
+      availableAt: new Date(),
+      processedAt: null,
+      lastError: null,
+      attempts: 0
     }
   });
 }
@@ -2327,6 +2509,11 @@ export async function getFeedbackRequestByToken(token: string) {
   return {
     token,
     expiresAt: payload.expiresAt,
+    existingFeedback: await prisma.feedback.findFirst({
+      where: {
+        jobId: job.id
+      }
+    }),
     job,
     customer: job.customer,
     tenant: job.tenant
@@ -2373,10 +2560,24 @@ export async function submitFeedbackByToken(token: string, input: { rating: numb
     throw new Error("Feedback request not found");
   }
 
+  const existingFeedback = await prisma.feedback.findFirst({
+    where: {
+      jobId: job.id
+    }
+  });
+
+  if (existingFeedback) {
+    return {
+      feedback: existingFeedback,
+      reviewRequestQueued: false
+    };
+  }
+
   const feedback = await prisma.feedback.create({
     data: {
       tenantId: payload.tenantId,
       customerId: job.customerId,
+      jobId: job.id,
       rating: input.rating,
       comment: input.comment?.trim() || null,
       source: "public_form"

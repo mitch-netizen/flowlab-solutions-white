@@ -24,6 +24,7 @@ import Stripe from "stripe";
 
 import type { AutomationBlueprintDescriptor, IntegrationService, IntegrationTestResult } from "@flowlab/contracts";
 import { automationBlueprints, serviceLabels } from "@flowlab/contracts";
+import { getCanonicalRootDomain, isProductionRuntime } from "@flowlab/contracts/server";
 
 const algorithm = "aes-256-gcm";
 const BREVO_API_BASE = "https://api.brevo.com/v3";
@@ -532,8 +533,13 @@ export async function generateServiceAgreementTemplateDocx(input: {
 }
 
 function getMasterKey() {
-  const source = process.env.ENCRYPTION_MASTER_KEY ?? "development-master-key";
-  return crypto.createHash("sha256").update(source).digest();
+  const source = process.env.ENCRYPTION_MASTER_KEY;
+
+  if (!source && isProductionRuntime()) {
+    throw new Error("ENCRYPTION_MASTER_KEY is required in production");
+  }
+
+  return crypto.createHash("sha256").update(source ?? "development-master-key").digest();
 }
 
 export function encryptJson(payload: Record<string, string>) {
@@ -938,7 +944,7 @@ export function buildAutomationBlueprintPayloads(input: {
   rootDomain?: string;
   descriptors?: AutomationBlueprintDescriptor[];
 }) {
-  const rootDomain = input.rootDomain ?? "flowlabsolutions.com.au";
+  const rootDomain = input.rootDomain ?? getCanonicalRootDomain();
   const baseWebhookUrl = `https://${input.tenantSlug}.${rootDomain}/api/automation`;
   const descriptors = input.descriptors ?? automationBlueprints;
 
@@ -1012,7 +1018,7 @@ export function buildDocuSealRequest(input: {
   rootDomain?: string;
   tenantSlug?: string;
 }) {
-  const rootDomain = input.rootDomain ?? "flowlabsolutions.com.au";
+  const rootDomain = input.rootDomain ?? getCanonicalRootDomain();
   const baseHost = input.tenantSlug ? `https://${input.tenantSlug}.${rootDomain}` : `https://app.${rootDomain}`;
 
   return {
@@ -1312,7 +1318,7 @@ export function buildStripePaymentLink(input: {
   amount: number;
   rootDomain?: string;
 }) {
-  const rootDomain = input.rootDomain ?? "flowlabsolutions.com.au";
+  const rootDomain = input.rootDomain ?? getCanonicalRootDomain();
   const sessionId = `cs_test_${Math.random().toString(36).slice(2, 12)}`;
   const publicUrl = `https://${input.tenantSlug}.${rootDomain}/invoice/${input.invoiceToken}`;
 

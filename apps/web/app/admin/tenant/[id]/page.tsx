@@ -190,7 +190,7 @@ export default function TenantDetailPage() {
             <div>
               <h1 style={{ margin: 0 }}>{tenant.profile?.businessName ?? tenant.slug}</h1>
               <p className="muted" style={{ marginTop: 4 }}>
-                {tenant.slug}.flowlabsolutions.com.au &nbsp;|&nbsp;
+                {tenant.slug}.flowlabsolutions.au &nbsp;|&nbsp;
                 <span style={{ color: STATUS_COLOURS[tenant.status] ?? "#64748b", fontWeight: 600 }}>
                   {tenant.status.toUpperCase()}
                 </span>

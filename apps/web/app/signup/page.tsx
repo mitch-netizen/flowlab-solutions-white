@@ -1,41 +1,54 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { createTenantWithOwner } from "@flowlab/db";
+import { consumeRateLimit, createTenantWithOwner } from "@flowlab/db";
+import { buildTenantUrl, signupInputSchema, validateBotGuard } from "@flowlab/contracts/server";
 
 async function createSignup(formData: FormData) {
   "use server";
 
-  const businessName = String(formData.get("businessName") ?? "");
-  const ownerName = String(formData.get("ownerName") ?? "");
-  const email = String(formData.get("email") ?? "");
-  const password = String(formData.get("password") ?? "");
-  const phone = String(formData.get("phone") ?? "");
-  const suburb = String(formData.get("suburb") ?? "");
-  const businessType = String(formData.get("businessType") ?? "other") as
-    | "lawn_mowing"
-    | "cleaning"
-    | "pest_control"
-    | "gardening"
-    | "handyman"
-    | "pool_service"
-    | "other";
-  const plan = String(formData.get("plan") ?? "professional") as "starter" | "professional" | "growth";
-
-  await createTenantWithOwner({
-    businessName,
-    ownerName,
-    email,
-    password,
-    phone,
-    suburb,
-    businessType,
-    plan
+  const headerStore = await headers();
+  const ip = headerStore.get("x-real-ip") || headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const throttle = await consumeRateLimit({
+    scope: "signup",
+    key: `signup:${ip}`,
+    limit: 5,
+    windowMs: 1000 * 60 * 15,
+    blockMs: 1000 * 60 * 30
   });
 
-  redirect("/admin?created=1");
+  if (!throttle.allowed) {
+    redirect("/signup?error=rate_limited");
+  }
+
+  const parsed = signupInputSchema.safeParse(Object.fromEntries(formData.entries()));
+  if (!parsed.success) {
+    redirect("/signup?error=invalid");
+  }
+
+  try {
+    validateBotGuard(parsed.data);
+  } catch {
+    redirect("/signup?error=invalid");
+  }
+
+  const tenant = await createTenantWithOwner({
+    businessName: parsed.data.businessName,
+    ownerName: parsed.data.ownerName,
+    email: parsed.data.email,
+    password: parsed.data.password,
+    phone: parsed.data.phone,
+    suburb: parsed.data.suburb,
+    businessType: parsed.data.businessType,
+    plan: parsed.data.plan
+  });
+
+  redirect(`${buildTenantUrl(tenant.slug, "/login")}?created=1`);
 }
 
 export default function SignupPage() {
+  const startedAt = Date.now();
+
   return (
     <main className="shell">
       <section className="hero" style={{ gridTemplateColumns: "1fr 0.8fr" }}>
@@ -66,7 +79,7 @@ export default function SignupPage() {
             </label>
             <label className="label">
               Password
-              <input className="input" name="password" type="password" required minLength={8} />
+              <input className="input" name="password" type="password" required minLength={10} autoComplete="new-password" />
             </label>
             <label className="label">
               Business type
@@ -91,6 +104,8 @@ export default function SignupPage() {
             <button className="cta" type="submit">
               Start free 14-day trial
             </button>
+            <input type="hidden" name="formStartedAt" value={startedAt} />
+            <input type="text" name="website" autoComplete="off" tabIndex={-1} style={{ position: "absolute", left: "-9999px", opacity: 0 }} />
           </form>
         </div>
         <div className="panel">

@@ -378,11 +378,13 @@ model Feedback {
   id          String   @id @default(uuid())
   tenantId    String
   customerId  String
+  jobId       String?  @unique
   createdAt   DateTime @default(now())
   rating      Int
   comment     String?
   source      String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  job         Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
 }
 
 model RebookReminder {
@@ -483,4 +485,17 @@ model AutomationJob {
   tenant       Tenant?             @relation(fields: [tenantId], references: [id], onDelete: SetNull)
 
   @@index([status, availableAt])
+}
+
+model RateLimitBucket {
+  id           String   @id @default(uuid())
+  key          String   @unique
+  scope        String
+  count        Int      @default(0)
+  windowStart  DateTime
+  blockedUntil DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([scope, windowStart])
 }

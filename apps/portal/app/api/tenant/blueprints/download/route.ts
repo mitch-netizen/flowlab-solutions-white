@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
 import { getTenantById } from "@flowlab/db";
+import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { buildAutomationBlueprintPayloads } from "@flowlab/integrations";
 
 export async function GET(request: Request) {
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
   const payloads = buildAutomationBlueprintPayloads({
     tenantSlug: tenant.slug,
     businessName: tenant.profile.businessName,
-    rootDomain: process.env.DEFAULT_ROOT_DOMAIN
+    rootDomain: getCanonicalRootDomain()
   });
 
   const zip = new JSZip();

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { TENANT_SESSION_COOKIE, signTenantSession } from "@flowlab/auth";
 import { getTenantById, prisma } from "@flowlab/db";
+import { adminImpersonateSchema, buildTenantUrl, getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { getPlatformSession } from "../../../../lib/session";
 
 export async function POST(request: Request) {
@@ -11,12 +12,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json()) as { tenantId: string };
-  if (!body.tenantId) {
+  const parsed = adminImpersonateSchema.safeParse(await request.json());
+  if (!parsed.success) {
     return NextResponse.json({ error: "tenantId required" }, { status: 400 });
   }
 
-  const tenant = await getTenantById(body.tenantId);
+  const tenant = await getTenantById(parsed.data.tenantId);
   if (!tenant) {
     return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
   }
@@ -55,16 +56,15 @@ export async function POST(request: Request) {
   store.set(TENANT_SESSION_COOKIE, tenantToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     maxAge: 60 * 60 * 12,
     path: "/"
   });
 
-  const rootDomain = process.env.ROOT_DOMAIN ?? "localhost";
   const portalUrl =
-    rootDomain === "localhost"
+    process.env.NODE_ENV !== "production"
       ? `http://${tenant.slug}.localhost:3001/dashboard`
-      : `https://${tenant.slug}.${rootDomain}/dashboard`;
+      : buildTenantUrl(tenant.slug, "/dashboard");
 
   return NextResponse.json({ ok: true, portalUrl, tenantSlug: tenant.slug });
 }

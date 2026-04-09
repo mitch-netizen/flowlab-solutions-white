@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
 import { getTenantIntegrationRecord, prisma } from "@flowlab/db";
+import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { decryptJson, encryptJson } from "@flowlab/integrations";
 import { logPlatformEvent } from "@flowlab/events";
 
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const rootDomain = process.env.DEFAULT_ROOT_DOMAIN ?? process.env.ROOT_DOMAIN ?? "flowlabsolutions.com.au";
+  const rootDomain = getCanonicalRootDomain();
   const isLocal = process.env.NODE_ENV !== "production";
   const slug = integration ? await prisma.tenant.findUnique({ where: { id: tenantId }, select: { slug: true } }) : null;
   const tenantSlug = slug?.slug ?? "tenant";

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getPlatformIntegrationRecord, getTenantIntegrationRecord, prisma } from "@flowlab/db";
+import { buildTenantUrl, getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { logPlatformEvent } from "@flowlab/events";
 import { decryptJson, encryptJson } from "@flowlab/integrations";
 
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
 
   if (!clientId || !clientSecret) {
     const destination = scope === "tenant" && tenant?.slug
-      ? `https://${tenant.slug}.${process.env.DEFAULT_ROOT_DOMAIN ?? process.env.ROOT_DOMAIN ?? "flowlabsolutions.com.au"}/dashboard/integrations?xero_error=missing_credentials`
+      ? buildTenantUrl(tenant.slug, "/dashboard/integrations?xero_error=missing_credentials")
       : "/admin?xero_error=missing_credentials";
     return NextResponse.redirect(new URL(destination, request.url));
   }
@@ -157,9 +158,8 @@ export async function GET(request: Request) {
       triggeredBy: scope === "platform" ? "platform_xero_oauth" : "tenant_xero_oauth"
     });
 
-    const portalRootDomain = process.env.DEFAULT_ROOT_DOMAIN ?? process.env.ROOT_DOMAIN ?? "flowlabsolutions.com.au";
     const destination = scope === "tenant" && tenant?.slug
-      ? `https://${tenant.slug}.${portalRootDomain}/dashboard/integrations?xero_connected=1`
+      ? buildTenantUrl(tenant.slug, "/dashboard/integrations?xero_connected=1")
       : "/admin?xero_connected=1";
 
     return NextResponse.redirect(new URL(destination, request.url));
@@ -175,9 +175,8 @@ export async function GET(request: Request) {
       triggeredBy: scope === "platform" ? "platform_xero_oauth" : "tenant_xero_oauth"
     });
 
-    const portalRootDomain = process.env.DEFAULT_ROOT_DOMAIN ?? process.env.ROOT_DOMAIN ?? "flowlabsolutions.com.au";
     const destination = scope === "tenant" && tenant?.slug
-      ? `https://${tenant.slug}.${portalRootDomain}/dashboard/integrations?xero_error=${encodeURIComponent(err instanceof Error ? err.message : "OAuth failed")}`
+      ? buildTenantUrl(tenant.slug, `/dashboard/integrations?xero_error=${encodeURIComponent(err instanceof Error ? err.message : "OAuth failed")}`)
       : `/admin?xero_error=${encodeURIComponent(err instanceof Error ? err.message : "OAuth failed")}`;
 
     return NextResponse.redirect(new URL(destination, request.url));
