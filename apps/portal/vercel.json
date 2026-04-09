@@ -1,5 +1,11 @@
 {
   "installCommand": "cd ../.. && npm install",
   "buildCommand": "cd ../.. && npx prisma generate --schema=packages/db/prisma/schema.prisma && npm run build --workspace=apps/portal",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/internal/automation/process",
+      "schedule": "0 21 * * *"
+    }
+  ]
 }

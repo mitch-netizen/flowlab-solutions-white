@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { processAutomationBatch } from "@flowlab/automation";
 import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
 import { createInvoiceDraft } from "@flowlab/db";
 
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
     amount: Number(formData.get("amount") ?? 0),
     note: String(formData.get("note") ?? "")
   });
+  await processAutomationBatch(5);
 
   return NextResponse.redirect(new URL("/dashboard/invoices", request.url), 303);
 }
