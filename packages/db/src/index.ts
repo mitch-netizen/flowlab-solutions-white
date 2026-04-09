@@ -3100,3 +3100,49 @@ export async function ensureDemoSeed() {
 
   return tenant;
 }
+
+export async function getAdminHealthSummary() {
+  const [failedJobsByTenant, expiringIntegrations] = await Promise.all([
+    prisma.automationJob.groupBy({
+      by: ["tenantId"],
+      where: { status: "failed" },
+      _count: { id: true }
+    }),
+    prisma.platformIntegration.findMany({
+      where: {
+        oauthExpiresAt: {
+          lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        }
+      },
+      select: { service: true, oauthExpiresAt: true }
+    })
+  ]);
+
+  const totalFailedJobs = failedJobsByTenant.reduce((sum, row) => sum + row._count.id, 0);
+
+  return {
+    totalFailedJobs,
+    tenantsWithFailures: failedJobsByTenant.length,
+    expiringIntegrations
+  };
+}
+
+export async function logWebhookFailure(input: {
+  tenantId?: string | null;
+  service: string;
+  errorMessage: string;
+  requestSummary?: string;
+}) {
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId: input.tenantId ?? null,
+      eventType: "webhook_received",
+      service: input.service as any,
+      direction: "inbound",
+      status: "failed",
+      requestSummary: input.requestSummary ?? `${input.service} webhook failed`,
+      errorMessage: input.errorMessage,
+      triggeredBy: `${input.service}_webhook`
+    }
+  });
+}
