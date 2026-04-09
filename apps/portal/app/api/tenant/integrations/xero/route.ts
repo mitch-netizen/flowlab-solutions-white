@@ -29,14 +29,12 @@ export async function GET(request: Request) {
     );
   }
 
-  const rootDomain = process.env.ROOT_DOMAIN ?? "flowlabsolutions.com.au";
   const isLocal = process.env.NODE_ENV !== "production";
-  const tenantSlug = request.headers.get("x-flowlab-host")?.split(".")[0] ?? "tenant";
   const redirectUri = isLocal
-    ? `http://${tenantSlug}.localhost:3001/api/tenant/integrations/xero/callback`
-    : `https://${tenantSlug}.${rootDomain}/api/tenant/integrations/xero/callback`;
+    ? "http://localhost:3000/api/integrations/xero/callback"
+    : process.env.XERO_REDIRECT_URI ?? "https://flowlabsolutions.au/api/integrations/xero/callback";
 
-  const state = Buffer.from(JSON.stringify({ tenantId: session.tenantId })).toString("base64url");
+  const state = Buffer.from(JSON.stringify({ scope: "tenant", tenantId: session.tenantId })).toString("base64url");
 
   const params = new URLSearchParams({
     response_type: "code",

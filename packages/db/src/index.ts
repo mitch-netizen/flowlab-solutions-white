@@ -1,5 +1,5 @@
 import { PrismaClient, type Prisma, type BusinessType, type TenantPlan } from "@prisma/client";
-import { hashPassword } from "@flowlab/auth";
+import { hashPassword, signCustomerToken, verifyCustomerToken } from "@flowlab/auth";
 import type {
   IntegrationService,
   IntegrationStatus,
@@ -123,7 +123,7 @@ export async function listTenants() {
 }
 
 export async function getPlatformOverview() {
-  const [tenants, jobs, invoices, events] = await Promise.all([
+  const [tenants, jobs, invoices, events, platformIntegrations] = await Promise.all([
     prisma.tenant.findMany({
       include: {
         profile: true,
@@ -142,23 +142,27 @@ export async function getPlatformOverview() {
     prisma.platformEventLog.findMany({
       orderBy: { createdAt: "desc" },
       take: 25
+    }),
+    prisma.platformIntegration.findMany({
+      orderBy: { service: "asc" }
     })
   ]);
 
-  const totalRevenue = tenants.reduce((sum, tenant) => sum + tenant.monthlyFee, 0);
-  const activeErrors = events.filter((event) => event.status === "failed").length;
+  const totalRevenue = tenants.reduce((sum: number, tenant: (typeof tenants)[number]) => sum + tenant.monthlyFee, 0);
+  const activeErrors = events.filter((event: (typeof events)[number]) => event.status === "failed").length;
 
   return {
     tenants,
     stats: {
-      totalActiveTenants: tenants.filter((tenant) => tenant.status === "active" || tenant.status === "trial").length,
-      trials: tenants.filter((tenant) => tenant.status === "trial").length,
+      totalActiveTenants: tenants.filter((tenant: (typeof tenants)[number]) => tenant.status === "active" || tenant.status === "trial").length,
+      trials: tenants.filter((tenant: (typeof tenants)[number]) => tenant.status === "trial").length,
       jobs,
       invoices,
       totalRevenue,
       activeErrors
     },
-    events
+    events,
+    platformIntegrations
   };
 }
 
@@ -713,6 +717,20 @@ export async function getTenantIntegrationRecord(tenantId: string, service: Inte
         service: service as any
       }
     }
+  });
+}
+
+export async function getPlatformIntegrationRecord(service: IntegrationService) {
+  return prisma.platformIntegration.findUnique({
+    where: {
+      service: service as any
+    }
+  });
+}
+
+export async function getPlatformIntegrations() {
+  return prisma.platformIntegration.findMany({
+    orderBy: { service: "asc" }
   });
 }
 
@@ -2278,6 +2296,125 @@ export async function getInvoiceByToken(token: string) {
       tenant: { include: { profile: true } }
     }
   });
+}
+
+export async function getFeedbackRequestByToken(token: string) {
+  const payload = verifyCustomerToken(token);
+
+  if (!payload || payload.resourceType !== "feedback" || new Date(payload.expiresAt) < new Date()) {
+    return null;
+  }
+
+  const job = await prisma.job.findFirst({
+    where: {
+      id: payload.resourceId,
+      tenantId: payload.tenantId
+    },
+    include: {
+      customer: true,
+      tenant: {
+        include: {
+          profile: true
+        }
+      }
+    }
+  });
+
+  if (!job) {
+    return null;
+  }
+
+  return {
+    token,
+    expiresAt: payload.expiresAt,
+    job,
+    customer: job.customer,
+    tenant: job.tenant
+  };
+}
+
+async function updateCustomerRatingAverage(customerId: string) {
+  const aggregate = await prisma.feedback.aggregate({
+    where: { customerId },
+    _avg: { rating: true }
+  });
+
+  return prisma.customer.update({
+    where: { id: customerId },
+    data: {
+      ratingAverage: aggregate._avg.rating ?? null
+    }
+  });
+}
+
+export async function submitFeedbackByToken(token: string, input: { rating: number; comment?: string | null }) {
+  const payload = verifyCustomerToken(token);
+
+  if (!payload || payload.resourceType !== "feedback" || new Date(payload.expiresAt) < new Date()) {
+    throw new Error("Feedback request expired");
+  }
+
+  const job = await prisma.job.findFirst({
+    where: {
+      id: payload.resourceId,
+      tenantId: payload.tenantId
+    },
+    include: {
+      customer: true,
+      tenant: {
+        include: {
+          profile: true
+        }
+      }
+    }
+  });
+
+  if (!job) {
+    throw new Error("Feedback request not found");
+  }
+
+  const feedback = await prisma.feedback.create({
+    data: {
+      tenantId: payload.tenantId,
+      customerId: job.customerId,
+      rating: input.rating,
+      comment: input.comment?.trim() || null,
+      source: "public_form"
+    }
+  });
+
+  await updateCustomerRatingAverage(job.customerId);
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId: payload.tenantId,
+      eventType: "webhook_received",
+      service: "internal",
+      direction: "inbound",
+      status: "success",
+      requestSummary: `Feedback submitted by ${job.customer.firstName} ${job.customer.lastName}`,
+      responseSummary: `${input.rating}/5 rating captured`,
+      triggeredBy: "public_feedback_form",
+      customerId: job.customerId,
+      jobId: job.id
+    }
+  });
+
+  if (input.rating === 5) {
+    await enqueueAutomationJob({
+      tenantId: payload.tenantId,
+      kind: "retention.review_request",
+      payload: {
+        feedbackId: feedback.id,
+        customerId: job.customerId
+      }
+    });
+  }
+
+  return {
+    feedback,
+    reviewRequestQueued: input.rating === 5
+  };
 }
 
 export interface RateSuggestion {

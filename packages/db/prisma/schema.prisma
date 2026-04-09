@@ -177,6 +177,22 @@ model TenantIntegration {
   @@unique([tenantId, service])
 }
 
+model PlatformIntegration {
+  id                String            @id @default(uuid())
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  service           IntegrationService @unique
+  status            IntegrationStatus @default(not_configured)
+  credentialsJson   String?
+  lastTestedAt      DateTime?
+  lastTestResult    String?
+  lastErrorMessage  String?
+  webhookUrl        String?
+  oauthAccessToken  String?
+  oauthRefreshToken String?
+  oauthExpiresAt    DateTime?
+}
+
 model PlatformEventLog {
   id              String         @id @default(uuid())
   createdAt       DateTime       @default(now())

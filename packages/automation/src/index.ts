@@ -1,3 +1,4 @@
+import { signCustomerToken } from "@flowlab/auth";
 import {
   claimPendingAutomationJobs,
   completeAutomationJob,
@@ -35,6 +36,19 @@ async function getCustomer(customerId: string) {
 
 async function getInvoice(invoiceId: string) {
   return prisma.invoice.findUnique({ where: { id: invoiceId } });
+}
+
+function buildFeedbackLink(input: { tenantSlug: string; tenantId: string; jobId: string }) {
+  const rootDomain = process.env.DEFAULT_ROOT_DOMAIN ?? "flowlabsolutions.com.au";
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
+  const token = signCustomerToken({
+    tenantId: input.tenantId,
+    resourceId: input.jobId,
+    resourceType: "feedback",
+    expiresAt
+  });
+
+  return `https://${input.tenantSlug}.${rootDomain}/feedback/${token}`;
 }
 
 async function getCredentials(tenantId: string, service: "twilio" | "sendgrid" | "make_com") {
@@ -517,13 +531,20 @@ async function processJob(job: ClaimedJob) {
       ]);
 
       const businessName = tenant?.profile?.businessName ?? "Your service provider";
+      const feedbackLink = tenant?.slug ? buildFeedbackLink({
+        tenantSlug: tenant.slug,
+        tenantId,
+        jobId: payload.jobId
+      }) : null;
 
       if (customer?.phone) {
         try {
           await sendSms(
             twilioCredentials,
             customer.phone,
-            `Hi ${customer.firstName}, how did we do? ${businessName} would love your feedback — reply with a rating from 1-5 ⭐`
+            feedbackLink
+              ? `Hi ${customer.firstName}, how did we do? ${businessName} would love your feedback: ${feedbackLink}`
+              : `Hi ${customer.firstName}, how did we do? ${businessName} would love your feedback — reply with a rating from 1-5 ⭐`
           );
 
           await logPlatformEvent({

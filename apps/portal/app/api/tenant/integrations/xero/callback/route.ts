@@ -48,13 +48,13 @@ export async function GET(request: Request) {
     );
   }
 
-  const rootDomain = process.env.ROOT_DOMAIN ?? "flowlabsolutions.com.au";
+  const rootDomain = process.env.DEFAULT_ROOT_DOMAIN ?? process.env.ROOT_DOMAIN ?? "flowlabsolutions.com.au";
   const isLocal = process.env.NODE_ENV !== "production";
   const slug = integration ? await prisma.tenant.findUnique({ where: { id: tenantId }, select: { slug: true } }) : null;
   const tenantSlug = slug?.slug ?? "tenant";
   const redirectUri = isLocal
-    ? `http://${tenantSlug}.localhost:3001/api/tenant/integrations/xero/callback`
-    : `https://${tenantSlug}.${rootDomain}/api/tenant/integrations/xero/callback`;
+    ? "http://localhost:3000/api/integrations/xero/callback"
+    : process.env.XERO_REDIRECT_URI ?? "https://flowlabsolutions.au/api/integrations/xero/callback";
 
   try {
     // Exchange authorization code for tokens
