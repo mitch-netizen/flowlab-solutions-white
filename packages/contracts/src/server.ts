@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { businessTypeSchema, tenantPlanSchema, tenantStatusSchema } from "./index";
+import { businessTypeSchema, tenantPlanSchema, tenantStatusSchema } from "./index.js";
 
 export const CANONICAL_ROOT_DOMAIN = "flowlabsolutions.au";
 export const LEGACY_ROOT_DOMAINS = ["flowlabsolutions.com.au"] as const;
@@ -148,4 +148,8 @@ export const adminTenantUpdateSchema = z.object({
 export const onboardingStepSchema = z.object({
   step: z.coerce.number().int().min(1).max(6),
   completed: z.coerce.boolean().optional()
+});
+
+export const publicRouteTokenSchema = z.object({
+  token: z.string().min(1).max(512)
 });

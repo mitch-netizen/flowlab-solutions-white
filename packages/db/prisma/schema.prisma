@@ -284,6 +284,7 @@ model Job {
   weatherRisk     Boolean    @default(false)
   customer        Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
   tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  feedbacks       Feedback[]
 }
 
 model Quote {
