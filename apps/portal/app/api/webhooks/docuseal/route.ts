@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { processAutomationBatch } from "@flowlab/automation";
 import { markAgreementSignedByToken } from "@flowlab/db";
 import { verifyDocuSealEventSecret } from "@flowlab/integrations";
 
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
   if ((eventType === "submission.completed" || eventType === "form.completed" || eventType === "submission.created") && token) {
     if (String(eventType).includes("completed")) {
       await markAgreementSignedByToken(String(token));
+      await processAutomationBatch(5);
     }
   }
 

@@ -9,6 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@flowlab/automation": "*",
     "@flowlab/contracts": "*",
     "@flowlab/db": "*",
     "@flowlab/events": "*",

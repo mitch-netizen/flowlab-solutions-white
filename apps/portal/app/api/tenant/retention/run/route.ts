@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { processAutomationBatch } from "@flowlab/automation";
 import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
 import { enqueueRetentionRun } from "@flowlab/db";
 
@@ -13,5 +14,6 @@ export async function POST(request: Request) {
   }
 
   await enqueueRetentionRun(session.tenantId);
+  await processAutomationBatch(10);
   return NextResponse.redirect(new URL("/dashboard/retention", request.url), 303);
 }

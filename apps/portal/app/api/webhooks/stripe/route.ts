@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { processAutomationBatch } from "@flowlab/automation";
 import { markInvoicePaidByStripeSession } from "@flowlab/db";
 import { getStripeClient } from "@flowlab/integrations";
 
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
     if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
       const session = event.data.object;
       await markInvoicePaidByStripeSession(session.id);
+      await processAutomationBatch(5);
     }
 
     return NextResponse.json({ ok: true });
@@ -38,5 +40,6 @@ export async function POST(request: Request) {
   }
 
   await markInvoicePaidByStripeSession(String(sessionId));
+  await processAutomationBatch(5);
   return NextResponse.json({ ok: true });
 }

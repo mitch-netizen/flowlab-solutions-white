@@ -24,6 +24,9 @@
       "@flowlab/auth": [
         "packages/auth/src"
       ],
+      "@flowlab/automation": [
+        "packages/automation/src"
+      ],
       "@flowlab/branding": [
         "packages/branding/src"
       ],
