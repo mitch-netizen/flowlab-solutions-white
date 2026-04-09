@@ -8,7 +8,7 @@ export default async function FeedbackPage(
     searchParams
   }: {
     params: Promise<{ token: string }>;
-    searchParams: Promise<{ submitted?: string; rating?: string }>;
+    searchParams: Promise<{ submitted?: string; rating?: string; error?: string }>;
   }
 ) {
   const { token } = await params;

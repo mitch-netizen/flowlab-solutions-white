@@ -26,7 +26,7 @@ describe("platform foundation", () => {
 
     expect(payloads).toHaveLength(16);
     expect(payloads[0]?.filename).toBe("new_enquiry.json");
-    expect(payloads[0]?.contents).toContain("lawnorder.flowlabsolutions.com.au");
+    expect(payloads[0]?.contents).toContain("lawnorder.flowlabsolutions.au");
   });
 
   it("verifies DocuSeal optional webhook secrets", () => {
