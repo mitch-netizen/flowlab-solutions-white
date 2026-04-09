@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { businessTypeSchema, tenantPlanSchema, tenantStatusSchema } from "./index.js";
+import { businessTypeSchema, tenantPlanSchema, tenantStatusSchema } from "./index";
 
 export const CANONICAL_ROOT_DOMAIN = "flowlabsolutions.au";
 export const LEGACY_ROOT_DOMAINS = ["flowlabsolutions.com.au"] as const;
