@@ -1,19 +1,14 @@
-import { cookies } from "next/headers";
+import { requireTenantSession } from "../../../../../../lib/session";
+
 import { NextResponse } from "next/server";
 
-import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
 import type { IntegrationService } from "@flowlab/contracts";
 import { getTenantIntegrationRecord, saveTenantIntegrationCredentials } from "@flowlab/db";
 import { logPlatformEvent } from "@flowlab/events";
 import { decryptJson, encryptJson } from "@flowlab/integrations";
 
 export async function POST(request: Request, { params }: { params: Promise<{ service: string }> }) {
-  const token = (await cookies()).get(TENANT_SESSION_COOKIE)?.value;
-  const session = token ? verifySessionToken(token) : null;
-
-  if (!session || session.scope !== "tenant" || !session.tenantId) {
-    return NextResponse.redirect(new URL("/login", request.url), 303);
-  }
+  const session = await requireTenantSession();
 
   const { service: serviceParam } = await params;
   const service = serviceParam as IntegrationService;

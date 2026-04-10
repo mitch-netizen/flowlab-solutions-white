@@ -1,5 +1,5 @@
 import { PrismaClient, type Prisma, type BusinessType, type TenantPlan } from "@prisma/client";
-import { hashPassword, signCustomerToken, verifyCustomerToken } from "@flowlab/auth";
+import { signCustomerToken, verifyCustomerToken } from "@flowlab/auth";
 import type {
   IntegrationService,
   IntegrationStatus,
@@ -88,6 +88,7 @@ export async function listTenants() {
         select: {
           id: true,
           tenantId: true,
+          authUserId: true,
           email: true,
           role: true,
           firstName: true,
@@ -258,6 +259,7 @@ export async function getTenantById(id: string) {
         select: {
           id: true,
           tenantId: true,
+          authUserId: true,
           email: true,
           role: true,
           firstName: true,
@@ -2365,7 +2367,7 @@ export async function createTenantWithOwner(input: {
   businessName: string;
   ownerName: string;
   email: string;
-  password: string;
+  authUserId: string;
   phone?: string;
   businessType: BusinessType;
   suburb?: string;
@@ -2381,7 +2383,6 @@ export async function createTenantWithOwner(input: {
   });
 
   const slug = existing > 0 ? `${slugBase}-${existing + 1}` : slugBase;
-  const passwordHash = await hashPassword(input.password);
   const [firstName, ...rest] = input.ownerName.split(" ");
 
   const tenant = await prisma.tenant.create({
@@ -2410,8 +2411,8 @@ export async function createTenantWithOwner(input: {
       },
       users: {
         create: {
+          authUserId: input.authUserId,
           email: input.email,
-          passwordHash,
           role: "owner",
           firstName: firstName || "Owner",
           lastName: rest.join(" ") || input.businessName
@@ -2680,10 +2681,9 @@ export async function resolveRateSuggestions(tenantId: string, action: "applied"
 export async function ensureDemoSeed() {
   const existing = await prisma.tenant.findUnique({ where: { slug: "lawnorder" } });
 
-  const [platformPassword, ownerPassword] = await Promise.all([
-    hashPassword("FlowLab123!"),
-    hashPassword("LawnOrder123!")
-  ]);
+  // Passwords are now managed by Supabase Auth — seed only creates DB records.
+  // Run `npm run db:seed` then log in once to trigger the dual-mode lazy migration,
+  // or create Supabase Auth users manually via the dashboard.
 
   const tenant =
     existing ??
@@ -2705,12 +2705,10 @@ export async function ensureDemoSeed() {
       email: "admin@flowlabsolutions.com.au"
     },
     update: {
-      passwordHash: platformPassword,
       role: "superadmin"
     },
     create: {
       email: "admin@flowlabsolutions.com.au",
-      passwordHash: platformPassword,
       role: "superadmin"
     }
   });
@@ -2756,7 +2754,6 @@ export async function ensureDemoSeed() {
       }
     },
     update: {
-      passwordHash: ownerPassword,
       role: "owner",
       firstName: "Jordan",
       lastName: "Webb"
@@ -2764,7 +2761,6 @@ export async function ensureDemoSeed() {
     create: {
       tenantId: tenant.id,
       email: "owner@lawnorder.com.au",
-      passwordHash: ownerPassword,
       role: "owner",
       firstName: "Jordan",
       lastName: "Webb"

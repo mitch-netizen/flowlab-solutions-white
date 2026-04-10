@@ -1,26 +1,33 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { PLATFORM_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
+import { createSupabaseServerClient } from "@flowlab/auth";
+import { prisma } from "@flowlab/db";
+import type { PlatformSession } from "@flowlab/contracts";
 
-export async function getPlatformSession() {
-  const store = await cookies();
-  const token = store.get(PLATFORM_SESSION_COOKIE)?.value;
+export async function getPlatformSession(): Promise<PlatformSession | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (!token) {
-    return null;
-  }
+  if (error || !user) return null;
 
-  const session = verifySessionToken(token);
-  return session?.scope === "platform" ? session : null;
+  // Verify this Supabase auth user is actually a PlatformUser
+  const platformUser = await prisma.platformUser.findFirst({
+    where: { authUserId: user.id },
+  });
+
+  if (!platformUser) return null;
+
+  return {
+    sub: platformUser.id,
+    authUserId: user.id,
+    email: platformUser.email,
+    scope: "platform",
+    role: platformUser.role,
+  } satisfies PlatformSession;
 }
 
 export async function requirePlatformSession() {
   const session = await getPlatformSession();
-
-  if (!session) {
-    redirect("/admin/login");
-  }
-
+  if (!session) redirect("/admin/login");
   return session;
 }

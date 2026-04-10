@@ -1,19 +1,14 @@
+import { requireTenantSession } from "../../../../../lib/session";
 import JSZip from "jszip";
-import { cookies } from "next/headers";
+
 import { NextResponse } from "next/server";
 
-import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
 import { getTenantById } from "@flowlab/db";
 import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { buildAutomationBlueprintPayloads } from "@flowlab/integrations";
 
 export async function GET(request: Request) {
-  const token = (await cookies()).get(TENANT_SESSION_COOKIE)?.value;
-  const session = token ? verifySessionToken(token) : null;
-
-  if (!session || session.scope !== "tenant" || !session.tenantId) {
-    return NextResponse.redirect(new URL("/login", request.url), 303);
-  }
+  const session = await requireTenantSession();
 
   const tenant = await getTenantById(session.tenantId);
 

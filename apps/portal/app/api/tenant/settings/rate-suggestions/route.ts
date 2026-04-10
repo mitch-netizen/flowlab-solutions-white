@@ -1,29 +1,19 @@
-import { cookies } from "next/headers";
+import { requireTenantSession } from "../../../../../lib/session";
+
 import { NextResponse } from "next/server";
 
-import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
 import { getPendingRateSuggestions, prisma, resolveRateSuggestions, saveTenantPricingSettings } from "@flowlab/db";
 import type { RateSuggestion } from "@flowlab/db";
 
-export async function GET(request: Request) {
-  const token = (await cookies()).get(TENANT_SESSION_COOKIE)?.value;
-  const session = token ? verifySessionToken(token) : null;
-
-  if (!session || session.scope !== "tenant" || !session.tenantId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export async function GET(_request: Request) {
+  const session = await requireTenantSession();
 
   const suggestions = await getPendingRateSuggestions(session.tenantId);
   return NextResponse.json({ suggestions });
 }
 
 export async function POST(request: Request) {
-  const token = (await cookies()).get(TENANT_SESSION_COOKIE)?.value;
-  const session = token ? verifySessionToken(token) : null;
-
-  if (!session || session.scope !== "tenant" || !session.tenantId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const session = await requireTenantSession();
 
   const body = (await request.json()) as { action: "apply" | "dismiss" };
 

@@ -12,6 +12,8 @@
     "@flowlab/auth": "*",
     "@flowlab/db": "*",
     "@flowlab/ui": "*",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.103.0",
     "@types/node": "^20.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

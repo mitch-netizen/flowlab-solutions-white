@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { createSupabaseAdminClient } from "@flowlab/auth";
 import { consumeRateLimit, createTenantWithOwner } from "@flowlab/db";
 import { buildTenantUrl, signupInputSchema, validateBotGuard } from "@flowlab/contracts/server";
 
@@ -32,11 +33,24 @@ async function createSignup(formData: FormData) {
     redirect("/signup?error=invalid");
   }
 
+  // Create the Supabase Auth user first
+  const admin = createSupabaseAdminClient();
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email: parsed.data.email,
+    password: parsed.data.password,
+    email_confirm: true,
+    user_metadata: { scope: "tenant" },
+  });
+
+  if (authError || !authData.user) {
+    redirect("/signup?error=auth");
+  }
+
   const tenant = await createTenantWithOwner({
     businessName: parsed.data.businessName,
     ownerName: parsed.data.ownerName,
     email: parsed.data.email,
-    password: parsed.data.password,
+    authUserId: authData.user.id,
     phone: parsed.data.phone,
     suburb: parsed.data.suburb,
     businessType: parsed.data.businessType,

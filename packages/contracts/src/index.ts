@@ -120,11 +120,15 @@ export interface AuthClaims {
 
 export interface PlatformSession extends AuthClaims {
   scope: "platform";
+  /** Supabase auth.users UUID */
+  authUserId: string;
 }
 
 export interface TenantSession extends AuthClaims {
   scope: "tenant";
   tenantId: string;
+  /** Supabase auth.users UUID */
+  authUserId: string;
   /** Set when a superadmin is impersonating this tenant — stores the superadmin's userId */
   impersonatedBy?: string;
 }

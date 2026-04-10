@@ -74,5 +74,9 @@
       "Read(//usr/local/opt/libpq/bin/**)",
       "Bash(open -a \"Google Chrome\" \"https://supabase.com/dashboard/project/stvrqepurmwalrecdlec/settings/database\")"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ],
+  "enableAllProjectMcpServers": true
 }
