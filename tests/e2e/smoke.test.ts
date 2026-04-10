@@ -49,7 +49,7 @@ test.describe("tenant login", () => {
 
   test("login page shows created success message", async ({ page }) => {
     await page.goto(`${PORTAL}/login?created=1`);
-    await expect(page.locator("text=account is ready")).toBeVisible();
+    await expect(page.locator("text=Your tenant trial is ready")).toBeVisible();
   });
 });
 
@@ -66,7 +66,7 @@ test.describe("public enquiry form", () => {
 
   test("enquiry page shows submitted confirmation", async ({ page }) => {
     await page.goto(`${PORTAL}/enquiry?submitted=1`);
-    await expect(page.locator("text=on its way")).toBeVisible();
+    await expect(page.locator("text=Your enquiry is in")).toBeVisible();
   });
 });
 
