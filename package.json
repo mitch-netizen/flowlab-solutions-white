@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
+    "dev": "npm run dev:portal",
     "dev:web": "npm run dev -w @flowlab/web",
     "dev:portal": "npm run dev -w @flowlab/portal",
     "dev:worker": "npm run dev -w @flowlab/worker",
