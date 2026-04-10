@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
+import { requireTenantSession } from "../../../../../lib/session";
+
 import { NextResponse } from "next/server";
 
-import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
 import { getTenantIntegrationRecord } from "@flowlab/db";
 import { decryptJson } from "@flowlab/integrations";
 
@@ -10,12 +10,7 @@ import { decryptJson } from "@flowlab/integrations";
  * Redirects user to Xero's authorization page.
  */
 export async function GET(request: Request) {
-  const token = (await cookies()).get(TENANT_SESSION_COOKIE)?.value;
-  const session = token ? verifySessionToken(token) : null;
-
-  if (!session || session.scope !== "tenant" || !session.tenantId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const session = await requireTenantSession();
 
   // Fetch tenant's Xero client credentials
   const integration = await getTenantIntegrationRecord(session.tenantId, "xero");

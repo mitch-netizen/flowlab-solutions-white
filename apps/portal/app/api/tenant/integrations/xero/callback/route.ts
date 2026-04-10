@@ -1,8 +1,9 @@
-import { cookies } from "next/headers";
+import { requireTenantSession } from "../../../../../../lib/session";
+
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 
-import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
+
 import { getTenantIntegrationRecord, prisma } from "@flowlab/db";
 import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { decryptJson, encryptJson } from "@flowlab/integrations";

@@ -1,17 +1,13 @@
-import { cookies } from "next/headers";
+import { requireTenantSession } from "../../../../../lib/session";
+
 import { NextResponse } from "next/server";
 
 import { processAutomationBatch } from "@flowlab/automation";
-import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
+
 import { enqueueRetentionRun } from "@flowlab/db";
 
 export async function POST(request: Request) {
-  const token = (await cookies()).get(TENANT_SESSION_COOKIE)?.value;
-  const session = token ? verifySessionToken(token) : null;
-
-  if (!session || session.scope !== "tenant" || !session.tenantId) {
-    return NextResponse.redirect(new URL("/login", request.url), 303);
-  }
+  const session = await requireTenantSession();
 
   await enqueueRetentionRun(session.tenantId);
   await processAutomationBatch(10);

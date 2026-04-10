@@ -215,8 +215,9 @@ model PlatformEventLog {
 
 model PlatformUser {
   id           String    @id @default(uuid())
+  authUserId   String?   @unique
   email        String    @unique
-  passwordHash String
+  passwordHash String?
   role         UserRole
   createdAt    DateTime  @default(now())
   lastLoginAt  DateTime?
@@ -225,8 +226,9 @@ model PlatformUser {
 model TenantUser {
   id                  String    @id @default(uuid())
   tenantId            String
+  authUserId          String?   @unique
   email               String
-  passwordHash        String
+  passwordHash        String?
   role                UserRole
   firstName           String
   lastName            String

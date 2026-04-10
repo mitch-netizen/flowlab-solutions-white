@@ -2,61 +2,34 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 
-import type { AuthClaims, CustomerTokenPayload, PlatformSession, TenantSession } from "@flowlab/contracts";
-import { isProductionRuntime } from "@flowlab/contracts/server";
+import type { CustomerTokenPayload } from "@flowlab/contracts";
 
+// ---------------------------------------------------------------------------
+// Cookie names — kept for backwards compat during migration window
+// (logout routes delete these stale cookies)
+// ---------------------------------------------------------------------------
 export const PLATFORM_SESSION_COOKIE = "flowlab_platform_session";
 export const TENANT_SESSION_COOKIE = "flowlab_tenant_session";
 
-const authClaimsSchema = z.object({
-  sub: z.string(),
-  email: z.string().email(),
-  scope: z.enum(["platform", "tenant", "customer"]),
-  role: z.string(),
-  tenantId: z.string().optional(),
-  impersonatedBy: z.string().optional()
-});
+// ---------------------------------------------------------------------------
+// Customer resource tokens (quotes, agreements, invoices, feedback)
+// These are NOT user session tokens — they stay as custom JWTs
+// ---------------------------------------------------------------------------
 
 const customerTokenSchema = z.object({
   tenantId: z.string(),
   resourceId: z.string(),
   resourceType: z.enum(["quote", "agreement", "invoice", "feedback"]),
-  expiresAt: z.string()
+  expiresAt: z.string(),
 });
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
-
-  if (!secret && isProductionRuntime()) {
-    throw new Error("JWT_SECRET is required in production");
-  }
-
+  const isProd =
+    process.env.NODE_ENV === "production" &&
+    process.env.NEXT_RUNTIME !== undefined;
+  if (!secret && isProd) throw new Error("JWT_SECRET is required in production");
   return secret ?? "development-only-secret";
-}
-
-export async function hashPassword(password: string) {
-  return bcrypt.hash(password, 10);
-}
-
-export async function verifyPassword(password: string, hash: string) {
-  return bcrypt.compare(password, hash);
-}
-
-export function signPlatformSession(payload: Omit<PlatformSession, "scope"> & { scope?: "platform" }) {
-  return jwt.sign({ ...payload, scope: "platform" }, getJwtSecret(), { expiresIn: "12h" });
-}
-
-export function signTenantSession(payload: Omit<TenantSession, "scope"> & { scope?: "tenant" }) {
-  return jwt.sign({ ...payload, scope: "tenant" }, getJwtSecret(), { expiresIn: "12h" });
-}
-
-export function verifySessionToken(token: string): AuthClaims | null {
-  try {
-    const decoded = jwt.verify(token, getJwtSecret());
-    return authClaimsSchema.parse(decoded);
-  } catch {
-    return null;
-  }
 }
 
 export function signCustomerToken(payload: CustomerTokenPayload) {
@@ -71,3 +44,24 @@ export function verifyCustomerToken(token: string): CustomerTokenPayload | null 
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Legacy helpers — used only during the dual-mode migration window
+// (existing users whose authUserId is still null get verified here,
+// then lazily migrated to Supabase Auth)
+// ---------------------------------------------------------------------------
+
+/** @deprecated use Supabase Auth — only needed for legacy user migration */
+export async function hashPassword(password: string) {
+  return bcrypt.hash(password, 10);
+}
+
+/** @deprecated use Supabase Auth — only needed for legacy user migration */
+export async function verifyPassword(password: string, hash: string) {
+  return bcrypt.compare(password, hash);
+}
+
+// ---------------------------------------------------------------------------
+// Supabase Auth clients — re-exported from dedicated module
+// ---------------------------------------------------------------------------
+export { createSupabaseServerClient, createSupabaseAdminClient } from "./supabase-server";

@@ -1,18 +1,13 @@
+import { requireTenantSession } from "../../../../../lib/session";
 import { promises as dns } from "dns";
-import { cookies } from "next/headers";
+
 import { NextResponse } from "next/server";
 
-import { TENANT_SESSION_COOKIE, verifySessionToken } from "@flowlab/auth";
 import { prisma } from "@flowlab/db";
 import { getExpectedTenantCname } from "@flowlab/contracts/server";
 
 export async function POST(request: Request) {
-  const token = (await cookies()).get(TENANT_SESSION_COOKIE)?.value;
-  const session = token ? verifySessionToken(token) : null;
-
-  if (!session || session.scope !== "tenant" || !session.tenantId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const session = await requireTenantSession();
 
   const body = (await request.json()) as { domain: string };
   const domain = body.domain?.trim().toLowerCase();

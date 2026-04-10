@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     businessName: body.businessName,
     ownerName: body.ownerName,
     email: body.email,
-    password: body.password,
+    authUserId: crypto.randomUUID(),
     phone: body.phone,
     suburb: body.suburb,
     businessType: body.businessType,
