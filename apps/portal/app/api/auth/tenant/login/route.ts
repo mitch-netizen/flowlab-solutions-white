@@ -66,7 +66,9 @@ export async function POST(request: Request) {
       : NextResponse.redirect(new URL("/login?error=invalid", request.url), 303);
   }
 
-  // ── Dual-mode: lazily migrate legacy users who haven't signed in since migration ──
+  const admin = createSupabaseAdminClient();
+
+  // ── Dual-mode: lazily migrate legacy users who haven't signed in yet ──
   if (!tenantUser.authUserId) {
     if (!tenantUser.passwordHash) {
       return contentType.includes("application/json")
@@ -74,36 +76,38 @@ export async function POST(request: Request) {
         : NextResponse.redirect(new URL("/login?error=invalid", request.url), 303);
     }
 
-    const isValid = await verifyPassword(
-      parsed.data.password,
-      tenantUser.passwordHash
-    );
+    const isValid = await verifyPassword(parsed.data.password, tenantUser.passwordHash);
     if (!isValid) {
       return contentType.includes("application/json")
         ? NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 })
         : NextResponse.redirect(new URL("/login?error=invalid", request.url), 303);
     }
 
-    // Create a Supabase auth user and link it
-    const admin = createSupabaseAdminClient();
-    const { data: authData, error: createErr } =
-      await admin.auth.admin.createUser({
-        email: parsed.data.email,
-        password: parsed.data.password,
-        email_confirm: true,
-        user_metadata: { scope: "tenant" },
-      });
+    // Create Supabase auth user and link it
+    const { data: authData, error: createErr } = await admin.auth.admin.createUser({
+      email: parsed.data.email,
+      password: parsed.data.password,
+      email_confirm: true,
+      user_metadata: { scope: "tenant" },
+    });
 
-    if (!createErr && authData.user) {
-      await prisma.tenantUser.update({
-        where: { id: tenantUser.id },
-        data: { authUserId: authData.user.id, passwordHash: null },
-      });
-      tenantUser.authUserId = authData.user.id;
+    if (createErr || !authData.user) {
+      return contentType.includes("application/json")
+        ? NextResponse.json({ ok: false, error: "Migration failed" }, { status: 500 })
+        : NextResponse.redirect(new URL("/login?error=server", request.url), 303);
     }
+
+    await prisma.tenantUser.update({
+      where: { id: tenantUser.id },
+      data: { authUserId: authData.user.id, passwordHash: null },
+    });
+    tenantUser.authUserId = authData.user.id;
   }
 
-  // ── Sign in via Supabase Auth (sets sb-* session cookies automatically) ──
+  // ── Sign in via Supabase Auth (sets sb-* session cookies) ──
+  // NOTE: requires CAPTCHA to be disabled in Supabase Dashboard:
+  //   Authentication → Security → Disable "Enable Captcha Protection"
+  // We validate Turnstile ourselves on signup — no need for Supabase's check.
   const supabase = await createSupabaseServerClient();
   const { error: signInErr } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
@@ -116,7 +120,6 @@ export async function POST(request: Request) {
       : NextResponse.redirect(new URL("/login?error=invalid", request.url), 303);
   }
 
-  // Update lastLoginAt
   await prisma.tenantUser.update({
     where: { id: tenantUser.id },
     data: { lastLoginAt: new Date() },
