@@ -1,10 +1,38 @@
-import { createClient } from "@supabase/supabase-js";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { createSupabaseAdminClient } from "@flowlab/auth";
 import { consumeRateLimit, createTenantWithOwner } from "@flowlab/db";
 import { buildTenantUrl, signupInputSchema, validateBotGuard } from "@flowlab/contracts/server";
 import SignupForm from "./SignupForm";
+
+/**
+ * Validate a Cloudflare Turnstile token server-side.
+ * Returns true if the token is genuine, false otherwise.
+ *
+ * We validate this ourselves (rather than passing it to Supabase's captchaToken
+ * option) because Supabase's built-in CAPTCHA enforcement also blocks
+ * signInWithPassword — which would break login for all users.
+ * By validating here and using admin.createUser() we get full bot protection
+ * on signup without touching the auth flow at all.
+ */
+async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) {
+    // No secret configured — skip in dev, fail in prod
+    if (process.env.NODE_ENV === "production") return false;
+    return true;
+  }
+
+  const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secret, response: token, remoteip: ip }),
+  });
+
+  const data = (await res.json()) as { success: boolean };
+  return data.success === true;
+}
 
 async function createSignup(formData: FormData) {
   "use server";
@@ -15,6 +43,7 @@ async function createSignup(formData: FormData) {
     headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown";
 
+  // Rate limit
   const throttle = await consumeRateLimit({
     scope: "signup",
     key: `signup:${ip}`,
@@ -22,35 +51,34 @@ async function createSignup(formData: FormData) {
     windowMs: 1000 * 60 * 15,
     blockMs: 1000 * 60 * 30,
   });
-
   if (!throttle.allowed) redirect("/signup?error=rate_limited");
 
+  // Input validation
   const parsed = signupInputSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) redirect("/signup?error=invalid");
 
+  // Honeypot + timing bot guard
   try {
     validateBotGuard(parsed.data);
   } catch {
     redirect("/signup?error=invalid");
   }
 
+  // Turnstile CAPTCHA — validated here, not passed to Supabase
   const captchaToken = formData.get("captchaToken")?.toString();
   if (!captchaToken) redirect("/signup?error=captcha");
 
-  // Use the public anon client so Supabase verifies the Turnstile token server-side.
-  // admin.createUser() bypasses captcha — signUp() enforces it.
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const captchaOk = await verifyTurnstile(captchaToken, ip);
+  if (!captchaOk) redirect("/signup?error=captcha");
 
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  // Create Supabase Auth user via admin client (bypasses Supabase's own captcha
+  // check — we've already validated the token above)
+  const admin = createSupabaseAdminClient();
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: {
-      captchaToken,
-      data: { scope: "tenant" },
-    },
+    email_confirm: true,
+    user_metadata: { scope: "tenant" },
   });
 
   if (authError || !authData.user) {
