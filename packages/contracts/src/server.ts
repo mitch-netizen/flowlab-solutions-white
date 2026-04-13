@@ -10,7 +10,12 @@ function cleanDomain(input: string | undefined | null) {
 }
 
 export function isProductionRuntime() {
-  return process.env.NODE_ENV === "production";
+  // NEXT_PHASE is set to "phase-production-build" during `next build`.
+  // We only want to enforce env-var checks at actual runtime, not during SSG/prerender.
+  return (
+    process.env.NODE_ENV === "production" &&
+    process.env.NEXT_PHASE !== "phase-production-build"
+  );
 }
 
 export function getCanonicalRootDomain() {
