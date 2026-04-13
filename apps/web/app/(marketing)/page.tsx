@@ -6,6 +6,18 @@ export const dynamic = "force-dynamic";
 
 const FEATURES = [
   {
+    title: "CRM built for field service",
+    body: "Every customer in one place — contact details, job history, communication log, and feedback. No spreadsheet, no guessing."
+  },
+  {
+    title: "Job board with swim lanes",
+    body: "Quoted → Scheduled → In Progress → Complete → Invoiced → Paid. Every job has a card. Every card links to the customer and the invoice."
+  },
+  {
+    title: "Xero invoicing, properly connected",
+    body: "Creating an invoice in FlowLab creates it in Xero instantly — AUTHORISED and ready to collect. Your Xero account is the source of truth."
+  },
+  {
     title: "Branded customer enquiry",
     body: "Your customers fill in a form on your own branded domain. Every enquiry lands straight in your CRM, ready to quote."
   },
@@ -16,10 +28,6 @@ const FEATURES = [
   {
     title: "Digital agreements",
     body: "Quote accepted? A service agreement goes out automatically via DocuSeal. Signed documents are stored against the job."
-  },
-  {
-    title: "Invoicing and payments",
-    body: "Stripe-powered invoices with a one-click payment link. Reminders fire automatically before and after the due date."
   },
   {
     title: "Scheduler and mobile app",
@@ -39,10 +47,10 @@ const PLANS = [
     highlight: false,
     features: [
       "Your own subdomain (yourbusiness.flowlabsolutions.au)",
+      "CRM + Job board + Revenue apps",
       "50 jobs per month",
       "50 AI quotes per month",
-      "Full automation suite",
-      "Enquiry form, agreements, invoices, Stripe payments"
+      "Xero invoicing, enquiry forms, digital agreements"
     ]
   },
   {
@@ -52,6 +60,7 @@ const PLANS = [
     highlight: true,
     features: [
       "Custom domain (yourbusiness.com.au)",
+      "CRM + Job board + Revenue apps",
       "200 jobs per month",
       "200 AI quotes per month",
       "No FlowLab branding — 100% your brand",
@@ -85,10 +94,11 @@ export default async function MarketingPage() {
           <div className="pill">FlowLab Solutions</div>
           <div className="hero-card">
             <h1 style={{ fontSize: "clamp(2.6rem, 6vw, 5rem)", lineHeight: 1.05, margin: 0 }}>
-              Run your field service business like it has a team behind it.
+              The operating system for your field service business.
             </h1>
             <p className="muted" style={{ fontSize: 18, lineHeight: 1.7, maxWidth: 560 }}>
-              FlowLab gives sole operators a branded operations layer — enquiry to invoice, automated and on your own domain.
+              CRM, job board, and Xero invoicing — all connected, all branded as you.
+              FlowLab runs the admin so you can run the jobs.
               Set up in ten minutes. Cancel any time.
             </p>
             <div className="button-row">
@@ -123,13 +133,13 @@ export default async function MarketingPage() {
 
       {/* ── How it works ────────────────────────────────────────── */}
       <section className="panel" style={{ marginTop: 0 }}>
-        <h2 style={{ marginTop: 0, textAlign: "center" }}>From first enquiry to five-star review</h2>
+        <h2 style={{ marginTop: 0, textAlign: "center" }}>From first enquiry to paid invoice — linked end to end</h2>
         <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 0 }}>
           {[
-            ["1", "Customer enquires", "Via your branded form on your own domain."],
-            ["2", "Quote generated", "AI calculates the price using your rates. You review and send."],
+            ["1", "Enquiry lands in CRM", "Your customer fills in your branded form. It arrives in the CRM ready to quote."],
+            ["2", "Quote goes out in seconds", "AI builds a priced quote using your rates. You review and send."],
             ["3", "Agreement signed", "Sent automatically when the customer accepts. Stored against the job."],
-            ["4", "Job complete, invoice sent", "Stripe payment link, automatic follow-up, and rebook reminder."]
+            ["4", "Job complete, invoice in Xero", "One click creates the invoice in Xero. Follow-up and rebook run automatically."]
           ].map(([step, title, desc]) => (
             <div key={step} className="panel-soft" style={{ textAlign: "center" }}>
               <div style={{ fontSize: 28, fontWeight: 800, color: "#3b82f6", marginBottom: 8 }}>{step}</div>
@@ -142,7 +152,7 @@ export default async function MarketingPage() {
 
       {/* ── Features ────────────────────────────────────────────── */}
       <section className="panel">
-        <h2 style={{ marginTop: 0 }}>Everything a sole operator needs</h2>
+        <h2 style={{ marginTop: 0 }}>Five apps. One platform. Your brand.</h2>
         <div className="cards-3">
           {FEATURES.map((f) => (
             <div key={f.title} className="panel-soft">
@@ -229,9 +239,9 @@ export default async function MarketingPage() {
 
       {/* ── Final CTA ───────────────────────────────────────────── */}
       <section className="panel" style={{ textAlign: "center" }}>
-        <h2 style={{ marginTop: 0 }}>Ready to automate the admin?</h2>
+        <h2 style={{ marginTop: 0 }}>Start your day knowing exactly what's on.</h2>
         <p className="muted" style={{ marginBottom: 24 }}>
-          Set up your branded workspace in ten minutes. Your first enquiry lands in your CRM before end of day.
+          Set up your branded workspace in ten minutes. Your CRM, jobs, and Xero — connected and ready before end of day.
         </p>
         <Link href="/signup" className="cta" style={{ fontSize: 18, padding: "14px 36px" }}>
           Start your free trial
