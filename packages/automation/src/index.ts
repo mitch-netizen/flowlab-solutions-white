@@ -1184,6 +1184,163 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
       break;
     }
 
+    case "operator.morning_digest": {
+      const [sendgridCredentials, twilioCredentials, tenant] = await Promise.all([
+        getCredentials(tenantId, "sendgrid"),
+        getCredentials(tenantId, "twilio"),
+        getTenantWithProfile(tenantId)
+      ]);
+
+      const businessName = tenant?.profile?.businessName ?? "FlowLab";
+      const operatorEmail = tenant?.profile?.email ?? null;
+      // Operator SMS goes to the business phone on the tenant profile (owner contact number)
+      const operatorPhone = tenant?.profile?.phone ?? null;
+
+      const tomorrowJobCount = Number(payload.tomorrowJobCount ?? "0");
+      const overdueInvoiceCount = Number(payload.overdueInvoiceCount ?? "0");
+      const openEnquiryCount = Number(payload.openEnquiryCount ?? "0");
+      const pendingQuoteCount = Number(payload.pendingQuoteCount ?? "0");
+      const recentFailedJobCount = Number(payload.recentFailedJobCount ?? "0");
+
+      let tomorrowJobs: Array<{ summary: string; suburb: string; time: string; customer: string }> = [];
+      let overdueInvoices: Array<{ number: string; amount: number; customer: string; daysOverdue: number }> = [];
+      try { tomorrowJobs = JSON.parse(payload.tomorrowJobs ?? "[]"); } catch { /* ignore */ }
+      try { overdueInvoices = JSON.parse(payload.overdueInvoices ?? "[]"); } catch { /* ignore */ }
+
+      // ── SMS brief (short) ──────────────────────────────────────────────
+      if (operatorPhone) {
+        const smsParts: string[] = [`Good morning — here's your ${businessName} brief.`];
+        if (tomorrowJobCount > 0) {
+          smsParts.push(`Tomorrow: ${tomorrowJobCount} job${tomorrowJobCount === 1 ? "" : "s"}.`);
+          tomorrowJobs.slice(0, 3).forEach((j) => smsParts.push(`  • ${j.customer} (${j.suburb}) @ ${j.time}`));
+        } else {
+          smsParts.push("Tomorrow: no jobs scheduled yet.");
+        }
+        if (overdueInvoiceCount > 0) smsParts.push(`Overdue invoices: ${overdueInvoiceCount}.`);
+        if (openEnquiryCount > 0) smsParts.push(`New enquiries waiting: ${openEnquiryCount}.`);
+        if (recentFailedJobCount > 0) smsParts.push(`⚠ ${recentFailedJobCount} automation failure${recentFailedJobCount === 1 ? "" : "s"} in last 24h.`);
+
+        const smsBody = smsParts.join(" ");
+        try {
+          await sendSms(twilioCredentials, operatorPhone, smsBody);
+          await logPlatformEvent({
+            tenantId,
+            eventType: "api_call",
+            service: SMS_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "success",
+            requestSummary: "Morning digest SMS sent to operator",
+            responseSummary: `${tomorrowJobCount} jobs, ${overdueInvoiceCount} overdue invoices`,
+            triggeredBy: "worker_morning_digest"
+          });
+        } catch (smsError) {
+          await logPlatformEvent({
+            tenantId,
+            eventType: "error",
+            service: SMS_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "failed",
+            requestSummary: "Morning digest SMS failed",
+            errorMessage: smsError instanceof Error ? smsError.message : String(smsError),
+            triggeredBy: "worker_morning_digest"
+          });
+        }
+      }
+
+      // ── Email brief (detailed) ─────────────────────────────────────────
+      if (operatorEmail) {
+        const jobRows = tomorrowJobs.length > 0
+          ? tomorrowJobs.map((j) => `<tr><td>${j.time}</td><td>${j.customer}</td><td>${j.suburb}</td><td>${j.summary}</td></tr>`).join("")
+          : `<tr><td colspan="4" style="color:#94a3b8">No jobs scheduled for tomorrow yet.</td></tr>`;
+
+        const invoiceRows = overdueInvoices.length > 0
+          ? overdueInvoices.map((inv) => `<tr><td>${inv.number}</td><td>${inv.customer}</td><td>$${inv.amount}</td><td>${inv.daysOverdue}d overdue</td></tr>`).join("")
+          : "";
+
+        const alertsHtml = recentFailedJobCount > 0
+          ? `<p style="color:#fca5a5">⚠ ${recentFailedJobCount} automation failure${recentFailedJobCount === 1 ? "" : "s"} in the last 24 hours — check System Health.</p>`
+          : "";
+
+        const bodyHtml = `
+          <p>Good morning. Here's your daily brief for <strong>${businessName}</strong>.</p>
+          ${alertsHtml}
+          <h3 style="margin-top:24px">Tomorrow's run sheet (${tomorrowJobCount} job${tomorrowJobCount === 1 ? "" : "s"})</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:14px">
+            <thead><tr style="color:#94a3b8"><th align="left">Time</th><th align="left">Customer</th><th align="left">Suburb</th><th align="left">Job</th></tr></thead>
+            <tbody>${jobRows}</tbody>
+          </table>
+          ${overdueInvoices.length > 0 ? `
+          <h3 style="margin-top:24px">Overdue invoices (${overdueInvoiceCount})</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:14px">
+            <thead><tr style="color:#94a3b8"><th align="left">Invoice</th><th align="left">Customer</th><th align="left">Amount</th><th align="left">Status</th></tr></thead>
+            <tbody>${invoiceRows}</tbody>
+          </table>` : ""}
+          ${openEnquiryCount > 0 ? `<p style="margin-top:16px">${openEnquiryCount} new enquir${openEnquiryCount === 1 ? "y" : "ies"} waiting in your CRM.</p>` : ""}
+          ${pendingQuoteCount > 0 ? `<p>${pendingQuoteCount} quote${pendingQuoteCount === 1 ? "" : "s"} sitting in draft — worth reviewing before the day starts.</p>` : ""}
+        `;
+
+        const html = buildBrandedEmailHtml({
+          businessName,
+          logoUrl: tenant?.profile?.logoUrl,
+          primaryColour: tenant?.profile?.primaryColour,
+          bodyHtml,
+          footerText: `${businessName} · Daily brief`
+        });
+
+        try {
+          await sendEmail(sendgridCredentials, operatorEmail, `Daily brief — ${businessName}`, html);
+          await logPlatformEvent({
+            tenantId,
+            eventType: "api_call",
+            service: EMAIL_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "success",
+            requestSummary: "Morning digest email sent to operator",
+            responseSummary: `${tomorrowJobCount} jobs, ${overdueInvoiceCount} overdue invoices`,
+            triggeredBy: "worker_morning_digest"
+          });
+        } catch (emailError) {
+          await logPlatformEvent({
+            tenantId,
+            eventType: "error",
+            service: EMAIL_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "failed",
+            requestSummary: "Morning digest email failed",
+            errorMessage: emailError instanceof Error ? emailError.message : String(emailError),
+            triggeredBy: "worker_morning_digest"
+          });
+        }
+      }
+
+      // ── Make.com webhook ──────────────────────────────────────────────
+      const makeCredentials = await getCredentials(tenantId, "make_com");
+      const makeResult = await fireMakeWebhook(makeCredentials, "morningDigestWebhookUrl", {
+        tenant_slug: tenant?.slug,
+        business_name: businessName,
+        event_key: "morningDigest",
+        triggered_at: new Date().toISOString(),
+        tomorrow_job_count: tomorrowJobCount,
+        overdue_invoice_count: overdueInvoiceCount,
+        open_enquiry_count: openEnquiryCount,
+        pending_quote_count: pendingQuoteCount,
+        failed_automation_count: recentFailedJobCount
+      });
+
+      await logPlatformEvent({
+        tenantId,
+        eventType: "webhook_fired",
+        service: "make",
+        direction: "outbound",
+        status: makeResult.ok ? "success" : makeResult.status === 0 ? "pending" : "failed",
+        requestSummary: "Make.com morning digest webhook",
+        responseSummary: makeResult.body.slice(0, 200),
+        triggeredBy: "worker_morning_digest"
+      });
+
+      break;
+    }
+
     default: {
       await logPlatformEvent({
         tenantId,

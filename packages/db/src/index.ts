@@ -2532,6 +2532,78 @@ export async function enqueueSchedulerAnalysis(tenantId: string) {
   });
 }
 
+export async function enqueueMorningDigest(tenantId: string) {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrowStart = new Date(todayStart.getTime() + 86400000);
+  const tomorrowEnd = new Date(tomorrowStart.getTime() + 86400000);
+
+  const [todayJobs, overdueInvoices, openEnquiries, pendingQuotes, recentFailed] = await Promise.all([
+    prisma.job.findMany({
+      where: {
+        tenantId,
+        scheduledFor: { gte: tomorrowStart, lt: tomorrowEnd }
+      },
+      include: { customer: true },
+      orderBy: { scheduledFor: "asc" }
+    }),
+    prisma.invoice.findMany({
+      where: {
+        tenantId,
+        status: { notIn: ["paid", "voided"] },
+        dueAt: { lt: now }
+      },
+      include: { customer: true },
+      orderBy: { dueAt: "asc" },
+      take: 10
+    }),
+    prisma.enquiry.count({
+      where: { tenantId, status: "new" }
+    }),
+    prisma.quote.count({
+      where: { tenantId, status: "draft" }
+    }),
+    prisma.automationJob.count({
+      where: {
+        tenantId,
+        status: "failed",
+        updatedAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) }
+      }
+    })
+  ]);
+
+  return enqueueAutomationJob({
+    tenantId,
+    kind: "operator.morning_digest",
+    payload: {
+      requestedAt: now.toISOString(),
+      tomorrowJobCount: String(todayJobs.length),
+      tomorrowJobs: JSON.stringify(
+        todayJobs.map((j) => ({
+          summary: j.summary,
+          suburb: j.suburb ?? j.customer.suburb ?? "TBD",
+          time: j.scheduledFor
+            ? new Date(j.scheduledFor).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" })
+            : "TBD",
+          customer: `${j.customer.firstName} ${j.customer.lastName}`
+        }))
+      ),
+      overdueInvoiceCount: String(overdueInvoices.length),
+      overdueInvoices: JSON.stringify(
+        overdueInvoices.slice(0, 5).map((inv) => ({
+          number: inv.number,
+          amount: inv.amount,
+          customer: `${inv.customer.firstName} ${inv.customer.lastName}`,
+          daysOverdue: Math.floor((now.getTime() - (inv.dueAt?.getTime() ?? now.getTime())) / 86400000)
+        }))
+      ),
+      openEnquiryCount: String(openEnquiries),
+      pendingQuoteCount: String(pendingQuotes),
+      recentFailedJobCount: String(recentFailed)
+    }
+  });
+}
+
 async function hasRecentOutboundCommunication(input: {
   tenantId: string;
   customerId: string;

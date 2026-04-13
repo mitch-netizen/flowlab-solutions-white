@@ -54,8 +54,13 @@ function getAutomationHeadline(triggeredBy: string | null | undefined, requestSu
   }
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams
+}: {
+  searchParams: Promise<{ digest?: string; error?: string }>;
+}) {
   const session = await requireTenantSession();
+  const query = await searchParams;
   const weekStart = startOfWeek();
   const tomorrowStart = startOfTomorrow();
   const tomorrowEnd = endOfTomorrow();
@@ -198,9 +203,23 @@ export default async function DashboardPage() {
           <>
             <Link className="ghost" href="/dashboard/scheduler">Open tomorrow&apos;s schedule</Link>
             <Link className="ghost" href="/dashboard/system-health">Review automations</Link>
+            <form action="/api/tenant/digest" method="post" style={{ display: "inline" }}>
+              <button className="ghost" type="submit">Send me today&apos;s brief</button>
+            </form>
           </>
         )}
       />
+
+      {query.digest === "sent" && (
+        <div className="surface-soft" style={{ color: "#86efac" }}>
+          Brief sent — check your SMS and email.
+        </div>
+      )}
+      {query.error === "digest_failed" && (
+        <div className="surface-soft" style={{ color: "#fca5a5" }}>
+          Brief could not be sent. Check that your SMS and email integrations are connected in Setup.
+        </div>
+      )}
 
       <div className="cards-3">
         <div className="surface-soft">
