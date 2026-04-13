@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { getPricingModel } from "@flowlab/contracts";
+
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 interface WorkScheduleEntry {
@@ -34,9 +36,11 @@ interface Props {
   };
   initialPricing: {
     label: string;
-    baseRatePerSquareM: number;
-    overgrownRate: number;
-    heavilyOvergrownRate: number;
+    baseRatePerSquareM?: number | null;
+    overgrownRate?: number | null;
+    heavilyOvergrownRate?: number | null;
+    hourlyRate?: number | null;
+    calloutFee?: number | null;
     minimumCharge: number;
     gstEnabled: boolean;
   } | null;
@@ -66,9 +70,11 @@ export default function OnboardingWizard({
   const [pricing, setPricing] = useState(
     initialPricing ?? {
       label: "Standard rates",
-      baseRatePerSquareM: 2.2,
-      overgrownRate: 3.1,
-      heavilyOvergrownRate: 4.2,
+      baseRatePerSquareM: 2.2 as number | null,
+      overgrownRate: 3.1 as number | null,
+      heavilyOvergrownRate: 4.2 as number | null,
+      hourlyRate: 65 as number | null,
+      calloutFee: 80 as number | null,
       minimumCharge: 55,
       gstEnabled: true
     }
@@ -77,10 +83,8 @@ export default function OnboardingWizard({
     initialServiceTemplates.length > 0
       ? initialServiceTemplates
       : [
-          { serviceName: "Mow & edge", defaultPrice: 75, defaultDuration: 60 },
-          { serviceName: "Garden beds weed & tidy", defaultPrice: 65, defaultDuration: 60 },
-          { serviceName: "Hedge trim", defaultPrice: 90, defaultDuration: 90 },
-          { serviceName: "Gutter clean", defaultPrice: 120, defaultDuration: 60 }
+          { serviceName: "Standard service", defaultPrice: 80, defaultDuration: 60 },
+          { serviceName: "Premium service", defaultPrice: 120, defaultDuration: 90 }
         ]
   );
 
@@ -399,23 +403,60 @@ export default function OnboardingWizard({
             <p className="muted">Set your pricing rates and the services you offer. The AI uses these to generate quotes.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 520 }}>
               <h3 style={{ margin: "4px 0" }}>Pricing rates</h3>
-              {[
-                { label: "Standard rate ($/m²)", field: "baseRatePerSquareM" as const },
-                { label: "Overgrown rate ($/m²)", field: "overgrownRate" as const },
-                { label: "Heavily overgrown rate ($/m²)", field: "heavilyOvergrownRate" as const },
-                { label: "Minimum charge ($)", field: "minimumCharge" as const }
-              ].map(({ label, field }) => (
-                <label key={field}>
-                  <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>
+              {getPricingModel(profile.businessType) === "area_based" && (
+                <>
+                  {[
+                    { label: "Standard rate ($/m²)", field: "baseRatePerSquareM" as const },
+                    { label: "Overgrown rate ($/m²)", field: "overgrownRate" as const },
+                    { label: "Heavily overgrown rate ($/m²)", field: "heavilyOvergrownRate" as const }
+                  ].map(({ label, field }) => (
+                    <label key={field}>
+                      <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>
+                      <input
+                        className="input"
+                        type="number"
+                        step="0.1"
+                        value={pricing[field] ?? ""}
+                        onChange={(e) => setPricing((p) => ({ ...p, [field]: parseFloat(e.target.value) }))}
+                      />
+                    </label>
+                  ))}
+                </>
+              )}
+              {getPricingModel(profile.businessType) === "hourly" && (
+                <label>
+                  <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Hourly rate ($/hr)</div>
                   <input
                     className="input"
                     type="number"
-                    step="0.1"
-                    value={pricing[field]}
-                    onChange={(e) => setPricing((p) => ({ ...p, [field]: parseFloat(e.target.value) }))}
+                    step="1"
+                    value={pricing.hourlyRate ?? ""}
+                    onChange={(e) => setPricing((p) => ({ ...p, hourlyRate: parseFloat(e.target.value) }))}
                   />
                 </label>
-              ))}
+              )}
+              {getPricingModel(profile.businessType) === "flat_rate" && (
+                <label>
+                  <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Call-out fee ($)</div>
+                  <input
+                    className="input"
+                    type="number"
+                    step="1"
+                    value={pricing.calloutFee ?? ""}
+                    onChange={(e) => setPricing((p) => ({ ...p, calloutFee: parseFloat(e.target.value) }))}
+                  />
+                </label>
+              )}
+              <label>
+                <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Minimum charge ($)</div>
+                <input
+                  className="input"
+                  type="number"
+                  step="1"
+                  value={pricing.minimumCharge}
+                  onChange={(e) => setPricing((p) => ({ ...p, minimumCharge: parseFloat(e.target.value) }))}
+                />
+              </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input
                   type="checkbox"

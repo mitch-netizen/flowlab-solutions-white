@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { requirePlatformSession } from "../../../../../lib/session";
@@ -14,9 +16,19 @@ export async function GET() {
     return NextResponse.json({ error: "Xero Client ID not configured" }, { status: 400 });
   }
 
+  const csrfToken = crypto.randomBytes(16).toString("hex");
+  const cookieStore = await cookies();
+  cookieStore.set("xero_oauth_csrf", csrfToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 600,
+    path: "/"
+  });
+
   const state = Buffer.from(JSON.stringify({
     scope: "platform",
-    platformUserId: session.sub
+    platformUserId: session.sub,
+    csrf: csrfToken
   })).toString("base64url");
 
   const params = new URLSearchParams({

@@ -1,5 +1,7 @@
+import { getPricingModel } from "@flowlab/contracts";
 import { getTenantSettingsSnapshot, getPendingRateSuggestions } from "@flowlab/db";
 
+import DashboardPageHeader from "../../../components/dashboard-page-header";
 import { requireTenantSession } from "../../../lib/session";
 import RateSuggestionsPanel from "./RateSuggestionsPanel";
 import CustomDomainSection from "./CustomDomainSection";
@@ -13,11 +15,12 @@ export default async function SettingsPage() {
 
   return (
     <div className="stack">
-      <div className="surface">
-        <div className="eyebrow">Settings</div>
-        <h1>Business profile, branding, territory, and automation downloads.</h1>
-        <p style={{ color: "#cbd5e1" }}>Update your business details, set your brand colours, and download automation templates for Make.com.</p>
-      </div>
+      <DashboardPageHeader
+        eyebrow="Setup"
+        title="Control your business profile, pricing, and brand setup."
+        description="This is the configuration layer of the portal: how the business appears, how pricing is shaped, and how the customer-facing experience stays on-brand."
+        section="operations"
+      />
       <div className="cards-2">
         <form className="surface form-grid" action="/api/tenant/settings/profile" method="post">
           <h2 style={{ marginTop: 0 }}>Business details</h2>
@@ -81,14 +84,21 @@ export default async function SettingsPage() {
         <div className="surface">
           <h2 style={{ marginTop: 0 }}>Pricing rates</h2>
           <div className="stack">
-            {snapshot.pricingRates.map((rate) => (
-              <div key={rate.id} className="surface-soft">
-                <strong>{rate.label}</strong>
-                <div style={{ color: "#cbd5e1", marginTop: 8 }}>
-                  Base ${rate.baseRatePerSquareM}/m² · Overgrown ${rate.overgrownRate}/m² · Min ${rate.minimumCharge}
+            {snapshot.pricingRates.map((rate) => {
+              const model = getPricingModel(snapshot.profile?.businessType);
+              const summary =
+                model === "area_based"
+                  ? `$${rate.baseRatePerSquareM ?? "—"}/m² · Overgrown $${rate.overgrownRate ?? "—"}/m² · Min $${rate.minimumCharge ?? "—"}`
+                  : model === "hourly"
+                    ? `$${rate.hourlyRate ?? "—"}/hr · Min $${rate.minimumCharge ?? "—"}`
+                    : `Call-out $${rate.calloutFee ?? "—"} · Min $${rate.minimumCharge ?? "—"}`;
+              return (
+                <div key={rate.id} className="surface-soft">
+                  <strong>{rate.label}</strong>
+                  <div style={{ color: "#cbd5e1", marginTop: 8 }}>{summary}</div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <a href="/dashboard/onboarding?step=3" style={{ color: "#3b82f6", fontSize: 13, marginTop: 12, display: "inline-block" }}>
             Edit pricing →

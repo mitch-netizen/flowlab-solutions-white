@@ -1,4 +1,11 @@
-import { PrismaClient, type Prisma, type BusinessType, type TenantPlan } from "@prisma/client";
+import {
+  PrismaClient,
+  type Prisma,
+  type BusinessType,
+  type TenantPlan,
+  IntegrationService as PrismaIntegrationService,
+  IntegrationStatus as PrismaIntegrationStatus
+} from "@prisma/client";
 import { signCustomerToken, verifyCustomerToken } from "@flowlab/auth";
 import type {
   IntegrationService,
@@ -9,7 +16,7 @@ import type {
   TenantIntegration,
   TenantProfile
 } from "@flowlab/contracts";
-import { getPlanFeatures } from "@flowlab/contracts";
+import { getPlanFeatures, getPricingModel } from "@flowlab/contracts";
 import {
   buildTenantUrl,
   getCanonicalRootDomain,
@@ -68,8 +75,11 @@ function toTenantProfile(record: Prisma.TenantProfileGetPayload<{ include: { ten
   };
 }
 
-export async function listTenants() {
+export async function listTenants(opts: { limit?: number; cursor?: string } = {}) {
+  const limit = Math.min(opts.limit ?? 50, 200);
   return prisma.tenant.findMany({
+    take: limit,
+    ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
     select: {
       id: true,
       createdAt: true,
@@ -340,8 +350,23 @@ export async function getTenantDashboardSnapshot(tenantId: string) {
       take: 20
     }),
     prisma.customer.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, take: 5 }),
-    prisma.job.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, take: 10 }),
-    prisma.invoice.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, take: 10 }),
+    prisma.job.findMany({
+      where: { tenantId },
+      include: {
+        customer: true,
+        invoice: {
+          select: { id: true }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    }),
+    prisma.invoice.findMany({
+      where: { tenantId },
+      include: { customer: true, job: true },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    }),
     getTenantAutomationHealth(tenantId),
     prisma.job.count({
       where: {
@@ -406,7 +431,10 @@ export async function getTenantSchedulerSnapshot(tenantId: string) {
         }
       },
       include: {
-        customer: true
+        customer: true,
+        invoice: {
+          select: { id: true }
+        }
       },
       orderBy: { scheduledFor: "asc" },
       take: 20
@@ -419,7 +447,7 @@ export async function getTenantSchedulerSnapshot(tenantId: string) {
 export async function getTenantInvoices(tenantId: string) {
   return prisma.invoice.findMany({
     where: { tenantId },
-    include: { customer: true },
+    include: { customer: true, job: true },
     orderBy: { createdAt: "desc" }
   });
 }
@@ -495,7 +523,7 @@ export async function getSchedulerRecommendations(tenantId: string) {
       include: { profile: true }
     }),
     prisma.tenantIntegration.findUnique({
-      where: { tenantId_service: { tenantId, service: "google_maps" as any } }
+      where: { tenantId_service: { tenantId, service: PrismaIntegrationService.google_maps } }
     })
   ]);
 
@@ -579,6 +607,7 @@ export async function getSchedulerRecommendations(tenantId: string) {
 
     return {
       jobId: job.id,
+      customerId: job.customer.id,
       summary: job.summary,
       customerName: `${job.customer.firstName} ${job.customer.lastName}`,
       scheduledFor: job.scheduledFor,
@@ -640,6 +669,123 @@ export async function getCrmSnapshot(tenantId: string) {
     communications,
     feedback,
     overdueInvoices
+  };
+}
+
+export async function getCustomerCrmRecord(tenantId: string, customerId: string) {
+  const [customer, communications, feedback, reminders] = await Promise.all([
+    prisma.customer.findFirst({
+      where: { id: customerId, tenantId },
+      include: {
+        jobs: { orderBy: { createdAt: "desc" }, take: 20 },
+        quotes: { orderBy: { createdAt: "desc" }, take: 20 },
+        agreements: { orderBy: { createdAt: "desc" }, take: 20 },
+        invoices: { orderBy: { createdAt: "desc" }, take: 20 }
+      }
+    }),
+    prisma.communication.findMany({
+      where: { tenantId, customerId },
+      orderBy: { createdAt: "desc" },
+      take: 20
+    }),
+    prisma.feedback.findMany({
+      where: { tenantId, customerId },
+      orderBy: { createdAt: "desc" },
+      take: 20
+    }),
+    prisma.rebookReminder.findMany({
+      where: { tenantId, customerId },
+      orderBy: { dueAt: "asc" },
+      take: 20
+    })
+  ]);
+
+  if (!customer) {
+    return null;
+  }
+
+  return {
+    customer,
+    communications,
+    feedback,
+    reminders
+  };
+}
+
+export async function getTenantJobRecord(tenantId: string, jobId: string) {
+  const job = await prisma.job.findFirst({
+    where: { id: jobId, tenantId },
+    include: {
+      customer: true,
+      invoice: true
+    }
+  });
+
+  if (!job) {
+    return null;
+  }
+
+  const [feedback, communications, otherCustomerInvoices] = await Promise.all([
+    prisma.feedback.findMany({
+      where: { tenantId, OR: [{ jobId }, { customerId: job.customerId }] },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    }),
+    prisma.communication.findMany({
+      where: { tenantId, customerId: job.customerId },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    }),
+    prisma.invoice.findMany({
+      where: {
+        tenantId,
+        customerId: job.customerId,
+        ...(job.invoice ? { id: { not: job.invoice.id } } : {})
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    })
+  ]);
+
+  return {
+    job,
+    feedback,
+    communications,
+    otherCustomerInvoices
+  };
+}
+
+export async function getTenantInvoiceRecord(tenantId: string, invoiceId: string) {
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, tenantId },
+    include: { customer: true, job: true }
+  });
+
+  if (!invoice) {
+    return null;
+  }
+
+  const [communications, otherCustomerJobs] = await Promise.all([
+    prisma.communication.findMany({
+      where: { tenantId, customerId: invoice.customerId },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    }),
+    prisma.job.findMany({
+      where: {
+        tenantId,
+        customerId: invoice.customerId,
+        ...(invoice.jobId ? { id: { not: invoice.jobId } } : {})
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    })
+  ]);
+
+  return {
+    invoice,
+    communications,
+    otherCustomerJobs
   };
 }
 
@@ -737,7 +883,7 @@ export async function saveTenantIntegrationCredentials(input: {
     where: {
       tenantId_service: {
         tenantId: input.tenantId,
-        service: input.service as any
+        service: input.service as PrismaIntegrationService
       }
     },
     data: {
@@ -753,7 +899,7 @@ export async function getTenantIntegrationRecord(tenantId: string, service: Inte
     where: {
       tenantId_service: {
         tenantId,
-        service: service as any
+        service: service as PrismaIntegrationService
       }
     }
   });
@@ -762,7 +908,7 @@ export async function getTenantIntegrationRecord(tenantId: string, service: Inte
 export async function getPlatformIntegrationRecord(service: IntegrationService) {
   return prisma.platformIntegration.findUnique({
     where: {
-      service: service as any
+      service: service as PrismaIntegrationService
     }
   });
 }
@@ -784,6 +930,8 @@ export async function getTenantEvents(tenantId: string): Promise<PlatformEventLo
     id: event.id,
     createdAt: event.createdAt.toISOString(),
     tenantId: event.tenantId,
+    jobId: event.jobId,
+    customerId: event.customerId,
     eventType: event.eventType,
     service: event.service,
     direction: event.direction,
@@ -938,7 +1086,7 @@ async function getTenantStripeSecretKey(tenantId: string) {
     where: {
       tenantId_service: {
         tenantId,
-        service: "stripe" as any
+        service: PrismaIntegrationService.stripe
       }
     }
   });
@@ -952,7 +1100,7 @@ async function getTenantDocuSealConfig(tenantId: string) {
     where: {
       tenantId_service: {
         tenantId,
-        service: "docuseal" as any
+        service: PrismaIntegrationService.docuseal
       }
     }
   });
@@ -1331,8 +1479,11 @@ export async function createQuoteDraft(input: {
   tenantId: string;
   customerId: string;
   serviceRequest: string;
+  // area_based
   siteCondition?: "standard" | "overgrown" | "heavily_overgrown";
   areaSquareMetres?: number;
+  // hourly
+  estimatedHours?: number;
 }) {
   const [customer, rate, tenant, serviceTemplates] = await Promise.all([
     prisma.customer.findFirst({
@@ -1372,6 +1523,7 @@ export async function createQuoteDraft(input: {
 
   const businessName = tenant?.profile?.businessName ?? "Service Provider";
   const businessType = tenant?.profile?.businessType ?? "other";
+  const pricingModel = getPricingModel(businessType);
 
   // Attempt Claude AI quoting — fall back to formula if unavailable
   let title: string;
@@ -1385,23 +1537,17 @@ export async function createQuoteDraft(input: {
       tenantId: input.tenantId,
       businessName,
       businessType,
+      pricingModel,
       enquiryText: input.serviceRequest,
       areaM2: input.areaSquareMetres,
       siteCondition: input.siteCondition,
+      estimatedHours: input.estimatedHours,
       services: serviceTemplates.map((s) => ({
         name: s.serviceName,
         defaultPrice: s.defaultPrice ?? 0,
         defaultDuration: s.defaultDuration ?? 0
       })),
-      pricingRate: rate
-        ? {
-            baseRatePerSquareM: rate.baseRatePerSquareM ?? 0,
-            overgrownRate: rate.overgrownRate ?? 0,
-            heavilyOvergrownRate: rate.heavilyOvergrownRate ?? 0,
-            minimumCharge: rate.minimumCharge ?? 0,
-            gstEnabled: rate.gstEnabled
-          }
-        : null
+      pricingRate: rate ?? null
     });
 
     title = aiResult.title;
@@ -1410,20 +1556,34 @@ export async function createQuoteDraft(input: {
     const breakdownText = aiResult.breakdown.map((b) => `${b.item}: $${b.price}`).join(" | ");
     description = `AI quote (${aiResult.confidence} confidence) — Est. ${aiResult.estimatedHours}h | ${breakdownText}${aiResult.notes ? ` | Note: ${aiResult.notes}` : ""}`;
   } catch {
-    // Formula fallback
+    // Formula fallback — use the model-appropriate calculation
     aiStatus = "failed";
-    const condition = input.siteCondition ?? "standard";
-    const area = input.areaSquareMetres ?? 80;
-    const perSquare =
-      condition === "heavily_overgrown"
-        ? rate?.heavilyOvergrownRate ?? 4.2
-        : condition === "overgrown"
-          ? rate?.overgrownRate ?? 3.1
-          : rate?.baseRatePerSquareM ?? 2.2;
     const minimum = rate?.minimumCharge ?? 55;
-    estimated = Math.max(minimum, Math.round(perSquare * area));
-    title = input.serviceRequest.split(".")[0]?.slice(0, 60) || "Service quote";
-    description = `Formula-based draft (AI unavailable): ${area}m² × $${perSquare}/m² = $${estimated}. Review before sending.`;
+
+    if (pricingModel === "area_based") {
+      const condition = input.siteCondition ?? "standard";
+      const area = input.areaSquareMetres ?? 80;
+      const perSquare =
+        condition === "heavily_overgrown"
+          ? rate?.heavilyOvergrownRate ?? 4.2
+          : condition === "overgrown"
+            ? rate?.overgrownRate ?? 3.1
+            : rate?.baseRatePerSquareM ?? 2.2;
+      estimated = Math.max(minimum, Math.round(perSquare * area));
+      title = input.serviceRequest.split(".")[0]?.slice(0, 60) || "Service quote";
+      description = `Formula-based draft (AI unavailable): ${area}m² × $${perSquare}/m² = $${estimated}. Review before sending.`;
+    } else if (pricingModel === "hourly") {
+      const hours = input.estimatedHours ?? 2;
+      const hourlyRate = rate?.hourlyRate ?? 75;
+      estimated = Math.max(minimum, Math.round(hourlyRate * hours));
+      title = input.serviceRequest.split(".")[0]?.slice(0, 60) || "Service quote";
+      description = `Formula-based draft (AI unavailable): ${hours}h × $${hourlyRate}/hr = $${estimated}. Review before sending.`;
+    } else {
+      // flat_rate
+      estimated = Math.max(minimum, rate?.calloutFee ?? minimum);
+      title = input.serviceRequest.split(".")[0]?.slice(0, 60) || "Service quote";
+      description = `Formula-based draft (AI unavailable): base charge $${estimated}. Review before sending.`;
+    }
   }
 
   const quote = await prisma.quote.create({
@@ -1447,7 +1607,7 @@ export async function createQuoteDraft(input: {
       direction: "outbound",
       status: aiStatus,
       durationMs: aiDurationMs,
-      requestSummary: `AI quote for ${customer.firstName} ${customer.lastName} — ${input.areaSquareMetres ?? "?"}m² ${input.siteCondition ?? "standard"}`,
+      requestSummary: `AI quote for ${customer.firstName} ${customer.lastName} (${pricingModel})`,
       responseSummary: `${title} at $${estimated}`,
       triggeredBy: "tenant_quote_generator",
       customerId: customer.id
@@ -1461,17 +1621,47 @@ export async function createInvoiceDraft(input: {
   tenantId: string;
   customerId: string;
   amount: number;
+  jobId?: string;
   note?: string;
 }) {
-  const customer = await prisma.customer.findFirst({
-    where: {
-      id: input.customerId,
-      tenantId: input.tenantId
-    }
-  });
+  const [customer, job] = await Promise.all([
+    prisma.customer.findFirst({
+      where: {
+        id: input.customerId,
+        tenantId: input.tenantId
+      }
+    }),
+    input.jobId
+      ? prisma.job.findFirst({
+          where: {
+            id: input.jobId,
+            tenantId: input.tenantId
+          },
+          include: {
+            invoice: {
+              select: { id: true }
+            }
+          }
+        })
+      : Promise.resolve(null)
+  ]);
 
   if (!customer) {
     throw new Error("Customer not found for tenant");
+  }
+
+  if (input.jobId) {
+    if (!job) {
+      throw new Error("Job not found for tenant");
+    }
+
+    if (job.customerId !== input.customerId) {
+      throw new Error("Selected job does not belong to that customer");
+    }
+
+    if (job.invoice) {
+      throw new Error("This job already has an invoice linked to it");
+    }
   }
 
   const invoiceCount = await prisma.invoice.count({
@@ -1482,6 +1672,7 @@ export async function createInvoiceDraft(input: {
     data: {
       tenantId: input.tenantId,
       customerId: input.customerId,
+      jobId: input.jobId,
       number: `INV-${String(invoiceCount + 1).padStart(4, "0")}`,
       amount: input.amount,
       status: "sent",
@@ -1570,9 +1761,17 @@ export async function createInvoiceDraft(input: {
       requestSummary: `Created invoice ${updatedInvoice.number}`,
       responseSummary: input.note ?? `Invoice sent for ${customer.firstName} ${customer.lastName}`,
       triggeredBy: "tenant_invoice_creator",
+      jobId: input.jobId ?? null,
       customerId: customer.id
     }
   });
+
+  if (input.jobId) {
+    await prisma.job.update({
+      where: { id: input.jobId },
+      data: { status: "invoiced" }
+    });
+  }
 
   await enqueueAutomationJob({
     tenantId: input.tenantId,
@@ -1636,9 +1835,15 @@ export async function saveTenantPricingSettings(input: {
   tenantId: string;
   pricingRate: {
     label: string;
-    baseRatePerSquareM: number;
-    overgrownRate: number;
-    heavilyOvergrownRate: number;
+    // area_based
+    baseRatePerSquareM?: number | null;
+    overgrownRate?: number | null;
+    heavilyOvergrownRate?: number | null;
+    // hourly
+    hourlyRate?: number | null;
+    // flat_rate
+    calloutFee?: number | null;
+    // common
     minimumCharge: number;
     gstEnabled: boolean;
   };
@@ -1788,6 +1993,13 @@ export async function markInvoicePaidByToken(token: string) {
     }
   });
 
+  if (invoice.jobId) {
+    await prisma.job.update({
+      where: { id: invoice.jobId },
+      data: { status: "paid" }
+    }).catch(() => {});
+  }
+
   await prisma.platformEventLog.create({
     data: {
       tenantId: invoice.tenantId,
@@ -1798,6 +2010,7 @@ export async function markInvoicePaidByToken(token: string) {
       requestSummary: `Invoice ${invoice.number} marked paid`,
       responseSummary: "Customer payment recorded",
       triggeredBy: "public_invoice_payment",
+      jobId: invoice.jobId,
       customerId: invoice.customerId
     }
   });
@@ -2427,7 +2640,7 @@ export async function createTenantWithOwner(input: {
   await prisma.tenantIntegration.createMany({
     data: ["twilio", "sendgrid", "stripe", "docuseal", "google_maps", "xero", "make_com", "claude"].map((service) => ({
       tenantId: tenant.id,
-      service: service as any,
+      service: service as PrismaIntegrationService,
       status: service === "claude" ? "connected" : "not_configured"
     }))
   });
@@ -2446,11 +2659,11 @@ export async function updateIntegrationTestResult(input: {
     where: {
       tenantId_service: {
         tenantId: input.tenantId,
-        service: input.service as any
+        service: input.service as PrismaIntegrationService
       }
     },
     data: {
-      status: input.status as any,
+      status: input.status as PrismaIntegrationStatus,
       lastTestedAt: new Date(),
       lastTestResult: input.ok ? "success" : "failed",
       lastErrorMessage: input.ok ? null : input.message
@@ -3068,7 +3281,7 @@ export async function ensureDemoSeed() {
   await prisma.tenantIntegration.createMany({
     data: ["twilio", "sendgrid", "stripe", "docuseal", "google_maps", "xero", "make_com", "claude"].map((service) => ({
       tenantId: tenant.id,
-      service: service as any,
+      service: service as PrismaIntegrationService,
       status: service === "claude" ? "connected" : "not_configured"
     })),
     skipDuplicates: true
@@ -3141,7 +3354,7 @@ export async function logWebhookFailure(input: {
     data: {
       tenantId: input.tenantId ?? null,
       eventType: "webhook_received",
-      service: input.service as any,
+      service: input.service as PrismaIntegrationService,
       direction: "inbound",
       status: "failed",
       requestSummary: input.requestSummary ?? `${input.service} webhook failed`,

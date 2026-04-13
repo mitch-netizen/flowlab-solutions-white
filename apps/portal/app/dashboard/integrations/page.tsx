@@ -2,6 +2,7 @@ import { getTenantIntegrations } from "@flowlab/db";
 import { serviceLabels } from "@flowlab/contracts";
 import { integrationFieldDefinitions, integrationHelpText } from "@flowlab/integrations";
 
+import DashboardPageHeader from "../../../components/dashboard-page-header";
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function IntegrationsPage() {
@@ -10,13 +11,12 @@ export default async function IntegrationsPage() {
 
   return (
     <div className="stack">
-      <div className="surface">
-        <div className="eyebrow">Integrations hub</div>
-        <h1>Connect your business services.</h1>
-        <p style={{ color: "#cbd5e1" }}>
-          These are your business integrations — separate from FlowLab's own platform connections. Credentials are encrypted at rest and every test attempt feeds the event log and health dashboard.
-        </p>
-      </div>
+      <DashboardPageHeader
+        eyebrow="Growth and ops"
+        title="Connect the tools your business already runs on."
+        description="This area is for tenant-owned integrations, not platform internals. Save credentials, reconnect OAuth services, and test each connection with a clear health trail."
+        section="operations"
+      />
       <div className="cards-2">
         {integrations.map((integration) => {
           const isXero = integration.service === "xero";

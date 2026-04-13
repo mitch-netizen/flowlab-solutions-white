@@ -1,5 +1,7 @@
 import { requireTenantSession } from "../../../../../lib/session";
 
+import crypto from "node:crypto";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { getTenantIntegrationRecord } from "@flowlab/db";
@@ -29,7 +31,16 @@ export async function GET(request: Request) {
     ? "http://localhost:3000/api/integrations/xero/callback"
     : process.env.XERO_REDIRECT_URI ?? "https://flowlabsolutions.au/api/integrations/xero/callback";
 
-  const state = Buffer.from(JSON.stringify({ scope: "tenant", tenantId: session.tenantId })).toString("base64url");
+  const csrfToken = crypto.randomBytes(16).toString("hex");
+  const cookieStore = await cookies();
+  cookieStore.set("xero_oauth_csrf", csrfToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 600,
+    path: "/"
+  });
+
+  const state = Buffer.from(JSON.stringify({ tenantId: session.tenantId, csrf: csrfToken })).toString("base64url");
 
   const params = new URLSearchParams({
     response_type: "code",

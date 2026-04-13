@@ -10,9 +10,11 @@ export async function POST(request: Request) {
   const body = await request.json() as {
     pricingRate: {
       label: string;
-      baseRatePerSquareM: number;
-      overgrownRate: number;
-      heavilyOvergrownRate: number;
+      baseRatePerSquareM?: number | null;
+      overgrownRate?: number | null;
+      heavilyOvergrownRate?: number | null;
+      hourlyRate?: number | null;
+      calloutFee?: number | null;
       minimumCharge: number;
       gstEnabled: boolean;
     };

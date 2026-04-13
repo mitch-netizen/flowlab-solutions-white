@@ -12,8 +12,13 @@ export async function POST(request: Request) {
     tenantId: session.tenantId,
     customerId: String(formData.get("customerId") ?? ""),
     serviceRequest: String(formData.get("serviceRequest") ?? ""),
-    areaSquareMetres: Number(formData.get("areaSquareMetres") ?? 80),
-    siteCondition: String(formData.get("siteCondition") ?? "standard") as "standard" | "overgrown" | "heavily_overgrown"
+    // area_based inputs (ignored by other models)
+    areaSquareMetres: formData.get("areaSquareMetres") ? Number(formData.get("areaSquareMetres")) : undefined,
+    siteCondition: formData.get("siteCondition")
+      ? (String(formData.get("siteCondition")) as "standard" | "overgrown" | "heavily_overgrown")
+      : undefined,
+    // hourly inputs (ignored by other models)
+    estimatedHours: formData.get("estimatedHours") ? Number(formData.get("estimatedHours")) : undefined
   });
 
   return NextResponse.redirect(new URL("/dashboard/quotes", request.url), 303);

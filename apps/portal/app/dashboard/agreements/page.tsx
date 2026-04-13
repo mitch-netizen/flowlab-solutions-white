@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { getTenantAgreements, getTenantAgreementTemplates, getTenantQuotes } from "@flowlab/db";
 
+import CustomerLink from "../../../components/customer-link";
+import DashboardPageHeader from "../../../components/dashboard-page-header";
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function AgreementsPage() {
@@ -17,11 +19,12 @@ export default async function AgreementsPage() {
 
   return (
     <div className="stack">
-      <div className="surface">
-        <div className="eyebrow">Agreements</div>
-        <h1>Get your agreements signed — fast.</h1>
-        <p style={{ color: "#cbd5e1" }}>Upload your own contract, place the required signer fields in the builder, then mark it ready. Once a default template is ready, FlowLab will use it automatically whenever a customer accepts a quote.</p>
-      </div>
+      <DashboardPageHeader
+        eyebrow="Revenue"
+        title="Turn accepted quotes into signed agreements."
+        description="Upload your own contract, finish the signer fields in the builder, and mark one template as ready. FlowLab will use the default agreement automatically once a quote is accepted."
+        section="revenue"
+      />
       <div className="cards-2">
         <div className="surface stack">
           <form action="/api/tenant/agreements/templates/upload" method="post" encType="multipart/form-data" className="form-grid">
@@ -130,7 +133,10 @@ export default async function AgreementsPage() {
                   <input type="hidden" name="quoteId" value={quote.id} />
                   <strong>{quote.title}</strong>
                   <div style={{ color: "#cbd5e1" }}>
-                    {quote.customer.firstName} {quote.customer.lastName} · ${quote.amount}
+                    <CustomerLink customerId={quote.customer.id} className="inline-entity-link">
+                      {quote.customer.firstName} {quote.customer.lastName}
+                    </CustomerLink>
+                    {" "}· ${quote.amount}
                   </div>
                   <div style={{ color: "#94a3b8", fontSize: 13 }}>
                     Using: {defaultTemplate?.name ?? "Legacy generated agreement"}
@@ -162,7 +168,9 @@ export default async function AgreementsPage() {
                   <td>{agreement.title}</td>
                   <td>{agreement.status}</td>
                   <td>
-                    {agreement.customer.firstName} {agreement.customer.lastName}
+                    <CustomerLink customerId={agreement.customer.id} className="inline-entity-link">
+                      {agreement.customer.firstName} {agreement.customer.lastName}
+                    </CustomerLink>
                   </td>
                   <td>
                     <Link href={`/sign/${agreement.accessToken}`}>Open sign page</Link>

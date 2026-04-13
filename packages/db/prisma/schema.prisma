@@ -287,6 +287,7 @@ model Job {
   customer        Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
   tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   feedbacks       Feedback[]
+  invoice         Invoice?
 }
 
 model Quote {
@@ -349,6 +350,7 @@ model Invoice {
   id             String    @id @default(uuid())
   tenantId       String
   customerId     String
+  jobId          String?   @unique
   createdAt      DateTime  @default(now())
   number         String
   amount         Float
@@ -359,6 +361,7 @@ model Invoice {
   stripeSessionId String?
   accessToken    String    @unique
   customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  job            Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
   tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, number])
@@ -401,16 +404,22 @@ model RebookReminder {
 }
 
 model PricingRate {
-  id                  String   @id @default(uuid())
-  tenantId            String
-  label               String
-  baseRatePerSquareM  Float?
-  overgrownRate       Float?
+  id                   String   @id @default(uuid())
+  tenantId             String
+  label                String
+  // Area-based model (lawn_mowing, gardening)
+  baseRatePerSquareM   Float?
+  overgrownRate        Float?
   heavilyOvergrownRate Float?
-  minimumCharge       Float?
-  gstEnabled          Boolean  @default(true)
-  scheduleBufferPct   Float?   @default(10)
-  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  // Hourly model (cleaning, handyman, pool_service)
+  hourlyRate           Float?
+  // Flat-rate model (plumbing, pest_control, other)
+  calloutFee           Float?
+  // Common fields
+  minimumCharge        Float?
+  gstEnabled           Boolean  @default(true)
+  scheduleBufferPct    Float?   @default(10)
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model ServiceRateTemplate {

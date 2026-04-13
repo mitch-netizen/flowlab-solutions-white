@@ -1,5 +1,6 @@
 import { prisma } from "@flowlab/db";
 import { getPlanFeatures } from "@flowlab/contracts";
+import DashboardPageHeader from "../../../components/dashboard-page-header";
 import { requireTenantSession } from "../../../lib/session";
 
 export const dynamic = "force-dynamic";
@@ -68,23 +69,18 @@ export default async function UpgradePage() {
 
   return (
     <div className="stack">
-      <div className="surface">
-        <div className="eyebrow">Plans</div>
-        <h1>Choose the right plan for your business.</h1>
-        {status === "trial" && trialDaysLeft !== null && trialDaysLeft > 0 ? (
-          <p style={{ color: "#fde68a", fontWeight: 500 }}>
-            You have {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left in your free trial. All plans include everything you tested during the trial.
-          </p>
-        ) : status === "trial" && (trialDaysLeft === null || trialDaysLeft <= 0) ? (
-          <p style={{ color: "#fca5a5", fontWeight: 500 }}>
-            Your trial has ended. Pick a plan below to restore full access.
-          </p>
-        ) : (
-          <p style={{ color: "#cbd5e1" }}>
-            You&apos;re currently on <strong style={{ textTransform: "capitalize", color: "white" }}>{currentPlan}</strong>. Upgrade at any time — your data and automations carry over.
-          </p>
-        )}
-      </div>
+      <DashboardPageHeader
+        eyebrow="Setup"
+        title="Choose the plan that fits the next stage of the business."
+        description={
+          status === "trial" && trialDaysLeft !== null && trialDaysLeft > 0
+            ? `You have ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left in your free trial. All plans include everything you tested during the trial.`
+            : status === "trial" && (trialDaysLeft === null || trialDaysLeft <= 0)
+              ? "Your trial has ended. Pick a plan below to restore full access."
+              : `You're currently on ${currentPlan}. Upgrade at any time and your data, automations, and setup carry over.`
+        }
+        section="setup"
+      />
 
       <div className="cards-3">
         {PLANS.map((plan) => {

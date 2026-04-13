@@ -1,7 +1,14 @@
 "use client";
 
 import Script from "next/script";
-import { createElement } from "react";
+import { createElement, type HTMLAttributes } from "react";
+
+interface DocuSealBuilderAttributes extends HTMLAttributes<HTMLElement> {
+  "data-token": string;
+  "data-roles": string;
+  "data-submitters": string;
+  "data-required-fields": string;
+}
 
 export default function DocuSealBuilderEmbed(props: {
   token: string;
@@ -25,7 +32,7 @@ export default function DocuSealBuilderEmbed(props: {
           overflow: "hidden",
           border: "1px solid rgba(148, 163, 184, 0.16)"
         }
-      } as any)}
+      } as DocuSealBuilderAttributes)}
     </>
   );
 }

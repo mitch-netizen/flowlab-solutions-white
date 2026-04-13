@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { getCrmSnapshot } from "@flowlab/db";
 
+import CustomerLink from "../../../components/customer-link";
+import DashboardPageHeader from "../../../components/dashboard-page-header";
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function CrmPage() {
@@ -10,11 +12,12 @@ export default async function CrmPage() {
 
   return (
     <div className="stack">
-      <div className="surface">
-        <div className="eyebrow">CRM</div>
-        <h1>Customers, communications, feedback, and overdue risk in one view.</h1>
-        <p style={{ color: "#cbd5e1" }}>Keep tabs on every customer — who&apos;s overdue, who&apos;s loyal, and who might need a nudge to rebook.</p>
-      </div>
+      <DashboardPageHeader
+        eyebrow="Workspace"
+        title="See customer history, communication, and risk in one place."
+        description="Use the CRM as your customer control panel: who is active, who needs a follow-up, who is overdue, and where the strongest relationships are forming."
+        section="workspace"
+      />
       <div className="cards-3">
         <div className="surface-soft">
           <strong>Customers</strong>
@@ -50,9 +53,11 @@ export default async function CrmPage() {
               return (
                 <tr key={customer.id}>
                   <td>
-                    <strong>
-                      {customer.firstName} {customer.lastName}
-                    </strong>
+                    <CustomerLink customerId={customer.id} className="inline-entity-link">
+                      <strong>
+                        {customer.firstName} {customer.lastName}
+                      </strong>
+                    </CustomerLink>
                     <div style={{ color: "#cbd5e1", marginTop: 6 }}>{customer.email}</div>
                   </td>
                   <td>{customer.suburb ?? "n/a"}</td>
