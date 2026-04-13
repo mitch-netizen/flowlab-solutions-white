@@ -1,30 +1,97 @@
 # FlowLab Solutions
 
-Multi-tenant white-label field service automation platform scaffolded as an npm-workspaces monorepo.
+**Multi-tenant field service platform for sole operators and tradies.**
 
-## Workspaces
+FlowLab gives field service businesses a branded, end-to-end operations layer — from customer enquiry through to Xero invoice — without hiring an office.
 
-- `apps/web`: marketing site, signup flow, and FlowLab superadmin
-- `apps/portal`: tenant dashboard, onboarding, integrations, system health, and customer-facing routes
-- `apps/worker`: async worker entrypoint
-- `packages/*`: shared contracts, data access, auth, branding, integrations, events, and UI
+## What it is
+
+FlowLab runs as a white-label SaaS. Each customer gets their own subdomain (or custom domain), their own isolated data, and a portal that feels like it was built for them. The platform is structured around five distinct apps:
+
+| App | Purpose |
+|-----|---------|
+| **Overview** | Morning brief — what's on today, outstanding tasks, key metrics |
+| **CRM** | Customer records, enquiries, communication history, feedback |
+| **Jobs** | Job board (swim-lane view), job cards, scheduling, mobile field view |
+| **Revenue** | Invoices (Xero-backed), payment status, billing trail |
+| **Setup** | Integrations (Xero, DocuSeal, Make.com), settings, system health |
+
+Everything is linked. A customer has a Xero Contact (`xeroContactId`). An invoice has a Xero Invoice (`xeroInvoiceId`). A job links to one invoice. Nothing is inferred or guessed.
+
+## Architecture
+
+```
+flowlab-solutions/
+├── apps/
+│   ├── web/          — Marketing site, signup, FlowLab superadmin
+│   ├── portal/       — Tenant dashboard (Next.js 15 App Router)
+│   └── worker/       — Async job processor
+└── packages/
+    ├── db/           — Prisma schema, migrations, typed query functions
+    ├── auth/         — JWT utilities, session helpers
+    ├── integrations/ — Xero, DocuSeal, Make.com API clients
+    ├── automation/   — Workflow trigger logic
+    ├── branding/     — Tenant theme and white-label config
+    ├── contracts/    — Shared TypeScript types and Zod schemas
+    ├── events/       — Event bus and audit logging
+    └── ui/           — Shared component library
+```
+
+## Tech stack
+
+- **Framework**: Next.js 15 (App Router), React 19
+- **Database**: PostgreSQL via Supabase, Prisma ORM
+- **Auth**: Supabase Auth (`@supabase/ssr`), lazy migration from bcrypt
+- **Invoicing**: Xero API (OAuth 2.0) — source of truth for all invoices
+- **Agreements**: DocuSeal
+- **Automation**: Make.com blueprint templates
+- **Multi-tenancy**: Host-based tenant resolution, RLS on every table
+- **Monorepo**: npm workspaces + Turborepo
 
 ## Quick start
 
-1. Copy `.env.example` to `.env`.
-2. Run `npm install`.
-3. Run `npm run db:generate`.
-4. Run `npm run db:push`.
-5. Run `npm run db:seed`.
-6. Start apps with `npm run dev:web` and `npm run dev:portal`.
+```bash
+cp .env.example .env          # fill in Supabase, Xero, and DocuSeal credentials
+npm install
+npm run db:generate           # generate Prisma client
+npm run db:push               # push schema to your Supabase project
+npm run db:seed               # seed demo tenant (Lawn & Order)
+npm run dev:web               # marketing site → localhost:3000
+npm run dev:portal            # tenant portal → localhost:3001?tenant=lawnorder
+```
 
-## Current implementation focus
+**Demo login** (after seed): `owner@lawnorder.com.au` / `LawnOrder123!`
 
-This initial build establishes:
+> **Dev note**: `*.localhost` subdomains don't resolve reliably in browsers. Use `localhost:3001?tenant=<slug>` instead. The slug is persisted in a `__flowlab_dev_tenant` cookie for subsequent requests.
 
-- multi-tenant schema and seed data
-- host-aware tenant resolution
-- custom JWT auth utilities
-- superadmin and tenant dashboard shells
-- onboarding, integrations, system health, and public portal foundations
-- worker and event logging scaffolding
+## Key design principles
+
+- **No guessing**: every relationship is explicit. Customer → `xeroContactId`. Invoice → `xeroInvoiceId`. Job → `invoiceId`. Nothing inferred from names or fuzzy matches.
+- **Xero is the invoice source of truth**: the local `Invoice` record is a mirror of Xero, not the primary. Creating an invoice in FlowLab calls Xero first.
+- **Tenant isolation**: all database queries are scoped by `tenantId`. Supabase RLS enforces this at the row level on all 26 tables.
+- **Linked, trackable, accountable**: the job card shows the customer, the billing trail, communications, and feedback in one place.
+
+## Integrations
+
+| Integration | Status | What it does |
+|-------------|--------|-------------|
+| **Xero** | OAuth 2.0, token refresh | Contacts + Invoices (AUTHORISED on create) |
+| **DocuSeal** | API key | Service agreement generation and signing |
+| **Make.com** | Webhook triggers | Automation blueprint pack (follow-up, review prompts, rebook) |
+
+## Tenant onboarding flow
+
+1. Sign up at `/signup` → trial tenant created, subdomain provisioned
+2. Walk through onboarding checklist: branding, Xero connect, DocuSeal, automations
+3. Embed branded enquiry form on own website
+4. Operate: enquiry → quote → job → Xero invoice → signed off
+
+## Database
+
+Schema lives in `packages/db/prisma/schema.prisma`. Migrations are applied via Supabase MCP or `prisma migrate deploy`. After any schema change:
+
+```bash
+npm run db:generate    # regenerate Prisma client types
+```
+
+Key tables: `Tenant`, `TenantUser`, `Customer`, `Job`, `Invoice`, `Quote`, `Communication`, `Feedback`, `Integration`, `AuditLog`.
