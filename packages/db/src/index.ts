@@ -1087,6 +1087,21 @@ export async function syncTenantInvoiceFromXero(input: { tenantId: string; invoi
     }
   });
 
+  // Fire invoice.paid automation when transitioning into paid for the first time
+  if (nextStatus === "paid" && invoice.status !== "paid") {
+    await enqueueAutomationJob({
+      tenantId: input.tenantId,
+      kind: "invoice.paid",
+      payload: {
+        invoiceId: updated.id,
+        invoiceNumber: updated.number,
+        customerId: updated.customerId,
+        amount: updated.amount,
+        tenantId: input.tenantId
+      }
+    });
+  }
+
   return updated;
 }
 
