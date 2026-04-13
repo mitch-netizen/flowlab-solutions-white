@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getJobBoard } from "@flowlab/db";
+import { getJobBoard, getTenantCustomers } from "@flowlab/db";
 
 import CustomerLink from "../../../components/customer-link";
 import DashboardPageHeader from "../../../components/dashboard-page-header";
@@ -27,7 +27,10 @@ const statusColor: Record<string, string> = {
 
 export default async function JobBoardPage() {
   const session = await requireTenantSession();
-  const { jobs, grouped, statuses } = await getJobBoard(session.tenantId);
+  const [{ jobs, grouped, statuses }, customers] = await Promise.all([
+    getJobBoard(session.tenantId),
+    getTenantCustomers(session.tenantId)
+  ]);
 
   const totalJobs = jobs.length;
   const activeJobs = grouped.scheduled.length + grouped.in_progress.length;
@@ -51,6 +54,50 @@ export default async function JobBoardPage() {
           </Link>
         }
       />
+
+      <div className="cards-2">
+        <form className="surface form-grid" action="/api/tenant/jobs/create" method="post">
+          <h2 style={{ marginTop: 0 }}>Create job</h2>
+          <label className="label">
+            Customer
+            <select className="select" name="customerId" required defaultValue="">
+              <option value="" disabled>Select a customer</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.firstName} {customer.lastName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="label">
+            Job summary
+            <input className="input" name="summary" placeholder="Describe the work to be done." required />
+          </label>
+          <label className="label">
+            Scheduled for
+            <input className="input" name="scheduledFor" type="datetime-local" />
+          </label>
+          <label className="label">
+            Estimated hours
+            <input className="input" name="estimatedHours" type="number" min="0.5" step="0.5" />
+          </label>
+          <label className="label">
+            Address
+            <input className="input" name="address" />
+          </label>
+          <label className="label">
+            Suburb
+            <input className="input" name="suburb" />
+          </label>
+          <button className="cta" type="submit">Create job</button>
+        </form>
+        <div className="surface">
+          <h2 style={{ marginTop: 0 }}>Status rules</h2>
+          <div className="surface-soft">
+            Operators move jobs through quoted, scheduled, in progress, and complete. Invoiced and paid come from the linked invoice lifecycle so billing remains accountable.
+          </div>
+        </div>
+      </div>
 
       {/* Status swim lanes */}
       <div className="job-board">
@@ -107,6 +154,27 @@ export default async function JobBoardPage() {
                         >
                           Create invoice →
                         </Link>
+                      ) : status === "quoted" ? (
+                        <form action={`/api/tenant/jobs/${job.id}/status`} method="post">
+                          <input type="hidden" name="status" value="scheduled" />
+                          <button className="job-board-card-action" type="submit">
+                            Move to scheduled →
+                          </button>
+                        </form>
+                      ) : status === "scheduled" ? (
+                        <form action={`/api/tenant/jobs/${job.id}/status`} method="post">
+                          <input type="hidden" name="status" value="in_progress" />
+                          <button className="job-board-card-action" type="submit">
+                            Start job →
+                          </button>
+                        </form>
+                      ) : status === "in_progress" ? (
+                        <form action={`/api/tenant/jobs/${job.id}/status`} method="post">
+                          <input type="hidden" name="status" value="complete" />
+                          <button className="job-board-card-action" type="submit">
+                            Mark complete →
+                          </button>
+                        </form>
                       ) : null}
                     </div>
                   ))

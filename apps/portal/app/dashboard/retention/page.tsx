@@ -14,7 +14,7 @@ export default async function RetentionPage() {
   return (
     <div className="stack">
       <DashboardPageHeader
-        eyebrow="Growth and ops"
+        eyebrow="CRM"
         title="Keep customers coming back and close the loop after each job."
         description="Track rebooking opportunities, overdue invoices, review outreach, and customer sentiment from one operating surface instead of scattered reminders."
         section="crm"

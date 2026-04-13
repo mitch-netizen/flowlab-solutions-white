@@ -16,36 +16,69 @@ import { upsertXeroContact } from "@flowlab/integrations/xero";
 export async function POST(request: Request) {
   const session = await requireTenantSession();
   const { tenantId } = session;
-
-  const body = await request.json() as {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone?: string;
-    address?: string;
-    suburb?: string;
-    notes?: string;
-  };
+  const contentType = request.headers.get("content-type") ?? "";
+  const body = contentType.includes("application/json")
+    ? await request.json() as {
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone?: string;
+        address?: string;
+        suburb?: string;
+        notes?: string;
+      }
+    : Object.fromEntries((await request.formData()).entries()) as unknown as {
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone?: string;
+        address?: string;
+        suburb?: string;
+        notes?: string;
+      };
 
   const { firstName, lastName, email, phone, address, suburb, notes } = body;
 
   if (!firstName || !lastName || !email) {
-    return NextResponse.json({ error: "First name, last name, and email are required" }, { status: 400 });
+    if (contentType.includes("application/json")) {
+      return NextResponse.json({ error: "First name, last name, and email are required" }, { status: 400 });
+    }
+
+    return NextResponse.redirect(new URL("/dashboard/crm?error=invalid_customer", request.url), 303);
   }
 
-  // Create the customer record
-  const customer = await prisma.customer.create({
-    data: {
+  const normalizedEmail = email.trim().toLowerCase();
+  const existingCustomer = await prisma.customer.findFirst({
+    where: {
       tenantId,
-      firstName,
-      lastName,
-      email,
-      phone: phone ?? null,
-      address: address ?? null,
-      suburb: suburb ?? null,
-      notes: notes ?? null,
+      email: normalizedEmail
     }
   });
+
+  const customer = existingCustomer
+    ? await prisma.customer.update({
+        where: { id: existingCustomer.id },
+        data: {
+          firstName,
+          lastName,
+          phone: phone ?? existingCustomer.phone,
+          address: address ?? existingCustomer.address,
+          suburb: suburb ?? existingCustomer.suburb,
+          notes: notes ?? existingCustomer.notes
+        }
+      })
+    : await prisma.customer.create({
+        data: {
+          tenantId,
+          firstName,
+          lastName,
+          email: normalizedEmail,
+          phone: phone ?? null,
+          address: address ?? null,
+          suburb: suburb ?? null,
+          notes: notes ?? null,
+        }
+      });
 
   // ── Sync to Xero if connected ─────────────────────────────────────────────
   const xeroIntegration = await getTenantIntegrationRecord(tenantId, "xero");
@@ -89,5 +122,9 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ id: customer.id, ok: true });
+  if (contentType.includes("application/json")) {
+    return NextResponse.json({ id: customer.id, ok: true });
+  }
+
+  return NextResponse.redirect(new URL(`/dashboard/crm/${customer.id}`, request.url), 303);
 }

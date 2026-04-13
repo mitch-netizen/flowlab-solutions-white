@@ -24,18 +24,19 @@ import {
 } from "@flowlab/contracts/server";
 import {
   buildDocuSealRequest,
-  buildStripePaymentLink,
   createDocuSealBuilderToken,
   createDocuSealSubmissionFromTemplate,
   createDocuSealTemplateFromFile,
   decryptJson,
+  encryptJson,
   generateServiceAgreementTemplateDocx,
   getDocuSealTemplate,
-  getStripeClient,
   sendDocuSealSignatureRequest,
   validateDocuSealTemplateFields
 } from "@flowlab/integrations";
 import { generateAIQuote } from "@flowlab/integrations/claude";
+import type { XeroCredentials } from "@flowlab/integrations/xero";
+import { getXeroInvoice } from "@flowlab/integrations/xero";
 import { assessJobWeatherRisks } from "@flowlab/integrations/bom";
 import { optimiseJobRoute, resolveGoogleMapsApiKey } from "@flowlab/integrations/google-maps";
 
@@ -73,6 +74,10 @@ function toTenantProfile(record: Prisma.TenantProfileGetPayload<{ include: { ten
     businessType: record.businessType,
     timezone: record.timezone
   };
+}
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
 }
 
 export async function listTenants(opts: { limit?: number; cursor?: string } = {}) {
@@ -633,7 +638,7 @@ export async function getSchedulerRecommendations(tenantId: string) {
 }
 
 export async function getCrmSnapshot(tenantId: string) {
-  const [customers, communications, feedback, overdueInvoices] = await Promise.all([
+  const [customers, communications, feedback, overdueInvoices, enquiries] = await Promise.all([
     prisma.customer.findMany({
       where: { tenantId },
       include: {
@@ -661,6 +666,22 @@ export async function getCrmSnapshot(tenantId: string) {
       },
       include: { customer: true },
       orderBy: { dueAt: "asc" }
+    }),
+    prisma.enquiry.findMany({
+      where: { tenantId },
+      include: {
+        customer: true,
+        quote: {
+          select: {
+            id: true,
+            accessToken: true,
+            title: true,
+            status: true
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20
     })
   ]);
 
@@ -668,15 +689,17 @@ export async function getCrmSnapshot(tenantId: string) {
     customers,
     communications,
     feedback,
-    overdueInvoices
+    overdueInvoices,
+    enquiries
   };
 }
 
 export async function getCustomerCrmRecord(tenantId: string, customerId: string) {
-  const [customer, communications, feedback, reminders] = await Promise.all([
+  const [customer, communications, feedback, reminders, enquiries] = await Promise.all([
     prisma.customer.findFirst({
       where: { id: customerId, tenantId },
       include: {
+        enquiries: { orderBy: { createdAt: "desc" }, take: 20 },
         jobs: { orderBy: { createdAt: "desc" }, take: 20 },
         quotes: { orderBy: { createdAt: "desc" }, take: 20 },
         agreements: { orderBy: { createdAt: "desc" }, take: 20 },
@@ -697,6 +720,21 @@ export async function getCustomerCrmRecord(tenantId: string, customerId: string)
       where: { tenantId, customerId },
       orderBy: { dueAt: "asc" },
       take: 20
+    }),
+    prisma.enquiry.findMany({
+      where: { tenantId, customerId },
+      include: {
+        quote: {
+          select: {
+            id: true,
+            accessToken: true,
+            title: true,
+            status: true
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20
     })
   ]);
 
@@ -708,7 +746,8 @@ export async function getCustomerCrmRecord(tenantId: string, customerId: string)
     customer,
     communications,
     feedback,
-    reminders
+    reminders,
+    enquiries
   };
 }
 
@@ -791,6 +830,132 @@ export async function getJobBoard(tenantId: string) {
   return { jobs, grouped, statuses };
 }
 
+export async function createTenantJob(input: {
+  tenantId: string;
+  customerId: string;
+  summary: string;
+  address?: string | null;
+  suburb?: string | null;
+  scheduledFor?: Date | null;
+  estimatedHours?: number | null;
+}) {
+  const customer = await prisma.customer.findFirst({
+    where: { id: input.customerId, tenantId: input.tenantId }
+  });
+
+  if (!customer) {
+    throw new Error("Customer not found for tenant");
+  }
+
+  const job = await prisma.job.create({
+    data: {
+      tenantId: input.tenantId,
+      customerId: input.customerId,
+      summary: input.summary,
+      address: input.address ?? customer.address,
+      suburb: input.suburb ?? customer.suburb,
+      scheduledFor: input.scheduledFor ?? null,
+      estimatedHours: input.estimatedHours ?? null,
+      status: "scheduled"
+    },
+    include: {
+      customer: { select: { id: true, firstName: true, lastName: true } },
+      invoice: { select: { id: true } }
+    }
+  });
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId: input.tenantId,
+      eventType: "info",
+      service: "internal",
+      direction: "outbound",
+      status: "success",
+      requestSummary: `Job created for ${job.customer.firstName} ${job.customer.lastName}`,
+      responseSummary: job.summary,
+      triggeredBy: "tenant_job_creator",
+      customerId: job.customerId,
+      jobId: job.id
+    }
+  });
+
+  if (job.scheduledFor) {
+    await enqueueAutomationJob({
+      tenantId: input.tenantId,
+      kind: "job.scheduled",
+      payload: {
+        jobId: job.id,
+        customerId: job.customerId,
+        summary: job.summary,
+        scheduledFor: job.scheduledFor.toISOString()
+      }
+    });
+  }
+
+  return job;
+}
+
+export async function updateTenantJobStatus(input: {
+  tenantId: string;
+  jobId: string;
+  status: "quoted" | "scheduled" | "in_progress" | "complete";
+}) {
+  const job = await prisma.job.findFirst({
+    where: { id: input.jobId, tenantId: input.tenantId },
+    include: {
+      quote: { select: { id: true } },
+      invoice: { select: { id: true } }
+    }
+  });
+
+  if (!job) {
+    throw new Error("Job not found for tenant");
+  }
+
+  if (input.status === "quoted" && job.quote == null) {
+    throw new Error("Only quote-linked jobs can move to quoted");
+  }
+
+  if ((job.status === "invoiced" || job.status === "paid") && job.invoice) {
+    throw new Error("Invoice-linked jobs must move through the invoice lifecycle");
+  }
+
+  const updated = await prisma.job.update({
+    where: { id: job.id },
+    data: { status: input.status }
+  });
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId: input.tenantId,
+      eventType: "info",
+      service: "internal",
+      direction: "outbound",
+      status: "success",
+      requestSummary: `Job status updated to ${input.status.replace(/_/g, " ")}`,
+      responseSummary: updated.summary,
+      triggeredBy: "tenant_job_status_update",
+      customerId: updated.customerId,
+      jobId: updated.id
+    }
+  });
+
+  if (input.status === "scheduled" && job.status !== "scheduled") {
+    await enqueueAutomationJob({
+      tenantId: input.tenantId,
+      kind: "job.scheduled",
+      payload: {
+        jobId: updated.id,
+        customerId: updated.customerId,
+        summary: updated.summary,
+        scheduledFor: updated.scheduledFor?.toISOString() ?? null
+      }
+    });
+  }
+
+  return updated;
+}
+
 export async function getTenantInvoiceRecord(tenantId: string, invoiceId: string) {
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, tenantId },
@@ -822,6 +987,138 @@ export async function getTenantInvoiceRecord(tenantId: string, invoiceId: string
     invoice,
     communications,
     otherCustomerJobs
+  };
+}
+
+export async function syncTenantInvoiceFromXero(input: { tenantId: string; invoiceId: string }) {
+  const invoice = await prisma.invoice.findFirst({
+    where: {
+      id: input.invoiceId,
+      tenantId: input.tenantId
+    }
+  });
+
+  if (!invoice) {
+    throw new Error("Invoice not found for tenant");
+  }
+
+  if (!invoice.xeroInvoiceId) {
+    throw new Error("Invoice is not linked to Xero");
+  }
+
+  const integration = await prisma.tenantIntegration.findUnique({
+    where: {
+      tenantId_service: {
+        tenantId: input.tenantId,
+        service: PrismaIntegrationService.xero
+      }
+    }
+  });
+
+  if (!integration?.credentialsJson) {
+    throw new Error("Xero integration is not configured");
+  }
+
+  const credentials = decryptJson(integration.credentialsJson) as unknown as XeroCredentials;
+  const result = await getXeroInvoice(credentials, invoice.xeroInvoiceId);
+  const xeroInvoice = result.data;
+
+  if (result.credentials.accessToken !== credentials.accessToken) {
+    await prisma.tenantIntegration.update({
+      where: { tenantId_service: { tenantId: input.tenantId, service: PrismaIntegrationService.xero } },
+      data: {
+        credentialsJson: encryptJson(result.credentials as unknown as Record<string, string>)
+      }
+    });
+  }
+
+  let nextStatus = invoice.status;
+  let nextPaidAt = invoice.paidAt;
+
+  if (xeroInvoice.Status === "PAID") {
+    nextStatus = "paid";
+    nextPaidAt = invoice.paidAt ?? new Date();
+  } else if (xeroInvoice.Status === "VOIDED" || xeroInvoice.Status === "DELETED") {
+    nextStatus = "voided";
+    nextPaidAt = null;
+  } else {
+    nextStatus = "sent";
+    nextPaidAt = null;
+  }
+
+  const updated = await prisma.invoice.update({
+    where: { id: invoice.id },
+    data: {
+      status: nextStatus,
+      paidAt: nextPaidAt,
+      paymentLink: xeroInvoice.OnlineInvoiceUrl ?? invoice.paymentLink,
+      xeroStatus: xeroInvoice.Status,
+      xeroSyncedAt: new Date(),
+      dueAt: xeroInvoice.DueDateString ? new Date(xeroInvoice.DueDateString) : invoice.dueAt
+    }
+  });
+
+  if (invoice.jobId) {
+    if (nextStatus === "paid") {
+      await prisma.job.update({
+        where: { id: invoice.jobId },
+        data: { status: "paid" }
+      }).catch(() => {});
+    } else if (nextStatus === "voided") {
+      await prisma.job.update({
+        where: { id: invoice.jobId },
+        data: { status: "complete" }
+      }).catch(() => {});
+    }
+  }
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId: input.tenantId,
+      eventType: "api_call",
+      service: "xero",
+      direction: "inbound",
+      status: "success",
+      requestSummary: `Synced Xero invoice ${updated.number}`,
+      responseSummary: `Xero status ${xeroInvoice.Status}`,
+      triggeredBy: "tenant_invoice_sync",
+      customerId: updated.customerId,
+      jobId: updated.jobId
+    }
+  });
+
+  return updated;
+}
+
+export async function syncTenantOpenInvoicesFromXero(input: { tenantId: string }) {
+  const invoices = await prisma.invoice.findMany({
+    where: {
+      tenantId: input.tenantId,
+      xeroInvoiceId: { not: null },
+      status: { notIn: ["paid", "voided"] }
+    },
+    select: { id: true }
+  });
+
+  let synced = 0;
+  let failed = 0;
+
+  for (const invoice of invoices) {
+    try {
+      await syncTenantInvoiceFromXero({
+        tenantId: input.tenantId,
+        invoiceId: invoice.id
+      });
+      synced += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+
+  return {
+    attempted: invoices.length,
+    synced,
+    failed
   };
 }
 
@@ -1072,26 +1369,44 @@ export async function createEnquiry(input: {
     }
   }
 
-  const customer = await prisma.customer.create({
-    data: {
+  const email = normalizeEmail(input.email);
+  const existingCustomer = await prisma.customer.findFirst({
+    where: {
       tenantId: input.tenantId,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      email: input.email,
-      phone: input.phone,
-      address: input.address,
-      suburb: input.suburb
+      email
     }
   });
 
-  const job = await prisma.job.create({
+  const customer = existingCustomer
+    ? await prisma.customer.update({
+        where: { id: existingCustomer.id },
+        data: {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          phone: input.phone ?? existingCustomer.phone,
+          address: input.address ?? existingCustomer.address,
+          suburb: input.suburb ?? existingCustomer.suburb
+        }
+      })
+    : await prisma.customer.create({
+        data: {
+          tenantId: input.tenantId,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email,
+          phone: input.phone,
+          address: input.address,
+          suburb: input.suburb
+        }
+      });
+
+  const enquiry = await prisma.enquiry.create({
     data: {
       tenantId: input.tenantId,
       customerId: customer.id,
-      status: "quoted",
-      address: input.address,
-      suburb: input.suburb,
-      summary: input.serviceRequest
+      serviceRequest: input.serviceRequest,
+      status: "new",
+      source: "public_form"
     }
   });
 
@@ -1103,32 +1418,27 @@ export async function createEnquiry(input: {
       direction: "inbound",
       status: "success",
       requestSummary: `Enquiry from ${input.firstName} ${input.lastName}`,
-      responseSummary: "Customer and quoted job created",
+      responseSummary: existingCustomer ? "Existing customer enquiry captured" : "New customer enquiry captured",
       triggeredBy: "public_enquiry_form",
-      customerId: customer.id,
-      jobId: job.id
+      customerId: customer.id
     }
   });
 
-  return { customer, job };
+  await enqueueAutomationJob({
+    tenantId: input.tenantId,
+    kind: "enquiry.received",
+    payload: {
+      enquiryId: enquiry.id,
+      customerId: customer.id,
+      serviceRequest: input.serviceRequest
+    }
+  });
+
+  return { customer, enquiry };
 }
 
 function toToken(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 12)}${Date.now().toString(36)}`;
-}
-
-async function getTenantStripeSecretKey(tenantId: string) {
-  const integration = await prisma.tenantIntegration.findUnique({
-    where: {
-      tenantId_service: {
-        tenantId,
-        service: PrismaIntegrationService.stripe
-      }
-    }
-  });
-
-  const saved = integration?.credentialsJson ? decryptJson(integration.credentialsJson) : {};
-  return saved.secretKey || process.env.STRIPE_SECRET_KEY || "";
 }
 
 async function getTenantDocuSealConfig(tenantId: string) {
@@ -1514,6 +1824,7 @@ export async function validateTenantAgreementTemplate(tenantId: string, template
 export async function createQuoteDraft(input: {
   tenantId: string;
   customerId: string;
+  enquiryId?: string;
   serviceRequest: string;
   // area_based
   siteCondition?: "standard" | "overgrown" | "heavily_overgrown";
@@ -1521,7 +1832,7 @@ export async function createQuoteDraft(input: {
   // hourly
   estimatedHours?: number;
 }) {
-  const [customer, rate, tenant, serviceTemplates] = await Promise.all([
+  const [customer, rate, tenant, serviceTemplates, enquiry] = await Promise.all([
     prisma.customer.findFirst({
       where: { id: input.customerId, tenantId: input.tenantId }
     }),
@@ -1536,11 +1847,33 @@ export async function createQuoteDraft(input: {
     prisma.serviceRateTemplate.findMany({
       where: { tenantId: input.tenantId },
       take: 10
-    })
+    }),
+    input.enquiryId
+      ? prisma.enquiry.findFirst({
+          where: {
+            id: input.enquiryId,
+            tenantId: input.tenantId
+          }
+        })
+      : Promise.resolve(null)
   ]);
 
   if (!customer) {
     throw new Error("Customer not found for tenant");
+  }
+
+  if (input.enquiryId) {
+    if (!enquiry) {
+      throw new Error("Enquiry not found for tenant");
+    }
+
+    if (enquiry.customerId !== input.customerId) {
+      throw new Error("Enquiry does not belong to the selected customer");
+    }
+
+    if (enquiry.quoteId) {
+      throw new Error("This enquiry is already linked to a quote");
+    }
   }
 
   // Plan limit check: AI quotes per month
@@ -1635,6 +1968,17 @@ export async function createQuoteDraft(input: {
     include: { customer: true }
   });
 
+  if (enquiry) {
+    await prisma.enquiry.update({
+      where: { id: enquiry.id },
+      data: {
+        quoteId: quote.id,
+        status: "quoted",
+        convertedAt: new Date()
+      }
+    });
+  }
+
   await prisma.platformEventLog.create({
     data: {
       tenantId: input.tenantId,
@@ -1651,109 +1995,6 @@ export async function createQuoteDraft(input: {
   });
 
   return quote;
-}
-
-export async function createInvoiceDraft(input: {
-  tenantId: string;
-  customerId: string;
-  amount: number;
-  jobId?: string;
-  note?: string;
-}) {
-  const [customer, job] = await Promise.all([
-    prisma.customer.findFirst({
-      where: {
-        id: input.customerId,
-        tenantId: input.tenantId
-      }
-    }),
-    input.jobId
-      ? prisma.job.findFirst({
-          where: {
-            id: input.jobId,
-            tenantId: input.tenantId
-          },
-          include: {
-            invoice: {
-              select: { id: true }
-            }
-          }
-        })
-      : Promise.resolve(null)
-  ]);
-
-  if (!customer) {
-    throw new Error("Customer not found for tenant");
-  }
-
-  if (input.jobId) {
-    if (!job) {
-      throw new Error("Job not found for tenant");
-    }
-
-    if (job.customerId !== input.customerId) {
-      throw new Error("Selected job does not belong to that customer");
-    }
-
-    if (job.invoice) {
-      throw new Error("This job already has an invoice linked to it");
-    }
-  }
-
-  const invoiceCount = await prisma.invoice.count({
-    where: { tenantId: input.tenantId }
-  });
-
-  const invoice = await prisma.invoice.create({
-    data: {
-      tenantId: input.tenantId,
-      customerId: input.customerId,
-      jobId: input.jobId,
-      number: `INV-${String(invoiceCount + 1).padStart(4, "0")}`,
-      amount: input.amount,
-      status: "sent",
-      dueAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      accessToken: toToken("invoice")
-    },
-    include: { customer: true }
-  });
-
-  // Local-only fallback: no Stripe, no Xero (Xero path is handled at the API route level).
-  // This path is used when Xero is not connected — invoice is created locally only.
-  await prisma.platformEventLog.create({
-    data: {
-      tenantId: input.tenantId,
-      eventType: "api_call",
-      service: "stripe",
-      direction: "outbound",
-      status: "success",
-      requestSummary: `Created invoice ${invoice.number}`,
-      responseSummary: input.note ?? `Invoice sent for ${customer.firstName} ${customer.lastName}`,
-      triggeredBy: "tenant_invoice_creator",
-      jobId: input.jobId ?? null,
-      customerId: customer.id
-    }
-  });
-
-  if (input.jobId) {
-    await prisma.job.update({
-      where: { id: input.jobId },
-      data: { status: "invoiced" }
-    });
-  }
-
-  await enqueueAutomationJob({
-    tenantId: input.tenantId,
-    kind: "invoice.created",
-    payload: {
-      invoiceId: invoice.id,
-      invoiceNumber: invoice.number,
-      customerId: customer.id,
-      customerName: `${customer.firstName} ${customer.lastName}`
-    }
-  });
-
-  return invoice;
 }
 
 export async function updateTenantProfileSettings(input: {
@@ -1892,26 +2133,62 @@ export async function updateOnboardingProgress(userId: string, step: number, com
 
 export async function acceptQuoteByToken(token: string) {
   const quote = await prisma.quote.findUnique({
-    where: { accessToken: token }
+    where: { accessToken: token },
+    include: {
+      customer: true
+    }
   });
 
   if (!quote) {
     throw new Error("Quote not found");
   }
 
-  if (quote.status === "accepted") {
-    return quote;
-  }
-
-  const updated = await prisma.quote.update({
-    where: { accessToken: token },
-    data: {
-      status: "accepted",
-      acceptedAt: new Date()
+  const existingJob = await prisma.job.findFirst({
+    where: {
+      tenantId: quote.tenantId,
+      quote: {
+        is: { id: quote.id }
+      }
     }
   });
 
-  const agreement = await createAgreementForQuote(quote.id);
+  if (quote.status === "accepted" && existingJob) {
+    return quote;
+  }
+
+  const updated = quote.status === "accepted"
+    ? quote
+    : await prisma.quote.update({
+        where: { accessToken: token },
+        data: {
+          status: "accepted",
+          acceptedAt: new Date()
+        },
+        include: {
+          customer: true
+        }
+      });
+
+  const job = existingJob ?? await prisma.job.create({
+    data: {
+      tenantId: quote.tenantId,
+      customerId: quote.customerId,
+      quoteId: quote.id,
+      status: "quoted",
+      address: quote.customer.address,
+      suburb: quote.customer.suburb,
+      summary: quote.title
+    }
+  });
+
+  const existingAgreement = await prisma.agreement.findFirst({
+    where: {
+      tenantId: quote.tenantId,
+      quoteId: quote.id
+    }
+  });
+
+  const agreement = existingAgreement ?? await createAgreementForQuote(quote.id);
 
   await prisma.platformEventLog.create({
     data: {
@@ -1921,9 +2198,10 @@ export async function acceptQuoteByToken(token: string) {
       direction: "inbound",
       status: "success",
       requestSummary: `Quote ${quote.title} accepted`,
-      responseSummary: "Agreement record prepared",
+      responseSummary: existingAgreement ? "Job and agreement already linked" : "Job created and agreement prepared",
       triggeredBy: "public_quote_acceptance",
-      customerId: quote.customerId
+      customerId: quote.customerId,
+      jobId: job.id
     }
   });
 
@@ -1934,81 +2212,12 @@ export async function acceptQuoteByToken(token: string) {
       quoteId: quote.id,
       agreementId: agreement.id,
       customerId: quote.customerId,
+      jobId: job.id,
       title: quote.title
     }
   });
 
   return updated;
-}
-
-export async function markInvoicePaidByToken(token: string) {
-  const invoice = await prisma.invoice.findUnique({
-    where: { accessToken: token }
-  });
-
-  if (!invoice) {
-    throw new Error("Invoice not found");
-  }
-
-  if (invoice.status === "paid") {
-    return invoice;
-  }
-
-  const updated = await prisma.invoice.update({
-    where: { accessToken: token },
-    data: {
-      status: "paid",
-      paidAt: new Date()
-    }
-  });
-
-  if (invoice.jobId) {
-    await prisma.job.update({
-      where: { id: invoice.jobId },
-      data: { status: "paid" }
-    }).catch(() => {});
-  }
-
-  await prisma.platformEventLog.create({
-    data: {
-      tenantId: invoice.tenantId,
-      eventType: "webhook_received",
-      service: "stripe",
-      direction: "inbound",
-      status: "success",
-      requestSummary: `Invoice ${invoice.number} marked paid`,
-      responseSummary: "Customer payment recorded",
-      triggeredBy: "public_invoice_payment",
-      jobId: invoice.jobId,
-      customerId: invoice.customerId
-    }
-  });
-
-  await enqueueAutomationJob({
-    tenantId: invoice.tenantId,
-    kind: "invoice.paid",
-    payload: {
-      invoiceId: invoice.id,
-      invoiceNumber: invoice.number,
-      customerId: invoice.customerId
-    }
-  });
-
-  return updated;
-}
-
-export async function markInvoicePaidByStripeSession(sessionId: string) {
-  const invoice = await prisma.invoice.findFirst({
-    where: {
-      stripeSessionId: sessionId
-    }
-  });
-
-  if (!invoice) {
-    throw new Error("Invoice not found for Stripe session");
-  }
-
-  return markInvoicePaidByToken(invoice.accessToken);
 }
 
 export async function getInvoicePaymentContextByToken(token: string) {
@@ -2323,11 +2532,45 @@ export async function enqueueSchedulerAnalysis(tenantId: string) {
   });
 }
 
+async function hasRecentOutboundCommunication(input: {
+  tenantId: string;
+  customerId: string;
+  subject: string;
+  withinHours: number;
+}) {
+  const since = new Date(Date.now() - input.withinHours * 60 * 60 * 1000);
+  const existing = await prisma.communication.findFirst({
+    where: {
+      tenantId: input.tenantId,
+      customerId: input.customerId,
+      direction: "outbound",
+      subject: input.subject,
+      createdAt: { gte: since },
+      status: "sent"
+    },
+    select: { id: true }
+  });
+
+  return existing != null;
+}
+
 export async function enqueueRetentionRun(tenantId: string) {
   const retention = await getRetentionSnapshot(tenantId);
   const jobs = [];
 
   for (const invoice of retention.invoices.filter((entry) => entry.dueAt && entry.dueAt < new Date())) {
+    const subject = `Payment reminder · ${invoice.number}`;
+    const alreadySent = await hasRecentOutboundCommunication({
+      tenantId,
+      customerId: invoice.customerId,
+      subject,
+      withinHours: 24
+    });
+
+    if (alreadySent) {
+      continue;
+    }
+
     jobs.push(
       await enqueueAutomationJob({
         tenantId,
@@ -2342,6 +2585,17 @@ export async function enqueueRetentionRun(tenantId: string) {
   }
 
   for (const reminder of retention.reminders.filter((entry) => entry.status !== "sent")) {
+    const alreadySent = await hasRecentOutboundCommunication({
+      tenantId,
+      customerId: reminder.customerId,
+      subject: "Rebook reminder",
+      withinHours: 24 * 30
+    });
+
+    if (alreadySent) {
+      continue;
+    }
+
     jobs.push(
       await enqueueAutomationJob({
         tenantId,
@@ -2355,6 +2609,18 @@ export async function enqueueRetentionRun(tenantId: string) {
   }
 
   for (const job of retention.completedJobs.slice(0, 5)) {
+    const hasFeedback = retention.feedback.some((entry) => entry.jobId === job.id);
+    const alreadySent = await hasRecentOutboundCommunication({
+      tenantId,
+      customerId: job.customerId,
+      subject: `Feedback request · ${job.id}`,
+      withinHours: 24 * 30
+    });
+
+    if (hasFeedback || alreadySent) {
+      continue;
+    }
+
     jobs.push(
       await enqueueAutomationJob({
         tenantId,
@@ -2368,6 +2634,17 @@ export async function enqueueRetentionRun(tenantId: string) {
   }
 
   for (const item of retention.feedback.filter((entry) => entry.rating === 5).slice(0, 5)) {
+    const alreadySent = await hasRecentOutboundCommunication({
+      tenantId,
+      customerId: item.customerId,
+      subject: `Review request · ${item.id}`,
+      withinHours: 24 * 30
+    });
+
+    if (alreadySent) {
+      continue;
+    }
+
     jobs.push(
       await enqueueAutomationJob({
         tenantId,
@@ -3118,7 +3395,6 @@ export async function ensureDemoSeed() {
           status: index === 0 ? "paid" : "sent",
           dueAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           paidAt: index === 0 ? new Date() : null,
-          paymentLink: "https://example.com/pay/demo",
           accessToken: `invoice-${tenant.slug}-demo-token-${index + 1}`
         }
       });

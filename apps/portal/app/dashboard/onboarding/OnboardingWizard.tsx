@@ -600,7 +600,7 @@ export default function OnboardingWizard({
           <div>
             <h2>Connect your tools</h2>
             <p className="muted">
-              Connect Brevo SMS, Brevo Email, Stripe, and the rest of your stack to activate every automation. You can skip any and come back later.
+              Connect Xero, Brevo SMS, Brevo Email, DocuSeal, and the rest of your stack to activate every automation. You can skip any and come back later.
             </p>
             <div className="panel-soft" style={{ marginBottom: 20 }}>
               <p style={{ margin: 0 }}>

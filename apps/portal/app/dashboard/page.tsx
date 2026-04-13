@@ -190,7 +190,7 @@ export default async function DashboardPage() {
   return (
     <div className="stack">
       <DashboardPageHeader
-        eyebrow="Workspace"
+        eyebrow="Overview"
         title={`Hi ${headingName}, here’s the brief.`}
         description={`This week you've had ${enquiriesThisWeek} new enquir${enquiriesThisWeek === 1 ? "y" : "ies"} and ${bookedJobsThisWeek} job${bookedJobsThisWeek === 1 ? "" : "s"} booked. Tomorrow ${tomorrowJobs.length === 0 ? "is clear so far." : `has ${tomorrowJobs.length} job${tomorrowJobs.length === 1 ? "" : "s"} in the run sheet.`}`}
         section="home"

@@ -17,12 +17,12 @@ export default async function CustomerRecordPage({ params }: { params: Promise<{
     notFound();
   }
 
-  const { customer, communications, feedback, reminders } = record;
+  const { customer, communications, feedback, reminders, enquiries } = record;
 
   return (
     <div className="stack">
       <DashboardPageHeader
-        eyebrow="Workspace"
+        eyebrow="CRM"
         title={`${customer.firstName} ${customer.lastName}`}
         description="This CRM record brings the full customer relationship together: work history, quotes, invoices, reminders, and recent communication."
         section="crm"
@@ -120,6 +120,26 @@ export default async function CustomerRecordPage({ params }: { params: Promise<{
       </div>
 
       <div className="cards-2">
+        <div className="surface">
+          <h2 style={{ marginTop: 0 }}>Enquiries</h2>
+          <div className="stack">
+            {enquiries.length > 0 ? enquiries.map((enquiry) => (
+              <div key={enquiry.id} className="surface-soft">
+                <strong>{enquiry.status}</strong>
+                <div style={{ color: "#cbd5e1", marginTop: 8 }}>{enquiry.serviceRequest}</div>
+                <div style={{ color: "#94a3b8", marginTop: 8 }}>
+                  {new Date(enquiry.createdAt).toLocaleString()}
+                  {enquiry.quote ? (
+                    <>
+                      {" "}· <Link className="inline-entity-link" href={`/quote/${enquiry.quote.accessToken}`}>Open linked quote</Link>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            )) : <div className="surface-soft">No enquiries recorded for this customer yet.</div>}
+          </div>
+        </div>
+
         <div className="surface">
           <h2 style={{ marginTop: 0 }}>Quotes and agreements</h2>
           <div className="stack">

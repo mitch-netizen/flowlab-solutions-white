@@ -19,7 +19,7 @@ export default async function SchedulerPage() {
   return (
     <div className="stack">
       <DashboardPageHeader
-        eyebrow="Workspace"
+        eyebrow="Jobs"
         title="Balance jobs, personal commitments, and schedule risk."
         description="Set your work windows, block out life commitments, and let FlowLab flag clashes, weak plans, and weather risk before the day gets messy."
         section="jobs"

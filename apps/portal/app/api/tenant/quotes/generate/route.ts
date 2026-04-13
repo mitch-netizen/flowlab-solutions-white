@@ -11,6 +11,7 @@ export async function POST(request: Request) {
   await createQuoteDraft({
     tenantId: session.tenantId,
     customerId: String(formData.get("customerId") ?? ""),
+    enquiryId: formData.get("enquiryId") ? String(formData.get("enquiryId")) : undefined,
     serviceRequest: String(formData.get("serviceRequest") ?? ""),
     // area_based inputs (ignored by other models)
     areaSquareMetres: formData.get("areaSquareMetres") ? Number(formData.get("areaSquareMetres")) : undefined,
@@ -21,5 +22,5 @@ export async function POST(request: Request) {
     estimatedHours: formData.get("estimatedHours") ? Number(formData.get("estimatedHours")) : undefined
   });
 
-  return NextResponse.redirect(new URL("/dashboard/quotes", request.url), 303);
+  return NextResponse.redirect(new URL("/dashboard/quotes?created=1", request.url), 303);
 }

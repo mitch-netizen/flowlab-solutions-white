@@ -43,6 +43,7 @@ export interface XeroInvoice {
   Total: number;
   DueDateString?: string;
   DateString?: string;
+  OnlineInvoiceUrl?: string;
   Contact: { ContactID: string; Name: string };
   LineItems: Array<{ Description: string; Quantity: number; UnitAmount: number; LineAmount: number }>;
 }

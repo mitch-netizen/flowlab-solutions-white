@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Web (flowlabsolutions.com.au)",
+      "name": "Web (flowlabsolutions.au)",
       "runtimeExecutable": "/usr/local/bin/node",
       "runtimeArgs": [
         "--env-file=/Users/mitch/FlowLab Solutions_White/.env.local",

@@ -8,13 +8,28 @@ import CustomerLink from "../../../components/customer-link";
 import DashboardPageHeader from "../../../components/dashboard-page-header";
 import { requireTenantSession } from "../../../lib/session";
 
-export default async function QuotesPage() {
+export default async function QuotesPage({
+  searchParams
+}: {
+  searchParams: Promise<{ customerId?: string; enquiryId?: string; created?: string }>;
+}) {
   const session = await requireTenantSession();
-  const [quotes, customers, settings, tenantUser] = await Promise.all([
+  const query = await searchParams;
+  const prefilledCustomerId = query.customerId ?? "";
+  const prefilledEnquiryId = query.enquiryId ?? "";
+  const [quotes, customers, settings, tenantUser, enquiry] = await Promise.all([
     getTenantQuotes(session.tenantId),
     getTenantCustomers(session.tenantId),
     getTenantSettingsSnapshot(session.tenantId),
-    prisma.tenantUser.findFirst({ where: { tenantId: session.tenantId }, select: { onboardingStep: true, onboardingCompleted: true } })
+    prisma.tenantUser.findFirst({ where: { tenantId: session.tenantId }, select: { onboardingStep: true, onboardingCompleted: true } }),
+    prefilledEnquiryId
+      ? prisma.enquiry.findFirst({
+          where: {
+            id: prefilledEnquiryId,
+            tenantId: session.tenantId
+          }
+        })
+      : Promise.resolve(null)
   ]);
 
   const businessType = settings.profile?.businessType ?? "other";
@@ -36,6 +51,11 @@ export default async function QuotesPage() {
         description="Pick a customer, describe the job, and FlowLab prices the draft using your configured model. Review the figure, then send a branded approval link."
         section="revenue"
       />
+      {query.created === "1" ? (
+        <div className="surface" style={{ borderLeft: "3px solid #38bdf8" }}>
+          Draft quote created and linked to the selected customer{prefilledEnquiryId ? " enquiry" : ""}.
+        </div>
+      ) : null}
 
       {needsPricingSetup && (
         <div className="surface" style={{ borderLeft: "3px solid #f59e0b" }}>
@@ -52,9 +72,10 @@ export default async function QuotesPage() {
       <div className="cards-2">
         <form className="surface form-grid" action="/api/tenant/quotes/generate" method="post">
           <h2 style={{ marginTop: 0 }}>Create draft quote</h2>
+          <input type="hidden" name="enquiryId" value={prefilledEnquiryId} />
           <label className="label">
             Customer
-            <select className="select" name="customerId" required defaultValue="">
+            <select className="select" name="customerId" required defaultValue={prefilledCustomerId}>
               <option value="" disabled>
                 Select a customer
               </option>
@@ -67,7 +88,13 @@ export default async function QuotesPage() {
           </label>
           <label className="label">
             Service request
-            <textarea className="textarea" name="serviceRequest" placeholder="Describe the services to be provided at this property." required />
+            <textarea
+              className="textarea"
+              name="serviceRequest"
+              placeholder="Describe the services to be provided at this property."
+              required
+              defaultValue={enquiry?.serviceRequest ?? ""}
+            />
           </label>
           {pricingModel === "area_based" && (
             <>
@@ -100,6 +127,14 @@ export default async function QuotesPage() {
           <div className="surface-soft">
             Your pricing rates are used to generate a draft figure. Review it, adjust if needed, then fire it off.
           </div>
+          {enquiry ? (
+            <div className="surface-soft" style={{ marginTop: 18 }}>
+              <strong>Working from a live enquiry</strong>
+              <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 8 }}>
+                This draft will be linked back to the enquiry received on {new Date(enquiry.createdAt).toLocaleString()}.
+              </div>
+            </div>
+          ) : null}
           <div className="surface-soft" style={{ marginTop: 18 }}>
             The customer gets a secure, branded link — no login required. Once they accept, you can send an agreement with one click.
           </div>

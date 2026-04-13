@@ -23,7 +23,7 @@ export default async function JobRecordPage({ params }: { params: Promise<{ jobI
   return (
     <div className="stack">
       <DashboardPageHeader
-        eyebrow="Workspace"
+        eyebrow="Jobs"
         title={job.summary}
         description="This job card keeps the operational context together: customer, status, timing, related billing, and recent communication."
         section="jobs"

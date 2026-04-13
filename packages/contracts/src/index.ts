@@ -242,7 +242,7 @@ export const automationBlueprints: AutomationBlueprintDescriptor[] = [
   ["day_before_reminder.json", "Day before reminder", "Send reminders for tomorrow's jobs", "dayBeforeReminderWebhookUrl"],
   ["on_my_way.json", "On my way", "Send ETA update when operator leaves", "onMyWayWebhookUrl"],
   ["schedule_update.json", "Schedule update", "Recalculate ETAs and notify customers", "scheduleUpdateWebhookUrl"],
-  ["job_complete.json", "Job complete", "Issue invoice and payment link", "jobCompleteWebhookUrl"],
+  ["job_complete.json", "Job complete", "Issue invoice in Xero", "jobCompleteWebhookUrl"],
   ["payment_reminder_day3.json", "Payment reminder day 3", "Remind overdue invoices after 3 days", "paymentReminderDay3WebhookUrl"],
   ["payment_reminder_day7.json", "Payment reminder day 7", "Remind overdue invoices after 7 days", "paymentReminderDay7WebhookUrl"],
   ["payment_overdue_day14.json", "Payment overdue day 14", "Flag invoices overdue by 14 days", "paymentOverdueDay14WebhookUrl"],

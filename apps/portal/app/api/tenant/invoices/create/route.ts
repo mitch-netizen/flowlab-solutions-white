@@ -3,7 +3,7 @@ import { requireTenantSession } from "../../../../../lib/session";
 import { NextResponse } from "next/server";
 
 import { processAutomationBatch } from "@flowlab/automation";
-import { createInvoiceDraft, getTenantIntegrationRecord, prisma } from "@flowlab/db";
+import { getTenantIntegrationRecord, prisma } from "@flowlab/db";
 import { decryptJson, encryptJson } from "@flowlab/integrations";
 import type { XeroCredentials } from "@flowlab/integrations/xero";
 import { upsertXeroContact, createXeroInvoice } from "@flowlab/integrations/xero";
@@ -85,6 +85,8 @@ export async function POST(request: Request) {
     // 3. Create the invoice in Xero — Xero is the source of truth
     const dueAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     let xeroInvoiceId: string;
+    let onlineInvoiceUrl: string | null = null;
+    let xeroStatus = "AUTHORISED";
 
     try {
       const invoiceResult = await createXeroInvoice(updatedCredentials, {
@@ -97,6 +99,8 @@ export async function POST(request: Request) {
       });
 
       xeroInvoiceId = invoiceResult.data.InvoiceID;
+      onlineInvoiceUrl = invoiceResult.data.OnlineInvoiceUrl ?? null;
+      xeroStatus = invoiceResult.data.Status;
       updatedCredentials = invoiceResult.credentials;
 
       // Persist refreshed Xero tokens if they were refreshed during this call
@@ -123,8 +127,9 @@ export async function POST(request: Request) {
         amount,
         status: "sent",
         dueAt,
+        paymentLink: onlineInvoiceUrl,
         xeroInvoiceId,
-        xeroStatus: "AUTHORISED",
+        xeroStatus,
         xeroSyncedAt: new Date(),
         accessToken: crypto.randomUUID().replace(/-/g, ""),
       }
@@ -158,9 +163,5 @@ export async function POST(request: Request) {
     return NextResponse.redirect(new URL("/dashboard/invoices", request.url), 303);
   }
 
-  // ── Fallback: local-only invoice (Xero not connected) ─────────────────────
-  await createInvoiceDraft({ tenantId, customerId, jobId, amount, note });
-  await processAutomationBatch(5);
-
-  return NextResponse.redirect(new URL("/dashboard/invoices", request.url), 303);
+  return NextResponse.redirect(new URL("/dashboard/invoices?error=xero_required", request.url), 303);
 }
