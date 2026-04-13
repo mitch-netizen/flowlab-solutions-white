@@ -39,6 +39,31 @@ async function getInvoice(invoiceId: string) {
   return prisma.invoice.findUnique({ where: { id: invoiceId } });
 }
 
+async function getJob(jobId: string) {
+  return prisma.job.findUnique({ where: { id: jobId } });
+}
+
+async function recordCommunication(input: {
+  tenantId: string;
+  customerId?: string | null;
+  channel: "email" | "sms";
+  subject: string;
+  body: string;
+  status: "sent" | "failed";
+}) {
+  await prisma.communication.create({
+    data: {
+      tenantId: input.tenantId,
+      customerId: input.customerId ?? null,
+      channel: input.channel,
+      direction: "outbound",
+      subject: input.subject,
+      body: input.body,
+      status: input.status
+    }
+  });
+}
+
 function buildFeedbackLink(input: { tenantSlug: string; tenantId: string; jobId: string }) {
   const rootDomain = getCanonicalRootDomain();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
@@ -98,13 +123,18 @@ async function processJob(job: ClaimedJob) {
       });
 
       if (customer?.phone) {
+        const smsBody = `Hi ${customer.firstName}, thanks for accepting your quote from ${businessName}. Your service agreement will arrive shortly — please check your email.`;
         try {
           const twilioCredentials = await getCredentials(tenantId, "twilio");
-          await sendSms(
-            twilioCredentials,
-            customer.phone,
-            `Hi ${customer.firstName}, thanks for accepting your quote from ${businessName}. Your service agreement will arrive shortly — please check your email.`
-          );
+          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Quote accepted · ${payload.title ?? "Quote"}`,
+            body: smsBody,
+            status: "sent"
+          });
           await logPlatformEvent({
             tenantId,
             eventType: "api_call",
@@ -116,6 +146,14 @@ async function processJob(job: ClaimedJob) {
             triggeredBy: "worker_quote_accepted"
           });
         } catch (smsError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Quote accepted · ${payload.title ?? "Quote"}`,
+            body: smsBody,
+            status: "failed"
+          });
           await logPlatformEvent({
             tenantId,
             eventType: "error",
@@ -168,6 +206,7 @@ async function processJob(job: ClaimedJob) {
       });
 
       if (customer?.email) {
+        const subject = `Agreement signed — ${businessName}`;
         try {
           const html = buildBrandedEmailHtml({
             businessName,
@@ -186,9 +225,17 @@ async function processJob(job: ClaimedJob) {
           await sendEmail(
             sendgridCredentials,
             customer.email,
-            `Agreement signed — ${businessName}`,
+            subject,
             html
           );
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject,
+            body: `Agreement ${payload.title} signed successfully.`,
+            status: "sent"
+          });
 
           await logPlatformEvent({
             tenantId,
@@ -201,6 +248,14 @@ async function processJob(job: ClaimedJob) {
             triggeredBy: "worker_agreement_signed"
           });
         } catch (emailError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject,
+            body: `Agreement ${payload.title} signed successfully.`,
+            status: "failed"
+          });
           await logPlatformEvent({
             tenantId,
             eventType: "error",
@@ -258,6 +313,7 @@ async function processJob(job: ClaimedJob) {
       });
 
       if (customer?.email) {
+        const subject = `Invoice ${invoice?.number ?? payload.invoiceNumber} from ${businessName}`;
         try {
           const payButton = paymentLink
             ? `<p style="margin-top:24px;"><a href="${paymentLink}" style="background:${tenant?.profile?.primaryColour ?? "#3B82F6"};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Pay Invoice ${amount}</a></p>`
@@ -280,9 +336,17 @@ async function processJob(job: ClaimedJob) {
           await sendEmail(
             sendgridCredentials,
             customer.email,
-            `Invoice ${invoice?.number ?? payload.invoiceNumber} from ${businessName}`,
+            subject,
             html
           );
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject,
+            body: `Invoice ${invoice?.number ?? payload.invoiceNumber} issued for ${amount}.`,
+            status: "sent"
+          });
 
           await logPlatformEvent({
             tenantId,
@@ -295,6 +359,14 @@ async function processJob(job: ClaimedJob) {
             triggeredBy: "worker_invoice_created"
           });
         } catch (emailError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject,
+            body: `Invoice ${invoice?.number ?? payload.invoiceNumber} issued for ${amount}.`,
+            status: "failed"
+          });
           await logPlatformEvent({
             tenantId,
             eventType: "error",
@@ -309,12 +381,19 @@ async function processJob(job: ClaimedJob) {
       }
 
       if (customer?.phone) {
+        const smsBody = paymentLink
+          ? `Hi ${customer?.firstName ?? "there"}, your invoice for ${amount} from ${businessName} is ready. Pay here: ${paymentLink}`
+          : `Hi ${customer?.firstName ?? "there"}, your invoice ${invoice?.number ?? payload.invoiceNumber} for ${amount} from ${businessName} is ready. Check your email to pay.`;
         try {
-          const smsBody = paymentLink
-            ? `Hi ${customer?.firstName ?? "there"}, your invoice for ${amount} from ${businessName} is ready. Pay here: ${paymentLink}`
-            : `Hi ${customer?.firstName ?? "there"}, your invoice ${invoice?.number ?? payload.invoiceNumber} for ${amount} from ${businessName} is ready. Check your email to pay.`;
-
           await sendSms(twilioCredentials, customer.phone, smsBody);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Invoice issued · ${invoice?.number ?? payload.invoiceNumber}`,
+            body: smsBody,
+            status: "sent"
+          });
 
           await logPlatformEvent({
             tenantId,
@@ -327,6 +406,14 @@ async function processJob(job: ClaimedJob) {
             triggeredBy: "worker_invoice_created"
           });
         } catch (smsError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Invoice issued · ${invoice?.number ?? payload.invoiceNumber}`,
+            body: smsBody,
+            status: "failed"
+          });
           await logPlatformEvent({
             tenantId,
             eventType: "error",
@@ -380,8 +467,9 @@ async function processJob(job: ClaimedJob) {
       });
 
       if (customer?.email) {
+        const amount = invoice?.amount ? `$${invoice.amount.toFixed(2)}` : "the amount";
+        const subject = `Payment received — ${businessName}`;
         try {
-          const amount = invoice?.amount ? `$${invoice.amount.toFixed(2)}` : "the amount";
           const html = buildBrandedEmailHtml({
             businessName,
             logoUrl: tenant?.profile?.logoUrl,
@@ -398,9 +486,17 @@ async function processJob(job: ClaimedJob) {
           await sendEmail(
             sendgridCredentials,
             customer.email,
-            `Payment received — ${businessName}`,
+            subject,
             html
           );
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject,
+            body: `Payment received for invoice ${invoice?.number ?? payload.invoiceNumber} (${amount}).`,
+            status: "sent"
+          });
 
           await logPlatformEvent({
             tenantId,
@@ -413,6 +509,14 @@ async function processJob(job: ClaimedJob) {
             triggeredBy: "worker_invoice_paid"
           });
         } catch (emailError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject,
+            body: `Payment received for invoice ${invoice?.number ?? payload.invoiceNumber} (${amount}).`,
+            status: "failed"
+          });
           await logPlatformEvent({
             tenantId,
             eventType: "error",
@@ -439,14 +543,19 @@ async function processJob(job: ClaimedJob) {
       const businessName = tenant?.profile?.businessName ?? "Your service provider";
 
       if (customer?.phone) {
+        const amount = invoice?.amount ? `$${invoice.amount.toFixed(2)}` : "";
+        const linkPart = invoice?.paymentLink ? ` Pay here: ${invoice.paymentLink}` : "";
+        const smsBody = `Hi ${customer.firstName}, a friendly reminder that invoice ${invoice?.number ?? payload.invoiceNumber}${amount ? ` for ${amount}` : ""} from ${businessName} is still outstanding.${linkPart}`;
         try {
-          const amount = invoice?.amount ? `$${invoice.amount.toFixed(2)}` : "";
-          const linkPart = invoice?.paymentLink ? ` Pay here: ${invoice.paymentLink}` : "";
-          await sendSms(
-            twilioCredentials,
-            customer.phone,
-            `Hi ${customer.firstName}, a friendly reminder that invoice ${invoice?.number ?? payload.invoiceNumber}${amount ? ` for ${amount}` : ""} from ${businessName} is still outstanding.${linkPart}`
-          );
+          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Payment reminder · ${invoice?.number ?? payload.invoiceNumber}`,
+            body: smsBody,
+            status: "sent"
+          });
 
           await logPlatformEvent({
             tenantId,
@@ -459,6 +568,14 @@ async function processJob(job: ClaimedJob) {
             triggeredBy: "worker_payment_reminder"
           });
         } catch (smsError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Payment reminder · ${invoice?.number ?? payload.invoiceNumber}`,
+            body: smsBody,
+            status: "failed"
+          });
           await logPlatformEvent({
             tenantId,
             eventType: "error",
@@ -484,12 +601,17 @@ async function processJob(job: ClaimedJob) {
       const businessName = tenant?.profile?.businessName ?? "Your service provider";
 
       if (customer?.phone) {
+        const smsBody = `Hi ${customer.firstName}! It's ${businessName} — it's been a while since your last service. Would you like to book again? Reply or call us to schedule.`;
         try {
-          await sendSms(
-            twilioCredentials,
-            customer.phone,
-            `Hi ${customer.firstName}! It's ${businessName} — it's been a while since your last service. Would you like to book again? Reply or call us to schedule.`
-          );
+          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: "Rebook reminder",
+            body: smsBody,
+            status: "sent"
+          });
 
           await logPlatformEvent({
             tenantId,
@@ -509,6 +631,14 @@ async function processJob(job: ClaimedJob) {
             });
           }
         } catch (smsError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: "Rebook reminder",
+            body: smsBody,
+            status: "failed"
+          });
           await logPlatformEvent({
             tenantId,
             eventType: "error",
@@ -539,14 +669,19 @@ async function processJob(job: ClaimedJob) {
       }) : null;
 
       if (customer?.phone) {
+        const smsBody = feedbackLink
+          ? `Hi ${customer.firstName}, how did we do? ${businessName} would love your feedback: ${feedbackLink}`
+          : `Hi ${customer.firstName}, how did we do? ${businessName} would love your feedback — reply with a rating from 1-5 ⭐`;
         try {
-          await sendSms(
-            twilioCredentials,
-            customer.phone,
-            feedbackLink
-              ? `Hi ${customer.firstName}, how did we do? ${businessName} would love your feedback: ${feedbackLink}`
-              : `Hi ${customer.firstName}, how did we do? ${businessName} would love your feedback — reply with a rating from 1-5 ⭐`
-          );
+          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Feedback request · ${payload.jobId}`,
+            body: smsBody,
+            status: "sent"
+          });
 
           await logPlatformEvent({
             tenantId,
@@ -559,6 +694,14 @@ async function processJob(job: ClaimedJob) {
             triggeredBy: "worker_feedback_request"
           });
         } catch (smsError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Feedback request · ${payload.jobId}`,
+            body: smsBody,
+            status: "failed"
+          });
           await logPlatformEvent({
             tenantId,
             eventType: "error",
@@ -584,12 +727,17 @@ async function processJob(job: ClaimedJob) {
       const businessName = tenant?.profile?.businessName ?? "Your service provider";
 
       if (customer?.phone) {
+        const smsBody = `Hi ${customer.firstName}, we're so glad you had a great experience with ${businessName}! If you have a moment, a Google review would mean the world to us 🌟`;
         try {
-          await sendSms(
-            twilioCredentials,
-            customer.phone,
-            `Hi ${customer.firstName}, we're so glad you had a great experience with ${businessName}! If you have a moment, a Google review would mean the world to us 🌟`
-          );
+          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Review request · ${payload.feedbackId ?? customer.id}`,
+            body: smsBody,
+            status: "sent"
+          });
 
           await logPlatformEvent({
             tenantId,
@@ -602,6 +750,14 @@ async function processJob(job: ClaimedJob) {
             triggeredBy: "worker_review_request"
           });
         } catch (smsError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Review request · ${payload.feedbackId ?? customer.id}`,
+            body: smsBody,
+            status: "failed"
+          });
           await logPlatformEvent({
             tenantId,
             eventType: "error",
@@ -611,6 +767,249 @@ async function processJob(job: ClaimedJob) {
             requestSummary: "Review request SMS failed",
             errorMessage: smsError instanceof Error ? smsError.message : String(smsError),
             triggeredBy: "worker_review_request"
+          });
+        }
+      }
+      break;
+    }
+
+    case "enquiry.received": {
+      const [makeCredentials, sendgridCredentials, twilioCredentials, tenant, customer] = await Promise.all([
+        getCredentials(tenantId, "make_com"),
+        getCredentials(tenantId, "sendgrid"),
+        getCredentials(tenantId, "twilio"),
+        getTenantWithProfile(tenantId),
+        getCustomer(payload.customerId)
+      ]);
+
+      const businessName = tenant?.profile?.businessName ?? "Your service provider";
+      const enquiryText = String(payload.serviceRequest ?? "New enquiry received");
+
+      const makeResult = await fireMakeWebhook(makeCredentials, "enquiryWebhookUrl", {
+        tenant_slug: tenant?.slug,
+        business_name: businessName,
+        event_key: "newEnquiry",
+        triggered_at: new Date().toISOString(),
+        enquiry_id: payload.enquiryId,
+        service_request: enquiryText,
+        customer: {
+          id: customer?.id,
+          name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
+          phone: customer?.phone,
+          email: customer?.email
+        }
+      });
+
+      await logPlatformEvent({
+        tenantId,
+        eventType: "webhook_fired",
+        service: "make",
+        direction: "outbound",
+        status: makeResult.ok ? "success" : makeResult.status === 0 ? "pending" : "failed",
+        requestSummary: "Make.com new enquiry webhook",
+        responseSummary: makeResult.body.slice(0, 200),
+        triggeredBy: "worker_enquiry_received"
+      });
+
+      if (customer?.email) {
+        const subject = `Enquiry received — ${businessName}`;
+        try {
+          const html = buildBrandedEmailHtml({
+            businessName,
+            logoUrl: tenant?.profile?.logoUrl,
+            primaryColour: tenant?.profile?.primaryColour,
+            bodyHtml: `
+              <p>Hi ${customer.firstName},</p>
+              <p>Thanks for reaching out to <strong>${businessName}</strong>. We've received your enquiry and will review it shortly.</p>
+              <p><strong>Your request:</strong> ${enquiryText}</p>
+              <p>We'll be back in touch with next steps as soon as we can.</p>
+            `,
+            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+          });
+
+          await sendEmail(sendgridCredentials, customer.email, subject, html);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject,
+            body: enquiryText,
+            status: "sent"
+          });
+        } catch {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject,
+            body: enquiryText,
+            status: "failed"
+          });
+        }
+      }
+
+      if (customer?.phone) {
+        const smsBody = `Hi ${customer.firstName}, thanks for your enquiry with ${businessName}. We've received it and will get back to you soon.`;
+        try {
+          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: "Enquiry received",
+            body: smsBody,
+            status: "sent"
+          });
+        } catch {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: "Enquiry received",
+            body: smsBody,
+            status: "failed"
+          });
+        }
+      }
+
+      if (tenant?.profile?.email) {
+        const subject = `New enquiry from ${customer ? `${customer.firstName} ${customer.lastName}` : "a customer"}`;
+        try {
+          const html = buildBrandedEmailHtml({
+            businessName,
+            logoUrl: tenant?.profile?.logoUrl,
+            primaryColour: tenant?.profile?.primaryColour,
+            bodyHtml: `
+              <p>A new enquiry just landed in FlowLab.</p>
+              <p><strong>Customer:</strong> ${customer ? `${customer.firstName} ${customer.lastName}` : "Unknown"}</p>
+              <p><strong>Request:</strong> ${enquiryText}</p>
+              <p>Open the CRM to convert it into a quote.</p>
+            `,
+            footerText: businessName
+          });
+
+          await sendEmail(sendgridCredentials, tenant.profile.email, subject, html);
+          await recordCommunication({
+            tenantId,
+            customerId: customer?.id ?? null,
+            channel: "email",
+            subject,
+            body: enquiryText,
+            status: "sent"
+          });
+        } catch {
+          await recordCommunication({
+            tenantId,
+            customerId: customer?.id ?? null,
+            channel: "email",
+            subject,
+            body: enquiryText,
+            status: "failed"
+          });
+        }
+      }
+      break;
+    }
+
+    case "job.scheduled": {
+      const [makeCredentials, sendgridCredentials, twilioCredentials, tenant, customer, jobRecord] = await Promise.all([
+        getCredentials(tenantId, "make_com"),
+        getCredentials(tenantId, "sendgrid"),
+        getCredentials(tenantId, "twilio"),
+        getTenantWithProfile(tenantId),
+        getCustomer(payload.customerId),
+        getJob(payload.jobId)
+      ]);
+
+      const businessName = tenant?.profile?.businessName ?? "Your service provider";
+      const scheduledText = jobRecord?.scheduledFor
+        ? new Date(jobRecord.scheduledFor).toLocaleString("en-AU")
+        : "the scheduled time provided";
+
+      const makeResult = await fireMakeWebhook(makeCredentials, "jobScheduledWebhookUrl", {
+        tenant_slug: tenant?.slug,
+        business_name: businessName,
+        event_key: "jobScheduled",
+        triggered_at: new Date().toISOString(),
+        job_id: payload.jobId,
+        scheduled_for: jobRecord?.scheduledFor?.toISOString() ?? payload.scheduledFor,
+        summary: jobRecord?.summary ?? payload.summary,
+        customer: {
+          id: customer?.id,
+          name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
+          phone: customer?.phone,
+          email: customer?.email
+        }
+      });
+
+      await logPlatformEvent({
+        tenantId,
+        eventType: "webhook_fired",
+        service: "make",
+        direction: "outbound",
+        status: makeResult.ok ? "success" : makeResult.status === 0 ? "pending" : "failed",
+        requestSummary: "Make.com job scheduled webhook",
+        responseSummary: makeResult.body.slice(0, 200),
+        triggeredBy: "worker_job_scheduled"
+      });
+
+      if (customer?.email) {
+        const subject = `Booking confirmed — ${businessName}`;
+        try {
+          const html = buildBrandedEmailHtml({
+            businessName,
+            logoUrl: tenant?.profile?.logoUrl,
+            primaryColour: tenant?.profile?.primaryColour,
+            bodyHtml: `
+              <p>Hi ${customer.firstName},</p>
+              <p>Your job with <strong>${businessName}</strong> has been scheduled.</p>
+              <p><strong>When:</strong> ${scheduledText}</p>
+              <p><strong>Work:</strong> ${jobRecord?.summary ?? payload.summary ?? "Scheduled service"}</p>
+            `,
+            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+          });
+
+          await sendEmail(sendgridCredentials, customer.email, subject, html);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject,
+            body: `${jobRecord?.summary ?? payload.summary ?? "Scheduled service"} · ${scheduledText}`,
+            status: "sent"
+          });
+        } catch {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject,
+            body: `${jobRecord?.summary ?? payload.summary ?? "Scheduled service"} · ${scheduledText}`,
+            status: "failed"
+          });
+        }
+      }
+
+      if (customer?.phone) {
+        const smsBody = `Hi ${customer.firstName}, your job with ${businessName} is booked for ${scheduledText}.`;
+        try {
+          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Job scheduled · ${payload.jobId}`,
+            body: smsBody,
+            status: "sent"
+          });
+        } catch {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "sms",
+            subject: `Job scheduled · ${payload.jobId}`,
+            body: smsBody,
+            status: "failed"
           });
         }
       }

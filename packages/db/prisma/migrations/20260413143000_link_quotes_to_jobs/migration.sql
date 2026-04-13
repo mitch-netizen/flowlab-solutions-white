@@ -1,0 +1,10 @@
+ALTER TABLE "Job"
+ADD COLUMN "quoteId" TEXT;
+
+CREATE UNIQUE INDEX "Job_quoteId_key" ON "Job"("quoteId");
+
+ALTER TABLE "Job"
+ADD CONSTRAINT "Job_quoteId_fkey"
+FOREIGN KEY ("quoteId") REFERENCES "Quote"("id")
+ON DELETE SET NULL
+ON UPDATE CASCADE;

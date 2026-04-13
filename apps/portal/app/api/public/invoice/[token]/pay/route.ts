@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { consumeRateLimit, getInvoicePaymentContextByToken, markInvoicePaidByToken } from "@flowlab/db";
+import { consumeRateLimit, getInvoicePaymentContextByToken } from "@flowlab/db";
 import { getClientIpFromRequest, publicRouteTokenSchema } from "@flowlab/contracts/server";
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
@@ -31,11 +31,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
 
   if (invoice.paymentLink) {
     return NextResponse.redirect(invoice.paymentLink, 303);
-  }
-
-  if (process.env.ALLOW_FAKE_PAYMENTS === "true") {
-    await markInvoicePaidByToken(token);
-    return NextResponse.redirect(new URL(`/invoice/${token}?paid=1`, request.url), 303);
   }
 
   return NextResponse.redirect(new URL(`/invoice/${token}?error=unavailable`, request.url), 303);

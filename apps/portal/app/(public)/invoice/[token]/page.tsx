@@ -29,14 +29,14 @@ export default async function InvoicePage({
             {query.error === "rate_limited"
               ? "Too many payment attempts were made. Please wait a moment and try again."
               : query.error === "unavailable"
-                ? "A secure payment link is not available right now. Please contact the business for help."
+                ? "An online invoice link is not available right now. Please contact the business for help."
                 : "This invoice link is no longer available."}
           </div>
         ) : null}
         {invoice.status !== "paid" ? (
           <form action={`/api/public/invoice/${invoice.accessToken}/pay`} method="post" style={{ marginTop: 24 }}>
             <button className="cta" type="submit">
-              Proceed to secure payment
+              Open online invoice
             </button>
           </form>
         ) : (

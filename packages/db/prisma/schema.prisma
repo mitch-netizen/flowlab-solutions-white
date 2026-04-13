@@ -111,6 +111,7 @@ model Tenant {
   integrations          TenantIntegration[]
   users                 TenantUser[]
   customers             Customer[]
+  enquiries             Enquiry[]
   services              Service[]
   jobs                  Job[]
   quotes                Quote[]
@@ -255,10 +256,30 @@ model Customer {
   ratingAverage  Float?
   xeroContactId  String?          // Xero Contact ID — set when first synced to Xero
   tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enquiries      Enquiry[]
   jobs           Job[]
   quotes         Quote[]
   agreements     Agreement[]
   invoices       Invoice[]
+}
+
+model Enquiry {
+  id             String    @id @default(uuid())
+  tenantId       String
+  customerId     String
+  quoteId        String?   @unique
+  createdAt      DateTime  @default(now())
+  serviceRequest String
+  status         String    @default("new")
+  source         String    @default("public_form")
+  convertedAt    DateTime?
+  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  quote          Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status, createdAt])
+  @@index([customerId, createdAt])
 }
 
 model Service {
@@ -276,6 +297,7 @@ model Job {
   tenantId        String
   customerId      String
   serviceId       String?
+  quoteId         String?    @unique
   createdAt       DateTime   @default(now())
   scheduledFor    DateTime?
   status          JobStatus
@@ -287,6 +309,7 @@ model Job {
   weatherRisk     Boolean    @default(false)
   customer        Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
   tenant          Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quote           Quote?     @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   feedbacks       Feedback[]
   invoice         Invoice?
 }
@@ -303,7 +326,9 @@ model Quote {
   accessToken    String    @unique
   acceptedAt     DateTime?
   customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  enquiry        Enquiry?
   tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  job            Job?
 }
 
 model Agreement {

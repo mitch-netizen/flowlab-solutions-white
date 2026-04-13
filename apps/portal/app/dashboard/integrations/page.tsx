@@ -12,7 +12,7 @@ export default async function IntegrationsPage() {
   return (
     <div className="stack">
       <DashboardPageHeader
-        eyebrow="Growth and ops"
+        eyebrow="Setup"
         title="Connect the tools your business already runs on."
         description="This area is for tenant-owned integrations, not platform internals. Save credentials, reconnect OAuth services, and test each connection with a clear health trail."
         section="setup"

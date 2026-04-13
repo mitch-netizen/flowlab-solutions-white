@@ -1,15 +1,25 @@
 import Link from "next/link";
 
-import { getTenantCustomers, getTenantInvoices, prisma } from "@flowlab/db";
+import { getTenantCustomers, getTenantIntegrationRecord, getTenantInvoices, prisma } from "@flowlab/db";
 
 import CustomerLink from "../../../components/customer-link";
 import DashboardPageHeader from "../../../components/dashboard-page-header";
 import { getInvoiceRecordHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
-export default async function InvoicesPage() {
+export default async function InvoicesPage({
+  searchParams
+}: {
+  searchParams: Promise<{ jobId?: string; customerId?: string; synced?: string; failed?: string; error?: string }>;
+}) {
   const session = await requireTenantSession();
-  const [invoices, customers, invoiceableJobs] = await Promise.all([
+  const query = await searchParams;
+  const prefilledJobId = query.jobId ?? "";
+  const prefilledCustomerId = query.customerId ?? "";
+  const syncedCount = Number(query.synced ?? 0);
+  const failedCount = Number(query.failed ?? 0);
+
+  const [invoices, customers, invoiceableJobs, xeroIntegration] = await Promise.all([
     getTenantInvoices(session.tenantId),
     getTenantCustomers(session.tenantId),
     prisma.job.findMany({
@@ -21,23 +31,54 @@ export default async function InvoicesPage() {
       include: { customer: true },
       orderBy: { createdAt: "desc" },
       take: 30
-    })
+    }),
+    getTenantIntegrationRecord(session.tenantId, "xero")
   ]);
+  const xeroConnected = xeroIntegration?.status === "connected";
 
   return (
     <div className="stack">
       <DashboardPageHeader
         eyebrow="Revenue"
         title="Invoice customers clearly and keep payment status visible."
-        description="Create invoices, send secure payment links, and rely on reminder automation to keep overdue balances from slipping out of sight."
+        description="Create invoices in Xero, keep the linked job and customer together, and sync local invoice status back to the Xero source of truth."
         section="revenue"
+        actions={xeroConnected ? (
+          <form action="/api/tenant/invoices/sync" method="post">
+            <button className="ghost" type="submit">Sync open invoices from Xero</button>
+          </form>
+        ) : undefined}
       />
+      {query.error === "xero_sync_failed" ? (
+        <div className="surface" style={{ borderLeft: "3px solid #ef4444", color: "#fecaca" }}>
+          FlowLab could not refresh invoice status from Xero just now. Check the Xero connection and try again.
+        </div>
+      ) : null}
+      {syncedCount > 0 || failedCount > 0 ? (
+        <div className="surface" style={{ borderLeft: "3px solid #38bdf8" }}>
+          <strong>Invoice sync complete.</strong>
+          <div style={{ color: "#cbd5e1", marginTop: 8 }}>
+            {syncedCount} invoice{syncedCount === 1 ? "" : "s"} refreshed from Xero{failedCount > 0 ? `, ${failedCount} failed.` : "."}
+          </div>
+        </div>
+      ) : null}
+      {!xeroConnected ? (
+        <div className="surface" style={{ borderLeft: "3px solid #f59e0b" }}>
+          <h2 style={{ marginTop: 0, color: "#fde68a" }}>Connect Xero before invoicing</h2>
+          <p style={{ color: "#cbd5e1", marginBottom: 16 }}>
+            FlowLab no longer creates local-only invoice records. Revenue follows Xero so payment state stays accountable.
+          </p>
+          <Link href="/dashboard/integrations" className="cta" style={{ display: "inline-block" }}>
+            Open integrations
+          </Link>
+        </div>
+      ) : null}
       <div className="cards-2">
         <form className="surface form-grid" action="/api/tenant/invoices/create" method="post">
           <h2 style={{ marginTop: 0 }}>Create invoice</h2>
           <label className="label">
             Customer
-            <select className="select" name="customerId" required defaultValue="">
+            <select className="select" name="customerId" required defaultValue={prefilledCustomerId}>
               <option value="" disabled>
                 Select a customer
               </option>
@@ -50,7 +91,7 @@ export default async function InvoicesPage() {
           </label>
           <label className="label">
             Related job
-            <select className="select" name="jobId" defaultValue="">
+            <select className="select" name="jobId" defaultValue={prefilledJobId}>
               <option value="">No linked job</option>
               {invoiceableJobs.map((job) => (
                 <option key={job.id} value={job.id}>
@@ -72,9 +113,12 @@ export default async function InvoicesPage() {
           </button>
         </form>
         <div className="surface">
-          <h2 style={{ marginTop: 0 }}>Reminder automation fit</h2>
+          <h2 style={{ marginTop: 0 }}>Revenue rules</h2>
           <div className="surface-soft">
-            These invoices are compatible with the day-3, day-7, and day-14 payment reminder blueprint payloads that can be downloaded from Settings.
+            Invoices are created in Xero first. FlowLab mirrors the Xero invoice number, status, payment URL, and its linked customer/job record.
+          </div>
+          <div className="surface-soft" style={{ marginTop: 18 }}>
+            If a customer pays or the invoice is updated in Xero, use the invoice sync action to pull the fresh state back into FlowLab.
           </div>
         </div>
       </div>
@@ -87,6 +131,7 @@ export default async function InvoicesPage() {
               <th>Job</th>
               <th>Customer</th>
               <th>Status</th>
+              <th>Xero</th>
               <th>Amount</th>
               <th>Public link</th>
             </tr>
@@ -102,6 +147,7 @@ export default async function InvoicesPage() {
                   </CustomerLink>
                 </td>
                 <td>{invoice.status}</td>
+                <td>{invoice.xeroStatus ?? "Not synced"}</td>
                 <td>${invoice.amount}</td>
                 <td>
                   <Link href={getInvoiceRecordHref(invoice.id)}>Open record</Link>

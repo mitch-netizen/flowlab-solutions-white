@@ -647,10 +647,10 @@ function signHs256Jwt(payload: Record<string, unknown>, secret: string) {
 export const integrationHelpText: Record<IntegrationService, string> = {
   twilio: "Send transactional SMS confirmations, reminders, and ETA updates through Brevo.",
   sendgrid: "Deliver branded transactional emails and invoices through Brevo.",
-  stripe: "Accept invoice payments and receive payment webhooks.",
+  stripe: "Platform-level payment tooling only. Tenant invoicing is handled through Xero.",
   docuseal: "Send agreements for e-signature and track signing completion.",
   google_maps: "Estimate routes, drive times, and map service areas.",
-  xero: "Sync invoices and accounting metadata with Xero.",
+  xero: "Create invoices in Xero and sync invoice status back into FlowLab.",
   make_com: "Push automation triggers to the tenant's own Make.com scenarios.",
   claude: "Use FlowLab-managed AI for quoting, scheduling, and learning."
 };

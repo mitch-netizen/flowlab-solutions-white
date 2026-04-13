@@ -29,7 +29,10 @@ export default async function InvoiceRecordPage({ params }: { params: Promise<{ 
         actions={(
           <>
             <CustomerLink customerId={invoice.customerId} className="ghost">Open customer</CustomerLink>
-            {invoice.paymentLink ? <a className="ghost" href={invoice.paymentLink} target="_blank" rel="noreferrer">Open payment link</a> : null}
+            <form action={`/api/tenant/invoices/${invoice.id}/sync`} method="post">
+              <button className="ghost" type="submit">Sync from Xero</button>
+            </form>
+            {invoice.paymentLink ? <a className="ghost" href={invoice.paymentLink} target="_blank" rel="noreferrer">{invoice.xeroInvoiceId ? "Open Xero invoice" : "Open online invoice"}</a> : null}
           </>
         )}
       />
@@ -38,6 +41,7 @@ export default async function InvoiceRecordPage({ params }: { params: Promise<{ 
         <div className="surface-soft">
           <strong>Status</strong>
           <div style={{ fontSize: 26, marginTop: 10, textTransform: "capitalize" }}>{invoice.status}</div>
+          <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 8 }}>Xero: {invoice.xeroStatus ?? "Unknown"}</div>
         </div>
         <div className="surface-soft">
           <strong>Amount</strong>
@@ -63,7 +67,7 @@ export default async function InvoiceRecordPage({ params }: { params: Promise<{ 
             </div>
             <div><strong>Email</strong><div style={{ color: "#cbd5e1", marginTop: 6 }}>{invoice.customer.email}</div></div>
             <div><strong>Paid at</strong><div style={{ color: "#cbd5e1", marginTop: 6 }}>{invoice.paidAt ? new Date(invoice.paidAt).toLocaleString() : "Not paid yet"}</div></div>
-            <div><strong>Access link</strong><div style={{ color: "#cbd5e1", marginTop: 6 }}>{invoice.paymentLink ? <a className="inline-entity-link" href={invoice.paymentLink} target="_blank" rel="noreferrer">Open payment page</a> : "Not generated"}</div></div>
+            <div><strong>Xero invoice</strong><div style={{ color: "#cbd5e1", marginTop: 6 }}>{invoice.paymentLink ? <a className="inline-entity-link" href={invoice.paymentLink} target="_blank" rel="noreferrer">{invoice.xeroInvoiceId ? "Open Xero invoice" : "Open online invoice"}</a> : invoice.xeroInvoiceId ?? "Not synced yet"}</div></div>
           </div>
         </div>
 

@@ -28,7 +28,7 @@ export default async function SystemHealthPage() {
   return (
     <div className="stack">
       <DashboardPageHeader
-        eyebrow="Growth and ops"
+        eyebrow="Setup"
         title="Keep a close eye on automation health and service status."
         description="Use this screen to spot failures early, reconnect expiring services, and understand whether jobs, events, and integrations are still flowing as expected."
         section="setup"
