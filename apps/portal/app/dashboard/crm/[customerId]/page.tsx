@@ -25,7 +25,7 @@ export default async function CustomerRecordPage({ params }: { params: Promise<{
         eyebrow="Workspace"
         title={`${customer.firstName} ${customer.lastName}`}
         description="This CRM record brings the full customer relationship together: work history, quotes, invoices, reminders, and recent communication."
-        section="workspace"
+        section="crm"
         actions={(
           <Link className="ghost" href="/dashboard/crm">
             Back to CRM

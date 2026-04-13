@@ -22,7 +22,7 @@ export default async function SchedulerPage() {
         eyebrow="Workspace"
         title="Balance jobs, personal commitments, and schedule risk."
         description="Set your work windows, block out life commitments, and let FlowLab flag clashes, weak plans, and weather risk before the day gets messy."
-        section="workspace"
+        section="jobs"
         actions={(
           <form action="/api/tenant/scheduler/analyze" method="post">
             <button className="cta" type="submit">

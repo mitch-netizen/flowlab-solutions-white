@@ -242,22 +242,23 @@ model TenantUser {
 }
 
 model Customer {
-  id            String           @id @default(uuid())
-  tenantId      String
-  createdAt     DateTime         @default(now())
-  firstName     String
-  lastName      String
-  email         String
-  phone         String?
-  address       String?
-  suburb        String?
-  notes         String?
-  ratingAverage Float?
-  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  jobs          Job[]
-  quotes        Quote[]
-  agreements    Agreement[]
-  invoices      Invoice[]
+  id             String           @id @default(uuid())
+  tenantId       String
+  createdAt      DateTime         @default(now())
+  firstName      String
+  lastName       String
+  email          String
+  phone          String?
+  address        String?
+  suburb         String?
+  notes          String?
+  ratingAverage  Float?
+  xeroContactId  String?          // Xero Contact ID — set when first synced to Xero
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  jobs           Job[]
+  quotes         Quote[]
+  agreements     Agreement[]
+  invoices       Invoice[]
 }
 
 model Service {
@@ -347,22 +348,25 @@ model TenantAgreementTemplate {
 }
 
 model Invoice {
-  id             String    @id @default(uuid())
-  tenantId       String
-  customerId     String
-  jobId          String?   @unique
-  createdAt      DateTime  @default(now())
-  number         String
-  amount         Float
-  status         String
-  dueAt          DateTime?
-  paidAt         DateTime?
-  paymentLink    String?
+  id              String    @id @default(uuid())
+  tenantId        String
+  customerId      String
+  jobId           String?   @unique
+  createdAt       DateTime  @default(now())
+  number          String
+  amount          Float
+  status          String
+  dueAt           DateTime?
+  paidAt          DateTime?
+  paymentLink     String?
   stripeSessionId String?
-  accessToken    String    @unique
-  customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  job            Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  accessToken     String    @unique
+  xeroInvoiceId   String?   // Xero Invoice ID — set when pushed to Xero; Xero is source of truth
+  xeroStatus      String?   // Status as reported by Xero (DRAFT, SUBMITTED, AUTHORISED, PAID, VOIDED)
+  xeroSyncedAt    DateTime? // Last time this invoice was synced from Xero
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  job             Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, number])
 }

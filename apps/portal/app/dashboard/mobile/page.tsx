@@ -14,7 +14,7 @@ export default async function MobilePage() {
         eyebrow="Workspace"
         title="Run jobs from the field, even when reception drops out."
         description="The mobile workspace keeps actions moving while the operator is on-site. Timers, completion notes, and sync status stay visible in one place."
-        section="workspace"
+        section="jobs"
       />
       <MobileJobApp
         jobs={jobs.map((job) => ({

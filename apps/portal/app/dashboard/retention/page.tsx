@@ -17,7 +17,7 @@ export default async function RetentionPage() {
         eyebrow="Growth and ops"
         title="Keep customers coming back and close the loop after each job."
         description="Track rebooking opportunities, overdue invoices, review outreach, and customer sentiment from one operating surface instead of scattered reminders."
-        section="operations"
+        section="crm"
         actions={(
           <form action="/api/tenant/retention/run" method="post">
             <button className="cta" type="submit">

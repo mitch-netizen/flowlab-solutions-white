@@ -193,7 +193,7 @@ export default async function DashboardPage() {
         eyebrow="Workspace"
         title={`Hi ${headingName}, here’s the brief.`}
         description={`This week you've had ${enquiriesThisWeek} new enquir${enquiriesThisWeek === 1 ? "y" : "ies"} and ${bookedJobsThisWeek} job${bookedJobsThisWeek === 1 ? "" : "s"} booked. Tomorrow ${tomorrowJobs.length === 0 ? "is clear so far." : `has ${tomorrowJobs.length} job${tomorrowJobs.length === 1 ? "" : "s"} in the run sheet.`}`}
-        section="workspace"
+        section="home"
         actions={(
           <>
             <Link className="ghost" href="/dashboard/scheduler">Open tomorrow&apos;s schedule</Link>

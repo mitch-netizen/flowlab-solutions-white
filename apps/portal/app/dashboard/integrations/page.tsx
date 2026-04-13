@@ -15,7 +15,7 @@ export default async function IntegrationsPage() {
         eyebrow="Growth and ops"
         title="Connect the tools your business already runs on."
         description="This area is for tenant-owned integrations, not platform internals. Save credentials, reconnect OAuth services, and test each connection with a clear health trail."
-        section="operations"
+        section="setup"
       />
       <div className="cards-2">
         {integrations.map((integration) => {

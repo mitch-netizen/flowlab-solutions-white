@@ -26,7 +26,7 @@ export default async function JobRecordPage({ params }: { params: Promise<{ jobI
         eyebrow="Workspace"
         title={job.summary}
         description="This job card keeps the operational context together: customer, status, timing, related billing, and recent communication."
-        section="workspace"
+        section="jobs"
         actions={(
           <>
             <CustomerLink customerId={job.customerId} className="ghost">Open customer</CustomerLink>

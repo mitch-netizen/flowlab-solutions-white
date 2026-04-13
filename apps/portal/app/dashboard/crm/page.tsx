@@ -16,7 +16,7 @@ export default async function CrmPage() {
         eyebrow="Workspace"
         title="See customer history, communication, and risk in one place."
         description="Use the CRM as your customer control panel: who is active, who needs a follow-up, who is overdue, and where the strongest relationships are forming."
-        section="workspace"
+        section="crm"
       />
       <div className="cards-3">
         <div className="surface-soft">
