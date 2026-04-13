@@ -900,7 +900,7 @@ export async function testIntegration(service: IntegrationService, credentials: 
       };
     }
     try {
-      const { testXeroConnection } = await import("./xero.js");
+      const { testXeroConnection } = await import("./xero");
       const result = await testXeroConnection({
         clientId: credentials.clientId ?? "",
         clientSecret: credentials.clientSecret ?? "",
