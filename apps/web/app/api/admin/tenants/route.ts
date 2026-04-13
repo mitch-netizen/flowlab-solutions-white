@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { adminTenantCreateSchema } from "@flowlab/contracts/server";
 import { createTenantWithOwner, listTenants } from "@flowlab/db";
 import { getPlatformSession } from "../../../../lib/session";
 
@@ -20,15 +21,14 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
+  const parsed = adminTenantCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input", issues: parsed.error.issues }, { status: 400 });
+  }
+
   const tenant = await createTenantWithOwner({
-    businessName: body.businessName,
-    ownerName: body.ownerName,
-    email: body.email,
-    authUserId: crypto.randomUUID(),
-    phone: body.phone,
-    suburb: body.suburb,
-    businessType: body.businessType,
-    plan: body.plan
+    ...parsed.data,
+    authUserId: crypto.randomUUID()
   });
 
   return NextResponse.json({ tenant }, { status: 201 });

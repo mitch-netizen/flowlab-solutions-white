@@ -1,6 +1,10 @@
+import Link from "next/link";
+
 import { getTenantEvents, getTenantIntegrations, getTenantAutomationHealth } from "@flowlab/db";
 import { getServiceLabel, serviceLabels } from "@flowlab/contracts";
 
+import DashboardPageHeader from "../../../components/dashboard-page-header";
+import { getCustomerRecordHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
 export const dynamic = "force-dynamic";
@@ -23,13 +27,12 @@ export default async function SystemHealthPage() {
 
   return (
     <div className="stack">
-      <div className="surface">
-        <div className="eyebrow">System health</div>
-        <h1>Everything working as it should?</h1>
-        <p style={{ color: "#cbd5e1" }}>
-          Check the status of your connected services and review recent activity — SMS, email, payments, and automations.
-        </p>
-      </div>
+      <DashboardPageHeader
+        eyebrow="Growth and ops"
+        title="Keep a close eye on automation health and service status."
+        description="Use this screen to spot failures early, reconnect expiring services, and understand whether jobs, events, and integrations are still flowing as expected."
+        section="operations"
+      />
 
       {hasAlerts ? (
         <div className="surface" style={{ borderLeft: "3px solid #dc2626" }}>
@@ -105,7 +108,7 @@ export default async function SystemHealthPage() {
           const daysUntilExpiry = expiresAt ? Math.floor((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
 
           return (
-            <div key={integration.id} className="surface-soft">
+            <Link key={integration.id} href="/dashboard/integrations" className="surface-soft surface-link">
               <strong>{serviceLabels[integration.service]}</strong>
               <div style={{
                 marginTop: 10,
@@ -129,7 +132,7 @@ export default async function SystemHealthPage() {
                   {integration.lastErrorMessage}
                 </div>
               ) : null}
-            </div>
+            </Link>
           );
         })}
       </div>
@@ -154,7 +157,12 @@ export default async function SystemHealthPage() {
                   {event.status}
                 </td>
                 <td style={{ color: "#cbd5e1" }}>
-                  {event.requestSummary ?? event.responseSummary ?? event.errorMessage ?? "—"}
+                  <Link
+                    className="inline-entity-link"
+                    href={event.jobId ? getJobRecordHref(event.jobId) : event.customerId ? getCustomerRecordHref(event.customerId) : "/dashboard/system-health"}
+                  >
+                    {event.requestSummary ?? event.responseSummary ?? event.errorMessage ?? "—"}
+                  </Link>
                   {event.errorMessage && event.requestSummary ? (
                     <div style={{ color: "#fca5a5", fontSize: 12, marginTop: 2 }}>{event.errorMessage}</div>
                   ) : null}

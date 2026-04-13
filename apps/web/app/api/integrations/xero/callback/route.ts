@@ -1,9 +1,19 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
+import { IntegrationService, IntegrationStatus } from "@prisma/client";
 import { getPlatformIntegrationRecord, getTenantIntegrationRecord, prisma } from "@flowlab/db";
 import { buildTenantUrl, getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { logPlatformEvent } from "@flowlab/events";
 import { decryptJson, encryptJson } from "@flowlab/integrations";
+
+const xeroStateSchema = z.object({
+  scope: z.enum(["tenant", "platform"]).optional().default("tenant"),
+  tenantId: z.string().uuid().optional(),
+  platformUserId: z.string().uuid().optional(),
+  csrf: z.string().min(1)
+});
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -19,15 +29,25 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/admin?xero_error=missing_params", request.url));
   }
 
-  let stateJson: { scope?: "tenant" | "platform"; tenantId?: string; platformUserId?: string };
+  let scope: "tenant" | "platform";
+  let tenantId: string;
   try {
-    stateJson = JSON.parse(Buffer.from(stateParam, "base64url").toString()) as typeof stateJson;
+    const raw = JSON.parse(Buffer.from(stateParam, "base64url").toString());
+    const parsed = xeroStateSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.redirect(new URL("/admin?xero_error=invalid_state", request.url));
+    }
+    const cookieStore = await cookies();
+    const expectedCsrf = cookieStore.get("xero_oauth_csrf")?.value;
+    cookieStore.delete("xero_oauth_csrf");
+    if (!expectedCsrf || parsed.data.csrf !== expectedCsrf) {
+      return NextResponse.redirect(new URL("/admin?xero_error=invalid_state", request.url));
+    }
+    scope = parsed.data.scope;
+    tenantId = parsed.data.tenantId ?? "";
   } catch {
     return NextResponse.redirect(new URL("/admin?xero_error=invalid_state", request.url));
   }
-
-  const scope = stateJson.scope ?? "tenant";
-  const tenantId = stateJson.tenantId ?? "";
   const [tenantIntegration, platformIntegration, tenant] = await Promise.all([
     tenantId ? getTenantIntegrationRecord(tenantId, "xero") : Promise.resolve(null),
     getPlatformIntegrationRecord("xero"),
@@ -98,10 +118,10 @@ export async function GET(request: Request) {
 
     if (scope === "platform") {
       await prisma.platformIntegration.upsert({
-        where: { service: "xero" as any },
+        where: { service: IntegrationService.xero },
         create: {
-          service: "xero" as any,
-          status: "connected" as any,
+          service: IntegrationService.xero,
+          status: IntegrationStatus.connected,
           credentialsJson: encryptJson(updatedCredentials),
           lastTestedAt: new Date(),
           lastTestResult: "success",
@@ -110,7 +130,7 @@ export async function GET(request: Request) {
           oauthExpiresAt: new Date(expiresAt)
         },
         update: {
-          status: "connected" as any,
+          status: IntegrationStatus.connected,
           credentialsJson: encryptJson(updatedCredentials),
           lastTestedAt: new Date(),
           lastTestResult: "success",
@@ -122,11 +142,11 @@ export async function GET(request: Request) {
       });
     } else {
       await prisma.tenantIntegration.upsert({
-        where: { tenantId_service: { tenantId, service: "xero" as any } },
+        where: { tenantId_service: { tenantId, service: IntegrationService.xero } },
         create: {
           tenantId,
-          service: "xero" as any,
-          status: "connected" as any,
+          service: IntegrationService.xero,
+          status: IntegrationStatus.connected,
           credentialsJson: encryptJson(updatedCredentials),
           lastTestedAt: new Date(),
           lastTestResult: "success",
@@ -135,7 +155,7 @@ export async function GET(request: Request) {
           oauthExpiresAt: new Date(expiresAt)
         },
         update: {
-          status: "connected" as any,
+          status: IntegrationStatus.connected,
           credentialsJson: encryptJson(updatedCredentials),
           lastTestedAt: new Date(),
           lastTestResult: "success",

@@ -1,5 +1,10 @@
+import Link from "next/link";
+
 import { getRetentionSnapshot } from "@flowlab/db";
 
+import CustomerLink from "../../../components/customer-link";
+import DashboardPageHeader from "../../../components/dashboard-page-header";
+import { getInvoiceRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function RetentionPage() {
@@ -8,16 +13,19 @@ export default async function RetentionPage() {
 
   return (
     <div className="stack">
-      <div className="surface">
-        <div className="eyebrow">Retention</div>
-        <h1>Feedback, rebooking, overdue payments, and review outreach.</h1>
-        <p style={{ color: "#cbd5e1" }}>Stay on top of customers who haven&apos;t rebooked, chase overdue invoices, and follow up on your best reviews — all automated.</p>
-        <form action="/api/tenant/retention/run" method="post" style={{ marginTop: 18 }}>
-          <button className="cta" type="submit">
-            Queue retention automations
-          </button>
-        </form>
-      </div>
+      <DashboardPageHeader
+        eyebrow="Growth and ops"
+        title="Keep customers coming back and close the loop after each job."
+        description="Track rebooking opportunities, overdue invoices, review outreach, and customer sentiment from one operating surface instead of scattered reminders."
+        section="operations"
+        actions={(
+          <form action="/api/tenant/retention/run" method="post">
+            <button className="cta" type="submit">
+              Queue retention automations
+            </button>
+          </form>
+        )}
+      />
       <div className="cards-3">
         <div className="surface-soft">
           <strong>Low ratings</strong>
@@ -37,10 +45,10 @@ export default async function RetentionPage() {
           <h2 style={{ marginTop: 0 }}>Rebook reminders</h2>
           <div className="stack">
             {snapshot.reminders.map((entry) => (
-              <div key={entry.id} className="surface-soft">
+              <CustomerLink key={entry.id} customerId={entry.customerId} className="surface-soft surface-link">
                 <strong>{entry.status}</strong>
                 <div style={{ color: "#cbd5e1", marginTop: 8 }}>Due {new Date(entry.dueAt).toLocaleDateString()}</div>
-              </div>
+              </CustomerLink>
             ))}
           </div>
         </div>
@@ -48,10 +56,10 @@ export default async function RetentionPage() {
           <h2 style={{ marginTop: 0 }}>Recent feedback</h2>
           <div className="stack">
             {snapshot.feedback.map((entry) => (
-              <div key={entry.id} className="surface-soft">
+              <CustomerLink key={entry.id} customerId={entry.customerId} className="surface-soft surface-link">
                 <strong>{entry.rating} stars</strong>
                 <div style={{ color: "#cbd5e1", marginTop: 8 }}>{entry.comment ?? "No comment supplied."}</div>
-              </div>
+              </CustomerLink>
             ))}
           </div>
         </div>
@@ -70,9 +78,11 @@ export default async function RetentionPage() {
           <tbody>
             {snapshot.invoices.map((invoice) => (
               <tr key={invoice.id}>
-                <td>{invoice.number}</td>
+                <td><Link className="inline-entity-link" href={getInvoiceRecordHref(invoice.id)}>{invoice.number}</Link></td>
                 <td>
-                  {invoice.customer.firstName} {invoice.customer.lastName}
+                  <CustomerLink customerId={invoice.customer.id} className="inline-entity-link">
+                    {invoice.customer.firstName} {invoice.customer.lastName}
+                  </CustomerLink>
                 </td>
                 <td>{invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString() : "n/a"}</td>
                 <td>{invoice.status}</td>

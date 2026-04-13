@@ -17,6 +17,30 @@ export const businessTypeSchema = z.enum([
 ]);
 export type BusinessType = z.infer<typeof businessTypeSchema>;
 
+export type PricingModel = "area_based" | "hourly" | "flat_rate";
+
+/**
+ * Returns the appropriate pricing model for a given business type.
+ * - area_based: prices by m² (lawn mowing, gardening)
+ * - hourly: prices by hours worked (cleaning, handyman, pool service)
+ * - flat_rate: fixed callout/service prices (pest control, other)
+ */
+export function getPricingModel(businessType: BusinessType | string | null | undefined): PricingModel {
+  switch (businessType) {
+    case "lawn_mowing":
+    case "gardening":
+      return "area_based";
+    case "cleaning":
+    case "handyman":
+    case "pool_service":
+      return "hourly";
+    case "pest_control":
+    case "other":
+    default:
+      return "flat_rate";
+  }
+}
+
 export const integrationServiceSchema = z.enum([
   "twilio",
   "sendgrid",
@@ -98,6 +122,8 @@ export interface PlatformEventLogEntry {
   id: string;
   createdAt: string;
   tenantId: string | null;
+  jobId: string | null;
+  customerId: string | null;
   eventType: PlatformEventType;
   service: string;
   direction: "outbound" | "inbound";

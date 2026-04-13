@@ -31,7 +31,9 @@ export default async function TenantLoginPage({
                 ? "This host is not linked to an active tenant."
                 : query.error === "rate_limited"
                   ? "Too many login attempts. Please wait a few minutes and try again."
-                  : "Invalid email or password."}
+                  : query.error === "captcha"
+                    ? "Login is blocked by CAPTCHA. Please contact support."
+                    : "Invalid email or password."}
             </div>
           ) : null}
         </div>

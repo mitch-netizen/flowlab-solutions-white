@@ -1,8 +1,11 @@
 import Link from "next/link";
 
+import { getPricingModel } from "@flowlab/contracts";
 import { getTenantCustomers, getTenantQuotes, getTenantSettingsSnapshot } from "@flowlab/db";
 import { prisma } from "@flowlab/db";
 
+import CustomerLink from "../../../components/customer-link";
+import DashboardPageHeader from "../../../components/dashboard-page-header";
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function QuotesPage() {
@@ -14,17 +17,25 @@ export default async function QuotesPage() {
     prisma.tenantUser.findFirst({ where: { tenantId: session.tenantId }, select: { onboardingStep: true, onboardingCompleted: true } })
   ]);
 
-  const pricingConfigured = settings.pricingRates.length > 0 && settings.pricingRates[0]?.baseRatePerSquareM;
+  const businessType = settings.profile?.businessType ?? "other";
+  const pricingModel = getPricingModel(businessType);
+  const rate = settings.pricingRates[0];
+  const pricingConfigured = rate != null && (
+    (pricingModel === "area_based" && rate.baseRatePerSquareM != null) ||
+    (pricingModel === "hourly" && rate.hourlyRate != null) ||
+    (pricingModel === "flat_rate" && (rate.calloutFee != null || rate.minimumCharge != null))
+  );
   const onboardingComplete = tenantUser?.onboardingCompleted ?? false;
   const needsPricingSetup = !pricingConfigured && !onboardingComplete;
 
   return (
     <div className="stack">
-      <div className="surface">
-        <div className="eyebrow">AI quoting</div>
-        <h1>Price up a job and send the customer a link.</h1>
-        <p style={{ color: "#cbd5e1" }}>Pick a customer, describe the work, and we&apos;ll crunch the numbers based on your pricing. The customer gets a branded link to review and accept.</p>
-      </div>
+      <DashboardPageHeader
+        eyebrow="Revenue"
+        title="Quote work clearly and send the customer a link."
+        description="Pick a customer, describe the job, and FlowLab prices the draft using your configured model. Review the figure, then send a branded approval link."
+        section="revenue"
+      />
 
       {needsPricingSetup && (
         <div className="surface" style={{ borderLeft: "3px solid #f59e0b" }}>
@@ -56,20 +67,30 @@ export default async function QuotesPage() {
           </label>
           <label className="label">
             Service request
-            <textarea className="textarea" name="serviceRequest" defaultValue="Front lawn mow and edge, tidy up nature strip, and remove clippings." required />
+            <textarea className="textarea" name="serviceRequest" placeholder="Describe the services to be provided at this property." required />
           </label>
-          <label className="label">
-            Area estimate (m²)
-            <input className="input" name="areaSquareMetres" type="number" min="20" defaultValue="90" />
-          </label>
-          <label className="label">
-            Site condition
-            <select className="select" name="siteCondition" defaultValue="standard">
-              <option value="standard">Standard</option>
-              <option value="overgrown">Overgrown</option>
-              <option value="heavily_overgrown">Heavily overgrown</option>
-            </select>
-          </label>
+          {pricingModel === "area_based" && (
+            <>
+              <label className="label">
+                Area estimate (m²)
+                <input className="input" name="areaSquareMetres" type="number" min="1" defaultValue="90" />
+              </label>
+              <label className="label">
+                Site condition
+                <select className="select" name="siteCondition" defaultValue="standard">
+                  <option value="standard">Standard</option>
+                  <option value="overgrown">Overgrown</option>
+                  <option value="heavily_overgrown">Heavily overgrown</option>
+                </select>
+              </label>
+            </>
+          )}
+          {pricingModel === "hourly" && (
+            <label className="label">
+              Estimated hours
+              <input className="input" name="estimatedHours" type="number" min="0.5" step="0.5" defaultValue="2" />
+            </label>
+          )}
           <button className="cta" type="submit" disabled={needsPricingSetup || undefined}>
             Generate draft quote
           </button>
@@ -77,16 +98,18 @@ export default async function QuotesPage() {
         <div className="surface">
           <h2 style={{ marginTop: 0 }}>How it works</h2>
           <div className="surface-soft">
-            Your pricing rates and site condition are used to calculate a draft figure. Review it, adjust if needed, then fire it off.
+            Your pricing rates are used to generate a draft figure. Review it, adjust if needed, then fire it off.
           </div>
           <div className="surface-soft" style={{ marginTop: 18 }}>
             The customer gets a secure, branded link — no login required. Once they accept, you can send an agreement with one click.
           </div>
-          {settings.pricingRates[0] && (
+          {rate && (
             <div className="surface-soft" style={{ marginTop: 18 }}>
               <strong>Your rates</strong>
               <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 8 }}>
-                Base: ${settings.pricingRates[0].baseRatePerSquareM ?? "—"}/m² · Min charge: ${settings.pricingRates[0].minimumCharge ?? "—"}
+                {pricingModel === "area_based" && `$${rate.baseRatePerSquareM ?? "—"}/m² · Min $${rate.minimumCharge ?? "—"}`}
+                {pricingModel === "hourly" && `$${rate.hourlyRate ?? "—"}/hr · Min $${rate.minimumCharge ?? "—"}`}
+                {pricingModel === "flat_rate" && `Call-out $${rate.calloutFee ?? "—"} · Min $${rate.minimumCharge ?? "—"}`}
               </div>
             </div>
           )}
@@ -109,7 +132,9 @@ export default async function QuotesPage() {
             {quotes.map((quote) => (
               <tr key={quote.id}>
                 <td>
-                  {quote.customer.firstName} {quote.customer.lastName}
+                  <CustomerLink customerId={quote.customer.id} className="inline-entity-link">
+                    {quote.customer.firstName} {quote.customer.lastName}
+                  </CustomerLink>
                 </td>
                 <td>{quote.title}</td>
                 <td>{quote.status}</td>

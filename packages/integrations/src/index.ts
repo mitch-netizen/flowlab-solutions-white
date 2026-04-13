@@ -326,7 +326,7 @@ export async function generateServiceAgreementTemplateDocx(input: {
             ]
           }),
           heading1("1. Services", green),
-          body("The service provider agrees to provide the following lawn and garden maintenance services at the client property listed above."),
+          body("The service provider agrees to provide the following services at the client property listed above."),
           new Table({
             width: { size: 9026, type: WidthType.DXA },
             columnWidths: [9026],
@@ -539,7 +539,30 @@ function getMasterKey() {
     throw new Error("ENCRYPTION_MASTER_KEY is required in production");
   }
 
+  // PBKDF2 with a fixed salt — proper key stretching over the legacy SHA256 hash.
+  // Salt is non-secret and deterministic so no per-record storage is needed.
+  return crypto.pbkdf2Sync(
+    source ?? "development-master-key",
+    "flowlab-encryption-v1",
+    100_000,
+    32,
+    "sha256"
+  );
+}
+
+/** Legacy key used before PBKDF2 migration — retained for decrypting old records. */
+function getLegacyMasterKey() {
+  const source = process.env.ENCRYPTION_MASTER_KEY;
   return crypto.createHash("sha256").update(source ?? "development-master-key").digest();
+}
+
+function decryptBuffer(buffer: Buffer, key: Buffer): string {
+  const iv = buffer.subarray(0, 16);
+  const authTag = buffer.subarray(16, 32);
+  const encrypted = buffer.subarray(32);
+  const decipher = crypto.createDecipheriv(algorithm, key, iv);
+  decipher.setAuthTag(authTag);
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
 }
 
 export function encryptJson(payload: Record<string, string>) {
@@ -551,19 +574,24 @@ export function encryptJson(payload: Record<string, string>) {
   return Buffer.concat([iv, authTag, encrypted]).toString("base64");
 }
 
-export function decryptJson(input: string | null | undefined) {
+export function decryptJson(input: string | null | undefined): Record<string, string> {
   if (!input) {
     return {};
   }
 
   const buffer = Buffer.from(input, "base64");
-  const iv = buffer.subarray(0, 16);
-  const authTag = buffer.subarray(16, 32);
-  const encrypted = buffer.subarray(32);
-  const decipher = crypto.createDecipheriv(algorithm, getMasterKey(), iv);
-  decipher.setAuthTag(authTag);
-  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
-  return JSON.parse(decrypted) as Record<string, string>;
+
+  // Try current PBKDF2 key first, then fall back to legacy SHA256 key for old records.
+  for (const key of [getMasterKey(), getLegacyMasterKey()]) {
+    try {
+      const decrypted = decryptBuffer(buffer, key);
+      return JSON.parse(decrypted) as Record<string, string>;
+    } catch {
+      // Try next key
+    }
+  }
+
+  return {};
 }
 
 export function getDocuSealApiBaseUrl() {

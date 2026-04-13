@@ -53,7 +53,7 @@ export default async function FeedbackPage(
             <h2 style={{ marginTop: 0 }}>Thanks for the feedback</h2>
             <p style={{ color: "#cbd5e1", marginBottom: 0 }}>
               {(submitted ? submittedRating : feedbackRequest.existingFeedback?.rating ?? 0) === 5
-                ? "We’re glad the job hit the mark. If there’s anything else you need, Lawn & Order would love to help again."
+                ? `We’re glad the job hit the mark. If there’s anything else you need, ${tenant.profile?.businessName ?? tenant.slug} would love to help again.`
                 : "Your note has been recorded and shared with the team."}
             </p>
           </div>

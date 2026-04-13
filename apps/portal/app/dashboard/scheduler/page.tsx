@@ -1,5 +1,10 @@
+import Link from "next/link";
+
 import { getSchedulerRecommendations, getTenantSchedulerSnapshot } from "@flowlab/db";
 
+import CustomerLink from "../../../components/customer-link";
+import DashboardPageHeader from "../../../components/dashboard-page-header";
+import { getJobPrimaryHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -13,29 +18,34 @@ export default async function SchedulerPage() {
 
   return (
     <div className="stack">
-      <div className="surface">
-        <div className="eyebrow">Scheduler</div>
-        <h1>Work windows, life commitments, weather flags, and upcoming jobs.</h1>
-        <p style={{ color: "#cbd5e1" }}>Set your available hours, block out personal commitments, and let the system flag any jobs that clash or carry weather risk.</p>
-        <form action="/api/tenant/scheduler/analyze" method="post" style={{ marginTop: 18 }}>
-          <button className="cta" type="submit">
-            Queue schedule analysis
-          </button>
-        </form>
-      </div>
+      <DashboardPageHeader
+        eyebrow="Workspace"
+        title="Balance jobs, personal commitments, and schedule risk."
+        description="Set your work windows, block out life commitments, and let FlowLab flag clashes, weak plans, and weather risk before the day gets messy."
+        section="workspace"
+        actions={(
+          <form action="/api/tenant/scheduler/analyze" method="post">
+            <button className="cta" type="submit">
+              Queue schedule analysis
+            </button>
+          </form>
+        )}
+      />
       <div className="surface">
         <h2 style={{ marginTop: 0 }}>Recommendations</h2>
-        <div className="stack">
-          {recommendations.map((item) => (
-            <div key={item.jobId} className="surface-soft">
-              <strong>{item.summary}</strong>
-              <div style={{ color: "#cbd5e1", marginTop: 8 }}>{item.customerName}</div>
-              <div style={{ color: "#cbd5e1", marginTop: 8 }}>{item.suggestedAction}</div>
-              {item.reasons.length > 0 ? <div style={{ color: "#fcd34d", marginTop: 8 }}>{item.reasons.join(" · ")}</div> : null}
-            </div>
-          ))}
+          <div className="stack">
+            {recommendations.map((item) => (
+              <div key={item.jobId} className="surface-soft">
+                <strong><Link className="inline-entity-link" href={getJobRecordHref(item.jobId)}>{item.summary}</Link></strong>
+                <div style={{ color: "#cbd5e1", marginTop: 8 }}>
+                  <CustomerLink customerId={item.customerId} className="inline-entity-link">{item.customerName}</CustomerLink>
+                </div>
+                <div style={{ color: "#cbd5e1", marginTop: 8 }}>{item.suggestedAction}</div>
+                {item.reasons.length > 0 ? <div style={{ color: "#fcd34d", marginTop: 8 }}>{item.reasons.join(" · ")}</div> : null}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
       <div className="cards-2">
         <div className="surface">
           <h2 style={{ marginTop: 0 }}>Work week</h2>
@@ -88,9 +98,15 @@ export default async function SchedulerPage() {
             <tbody>
               {snapshot.jobs.map((job) => (
                 <tr key={job.id}>
-                  <td>{job.scheduledFor ? new Date(job.scheduledFor).toLocaleString() : "TBD"}</td>
                   <td>
-                    {job.customer.firstName} {job.customer.lastName}
+                    <Link className="inline-entity-link" href={getJobPrimaryHref(job)}>
+                      {job.scheduledFor ? new Date(job.scheduledFor).toLocaleString() : "TBD"}
+                    </Link>
+                  </td>
+                  <td>
+                    <CustomerLink customerId={job.customer.id} className="inline-entity-link">
+                      {job.customer.firstName} {job.customer.lastName}
+                    </CustomerLink>
                   </td>
                   <td>{job.suburb}</td>
                   <td>{job.weatherRisk ? "Weather risk" : "Clear"}</td>

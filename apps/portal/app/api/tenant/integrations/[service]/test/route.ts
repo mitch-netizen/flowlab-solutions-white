@@ -4,12 +4,20 @@ import type { IntegrationService } from "@flowlab/contracts";
 import { getTenantIntegrationRecord, updateIntegrationTestResult } from "@flowlab/db";
 import { logPlatformEvent } from "@flowlab/events";
 import { decryptJson, testIntegration } from "@flowlab/integrations";
+import { requireTenantSession } from "../../../../../../lib/session";
 
 export async function POST(request: Request, { params }: { params: Promise<{ service: string }> }) {
+  const session = await requireTenantSession();
+
   const formData = await request.formData();
   const service = ((await params).service) as IntegrationService;
   const tenantId = String(formData.get("tenantId") ?? "");
   const credentialValue = String(formData.get("credentialValue") ?? "");
+
+  // Ensure the tenant in the form matches the authenticated session
+  if (tenantId && tenantId !== session.tenantId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const record = tenantId ? await getTenantIntegrationRecord(tenantId, service) : null;
   const savedCredentials = record?.credentialsJson ? decryptJson(record.credentialsJson) : {};

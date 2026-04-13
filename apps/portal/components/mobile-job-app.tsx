@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import type { MobileJobAction } from "@flowlab/contracts";
+import { getCustomerRecordHref, getJobRecordHref } from "../lib/dashboard-links";
 
 type JobCard = {
   id: string;
@@ -10,6 +12,7 @@ type JobCard = {
   suburb: string | null;
   status: string;
   scheduledFor: string | null;
+  customerId: string;
   customerName: string;
 };
 
@@ -142,8 +145,12 @@ export function MobileJobApp({ jobs }: { jobs: JobCard[] }) {
         const isRunning = Boolean(activeTimers[job.id]);
         return (
           <div key={job.id} className="surface">
-            <div className="eyebrow">{job.customerName}</div>
-            <h2 style={{ marginBottom: 8 }}>{job.summary}</h2>
+            <div className="eyebrow">
+              <Link className="inline-entity-link" href={getCustomerRecordHref(job.customerId)}>{job.customerName}</Link>
+            </div>
+            <h2 style={{ marginBottom: 8 }}>
+              <Link className="inline-entity-link" href={getJobRecordHref(job.id)}>{job.summary}</Link>
+            </h2>
             <p style={{ color: "#cbd5e1", marginTop: 0 }}>
               {job.suburb ?? "Suburb not set"} · {job.scheduledFor ? new Date(job.scheduledFor).toLocaleString() : "Unscheduled"}
             </p>

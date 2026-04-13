@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { prisma } from "@flowlab/db";
 import { getPlanFeatures } from "@flowlab/contracts";
 import TenantUnavailable from "../../components/tenant-unavailable";
+import PortalSidebarNav from "../../components/portal-sidebar-nav";
 import { getCurrentTenantContext } from "../../lib/tenant";
 import { requireTenantSession } from "../../lib/session";
 
@@ -126,20 +127,25 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
       <main className="portal-shell">
         <aside className="sidebar">
-          <div className="eyebrow">{tenant.branding.businessName}</div>
-          <h2 style={{ marginTop: 8 }}>{tenant.branding.tagline ?? "Your business, automated."}</h2>
+          <div className="sidebar-brand">
+            <div className="eyebrow">{tenant.branding.businessName}</div>
+            <h2 style={{ marginTop: 8 }}>{tenant.branding.tagline ?? "Your business, automated."}</h2>
+            <p className="sidebar-brand-copy">
+              Run the day-to-day from one place: enquiries, quoting, jobs, invoices, and follow-up.
+            </p>
+          </div>
 
-          {/* Plan / trial status */}
-          <div style={{ marginTop: 8, marginBottom: 4 }}>
-            <span style={{
-              display: "inline-block",
-              padding: "3px 10px",
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 600,
-              background: status === "trial" ? "#1e3a5f" : status === "active" ? "#14532d" : "#3f1515",
-              color: status === "trial" ? "#93c5fd" : status === "active" ? "#86efac" : "#fca5a5"
-            }}>
+          <div className="sidebar-status-card">
+            <div style={{ marginBottom: 8 }}>
+              <span style={{
+                display: "inline-block",
+                padding: "3px 10px",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 600,
+                background: status === "trial" ? "#1e3a5f" : status === "active" ? "#14532d" : "#3f1515",
+                color: status === "trial" ? "#93c5fd" : status === "active" ? "#86efac" : "#fca5a5"
+              }}>
               {status === "trial"
                 ? trialExpired
                   ? "Trial ended"
@@ -147,49 +153,27 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                     ? `Trial — ${trialDaysLeft}d left`
                     : "Trial"
                 : status}
-            </span>
-            <span style={{ color: "#64748b", fontSize: 12, marginLeft: 8, textTransform: "capitalize" }}>
-              {plan}
-            </span>
+              </span>
+              <span style={{ color: "#64748b", fontSize: 12, marginLeft: 8, textTransform: "capitalize" }}>
+                {plan}
+              </span>
+            </div>
+            <div style={{ fontSize: 13, color: "#cbd5e1" }}>
+              {!onboardingComplete
+                ? `Setup in progress · Step ${onboardingStep} of 6`
+                : "Setup complete"}
+            </div>
+            {features.jobsPerMonth !== null && (
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
+                Up to {features.jobsPerMonth} jobs / month
+              </div>
+            )}
           </div>
 
-          {/* Plan limits pill */}
-          {features.jobsPerMonth !== null && (
-            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>
-              Up to {features.jobsPerMonth} jobs / month
-            </div>
-          )}
-
-          <nav style={{ marginTop: 24 }}>
-            <Link className="nav-link" href="/dashboard">Overview</Link>
-            <Link className="nav-link" href="/dashboard/quotes">AI quoting</Link>
-            <Link className="nav-link" href="/dashboard/agreements">Agreements</Link>
-            <Link className="nav-link" href="/dashboard/crm">CRM</Link>
-            <Link className="nav-link" href="/dashboard/scheduler">Scheduler</Link>
-            <Link className="nav-link" href="/dashboard/mobile">Mobile job app</Link>
-            <Link className="nav-link" href="/dashboard/retention">Retention</Link>
-            <Link className="nav-link" href="/dashboard/invoices">Invoices</Link>
-            {!onboardingComplete && (
-              <Link className="nav-link" href="/dashboard/onboarding" style={{ color: "#f59e0b" }}>
-                ⚡ Onboarding
-              </Link>
-            )}
-            <Link className="nav-link" href="/dashboard/integrations">Integrations</Link>
-            <Link className="nav-link" href="/dashboard/system-health">System health</Link>
-            <Link className="nav-link" href="/dashboard/settings">Settings</Link>
-            <Link className="nav-link" href="/enquiry">Customer enquiry</Link>
-
-            {/* Upgrade CTA — shown on trial or starter */}
-            {(status === "trial" || plan === "starter") && (
-              <Link
-                className="nav-link"
-                href="/dashboard/upgrade"
-                style={{ color: "#3b82f6", fontWeight: 600, marginTop: 8 }}
-              >
-                ↑ Upgrade plan
-              </Link>
-            )}
-          </nav>
+          <PortalSidebarNav
+            showOnboardingHighlight={!onboardingComplete}
+            showUpgradeHighlight={status === "trial" || plan === "starter"}
+          />
         </aside>
         <section>{children}</section>
       </main>

@@ -1,23 +1,37 @@
 import Link from "next/link";
 
-import { getTenantCustomers, getTenantInvoices } from "@flowlab/db";
+import { getTenantCustomers, getTenantInvoices, prisma } from "@flowlab/db";
 
+import CustomerLink from "../../../components/customer-link";
+import DashboardPageHeader from "../../../components/dashboard-page-header";
+import { getInvoiceRecordHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function InvoicesPage() {
   const session = await requireTenantSession();
-  const [invoices, customers] = await Promise.all([
+  const [invoices, customers, invoiceableJobs] = await Promise.all([
     getTenantInvoices(session.tenantId),
-    getTenantCustomers(session.tenantId)
+    getTenantCustomers(session.tenantId),
+    prisma.job.findMany({
+      where: {
+        tenantId: session.tenantId,
+        status: { in: ["complete", "in_progress", "scheduled"] },
+        invoice: null
+      },
+      include: { customer: true },
+      orderBy: { createdAt: "desc" },
+      take: 30
+    })
   ]);
 
   return (
     <div className="stack">
-      <div className="surface">
-        <div className="eyebrow">Invoicing</div>
-        <h1>Invoice a customer and get paid faster.</h1>
-        <p style={{ color: "#cbd5e1" }}>Create an invoice and send the customer a secure payment link. Automated reminders chase it up at 3, 7, and 14 days if needed.</p>
-      </div>
+      <DashboardPageHeader
+        eyebrow="Revenue"
+        title="Invoice customers clearly and keep payment status visible."
+        description="Create invoices, send secure payment links, and rely on reminder automation to keep overdue balances from slipping out of sight."
+        section="revenue"
+      />
       <div className="cards-2">
         <form className="surface form-grid" action="/api/tenant/invoices/create" method="post">
           <h2 style={{ marginTop: 0 }}>Create invoice</h2>
@@ -30,6 +44,17 @@ export default async function InvoicesPage() {
               {customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
                   {customer.firstName} {customer.lastName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="label">
+            Related job
+            <select className="select" name="jobId" defaultValue="">
+              <option value="">No linked job</option>
+              {invoiceableJobs.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.summary} · {job.customer.firstName} {job.customer.lastName}
                 </option>
               ))}
             </select>
@@ -59,6 +84,7 @@ export default async function InvoicesPage() {
           <thead>
             <tr>
               <th>Invoice</th>
+              <th>Job</th>
               <th>Customer</th>
               <th>Status</th>
               <th>Amount</th>
@@ -68,14 +94,17 @@ export default async function InvoicesPage() {
           <tbody>
             {invoices.map((invoice) => (
               <tr key={invoice.id}>
-                <td>{invoice.number}</td>
+                <td><Link className="inline-entity-link" href={getInvoiceRecordHref(invoice.id)}>{invoice.number}</Link></td>
+                <td>{invoice.job ? <Link className="inline-entity-link" href={getJobRecordHref(invoice.job.id)}>{invoice.job.summary}</Link> : "—"}</td>
                 <td>
-                  {invoice.customer.firstName} {invoice.customer.lastName}
+                  <CustomerLink customerId={invoice.customer.id} className="inline-entity-link">
+                    {invoice.customer.firstName} {invoice.customer.lastName}
+                  </CustomerLink>
                 </td>
                 <td>{invoice.status}</td>
                 <td>${invoice.amount}</td>
                 <td>
-                  <Link href={`/invoice/${invoice.accessToken}`}>Open invoice</Link>
+                  <Link href={getInvoiceRecordHref(invoice.id)}>Open record</Link>
                 </td>
               </tr>
             ))}

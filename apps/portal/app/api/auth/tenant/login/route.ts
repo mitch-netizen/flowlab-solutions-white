@@ -102,6 +102,22 @@ export async function POST(request: Request) {
       data: { authUserId: authData.user.id, passwordHash: null },
     });
     tenantUser.authUserId = authData.user.id;
+  } else if (tenantUser.passwordHash) {
+    // ── Transition state: authUserId set but Supabase password never synced ──
+    // Verify legacy bcrypt hash, then sync the password to Supabase and clear the hash.
+    const isValid = await verifyPassword(parsed.data.password, tenantUser.passwordHash);
+    if (!isValid) {
+      return contentType.includes("application/json")
+        ? NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 })
+        : NextResponse.redirect(new URL("/login?error=invalid", request.url), 303);
+    }
+    await admin.auth.admin.updateUserById(tenantUser.authUserId, {
+      password: parsed.data.password,
+    });
+    await prisma.tenantUser.update({
+      where: { id: tenantUser.id },
+      data: { passwordHash: null },
+    });
   }
 
   // ── Sign in via Supabase Auth (sets sb-* session cookies) ──
@@ -115,9 +131,15 @@ export async function POST(request: Request) {
   });
 
   if (signInErr) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[login] signInWithPassword error:", signInErr.message, signInErr.status);
+    }
+    const errorCode = signInErr.message?.toLowerCase().includes("captcha")
+      ? "captcha"
+      : "invalid";
     return contentType.includes("application/json")
-      ? NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 })
-      : NextResponse.redirect(new URL("/login?error=invalid", request.url), 303);
+      ? NextResponse.json({ ok: false, error: signInErr.message }, { status: 401 })
+      : NextResponse.redirect(new URL(`/login?error=${errorCode}`, request.url), 303);
   }
 
   await prisma.tenantUser.update({

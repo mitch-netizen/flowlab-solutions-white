@@ -1,13 +1,20 @@
 import { requireTenantSession } from "../../../../../../lib/session";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
-
+import { IntegrationService, IntegrationStatus } from "@prisma/client";
 import { getTenantIntegrationRecord, prisma } from "@flowlab/db";
 import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { decryptJson, encryptJson } from "@flowlab/integrations";
 import { logPlatformEvent } from "@flowlab/events";
+
+const xeroStateSchema = z.object({
+  tenantId: z.string().uuid(),
+  csrf: z.string().min(1)
+});
 
 /**
  * GET — Xero OAuth callback.
@@ -29,11 +36,21 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/dashboard/integrations?xero_error=missing_params", request.url));
   }
 
-  // Decode state to get tenantId (no session cookie available during redirect)
+  // Decode, validate, and CSRF-check the state parameter
   let tenantId: string;
   try {
-    const stateJson = JSON.parse(Buffer.from(stateParam, "base64url").toString()) as { tenantId: string };
-    tenantId = stateJson.tenantId;
+    const raw = JSON.parse(Buffer.from(stateParam, "base64url").toString());
+    const parsed = xeroStateSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.redirect(new URL("/dashboard/integrations?xero_error=invalid_state", request.url));
+    }
+    const cookieStore = await cookies();
+    const expectedCsrf = cookieStore.get("xero_oauth_csrf")?.value;
+    cookieStore.delete("xero_oauth_csrf");
+    if (!expectedCsrf || parsed.data.csrf !== expectedCsrf) {
+      return NextResponse.redirect(new URL("/dashboard/integrations?xero_error=invalid_state", request.url));
+    }
+    tenantId = parsed.data.tenantId;
   } catch {
     return NextResponse.redirect(new URL("/dashboard/integrations?xero_error=invalid_state", request.url));
   }
@@ -108,17 +125,17 @@ export async function GET(request: Request) {
     };
 
     await prisma.tenantIntegration.upsert({
-      where: { tenantId_service: { tenantId, service: "xero" as any } },
+      where: { tenantId_service: { tenantId, service: IntegrationService.xero } },
       create: {
         tenantId,
-        service: "xero" as any,
-        status: "connected" as any,
+        service: IntegrationService.xero,
+        status: IntegrationStatus.connected,
         credentialsJson: encryptJson(updatedCredentials),
         lastTestedAt: new Date(),
         lastTestResult: "success"
       },
       update: {
-        status: "connected" as any,
+        status: IntegrationStatus.connected,
         credentialsJson: encryptJson(updatedCredentials),
         lastTestedAt: new Date(),
         lastTestResult: "success",
