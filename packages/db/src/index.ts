@@ -1122,6 +1122,31 @@ export async function syncTenantOpenInvoicesFromXero(input: { tenantId: string }
   };
 }
 
+/**
+ * Find a FlowLab tenantId by matching the Xero org tenant ID stored in encrypted credentials.
+ * Used by the Xero webhook handler to route incoming events to the right tenant.
+ */
+export async function findTenantIdByXeroTenantId(xeroTenantId: string): Promise<string | null> {
+  const integrations = await prisma.tenantIntegration.findMany({
+    where: { service: PrismaIntegrationService.xero },
+    select: { tenantId: true, credentialsJson: true }
+  });
+
+  for (const integration of integrations) {
+    if (!integration.credentialsJson) continue;
+    try {
+      const creds = decryptJson(integration.credentialsJson) as unknown as XeroCredentials;
+      if (creds.xeroTenantId === xeroTenantId) {
+        return integration.tenantId;
+      }
+    } catch {
+      // skip malformed or unrelated credentials
+    }
+  }
+
+  return null;
+}
+
 export async function getRetentionSnapshot(tenantId: string) {
   const [feedback, reminders, invoices, completedJobs] = await Promise.all([
     prisma.feedback.findMany({
