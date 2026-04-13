@@ -5,6 +5,15 @@ import { usePathname } from "next/navigation";
 
 import { dashboardNavGroups, dashboardUtilityLinks, isDashboardHrefActive } from "../lib/dashboard-nav";
 
+// App icons — simple SVG marks for each section
+const sectionIcon: Record<string, string> = {
+  Overview: "◈",
+  CRM:      "◉",
+  Jobs:     "◳",
+  Revenue:  "◎",
+  Setup:    "◫"
+};
+
 type PortalSidebarNavProps = {
   showOnboardingHighlight?: boolean;
   showUpgradeHighlight?: boolean;
@@ -18,31 +27,58 @@ export default function PortalSidebarNav({
 
   return (
     <div className="sidebar-nav">
-      {dashboardNavGroups.map((group) => (
-        <div key={group.title} className="sidebar-nav-group">
-          <Link
-            href={group.items[0]!.href}
-            className={`sidebar-section-link${group.items.some((item) => isDashboardHrefActive(pathname, item.href)) ? " is-active" : ""}${
-              showOnboardingHighlight && group.title === "Setup" ? " is-onboarding" : ""
-            }${
-              showUpgradeHighlight && group.title === "Setup" ? " is-upgrade" : ""
-            }`}
-          >
-            {group.title}
-          </Link>
-        </div>
-      ))}
+      {dashboardNavGroups.map((group) => {
+        const isGroupActive = group.items.some((item) => isDashboardHrefActive(pathname, item.href));
+        const isOnboarding = showOnboardingHighlight && group.title === "Setup";
+        const isUpgrade = showUpgradeHighlight && group.title === "Setup";
+        const icon = sectionIcon[group.title] ?? "·";
 
-      <div className="sidebar-nav-group">
-        {dashboardUtilityLinks.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-          return (
-            <Link key={item.href} className={`sidebar-section-link sidebar-section-link-secondary${isActive ? " is-active" : ""}`} href={item.href}>
-              {item.label}
+        return (
+          <div key={group.title} className="sidebar-app-group">
+            {/* App section button — navigates to the first (primary) page of the section */}
+            <Link
+              href={group.items[0]!.href}
+              className={[
+                "sidebar-app-btn",
+                isGroupActive ? "is-active" : "",
+                isOnboarding ? "is-onboarding" : "",
+                isUpgrade ? "is-upgrade" : ""
+              ].filter(Boolean).join(" ")}
+            >
+              <span className="sidebar-app-icon">{icon}</span>
+              <span className="sidebar-app-label">{group.title}</span>
+              {group.items.length > 1 ? (
+                <span className="sidebar-app-count">{group.items.length}</span>
+              ) : null}
             </Link>
-          );
-        })}
+
+            {/* Sub-pages (visible when this section is active) */}
+            {isGroupActive && group.items.length > 1 ? (
+              <div className="sidebar-app-pages">
+                {group.items.map((item) => {
+                  const isItemActive = isDashboardHrefActive(pathname, item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`sidebar-app-page${isItemActive ? " is-active" : ""}`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+
+      <div className="sidebar-utility">
+        {dashboardUtilityLinks.map((item) => (
+          <Link key={item.href} className="sidebar-utility-link" href={item.href} target="_blank" rel="noopener">
+            {item.label} ↗
+          </Link>
+        ))}
       </div>
     </div>
   );

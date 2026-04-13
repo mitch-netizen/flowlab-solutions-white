@@ -9,6 +9,7 @@ import { IntegrationService, IntegrationStatus } from "@prisma/client";
 import { getTenantIntegrationRecord, prisma } from "@flowlab/db";
 import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { decryptJson, encryptJson } from "@flowlab/integrations";
+import { getXeroTenantId } from "@flowlab/integrations/xero";
 import { logPlatformEvent } from "@flowlab/events";
 
 const xeroStateSchema = z.object({
@@ -101,24 +102,17 @@ export async function GET(request: Request) {
       throw new Error(tokenData.error ?? "Token exchange failed");
     }
 
-    // Get connected Xero organisation name
-    let orgName = "Connected";
-    try {
-      const connectionsResponse = await fetch("https://api.xero.com/connections", {
-        headers: { Authorization: `Bearer ${tokenData.access_token}`, "Content-Type": "application/json" }
-      });
-      if (connectionsResponse.ok) {
-        const connections = (await connectionsResponse.json()) as Array<{ tenantName?: string }>;
-        orgName = connections[0]?.tenantName ?? "Connected";
-      }
-    } catch {}
-
     const expiresAt = new Date(Date.now() + (tokenData.expires_in ?? 1800) * 1000).toISOString();
 
-    // Save encrypted tokens alongside existing credentials
+    // Fetch the Xero org's tenant ID (required for all subsequent API calls)
+    // and organisation name. getXeroTenantId throws if no org is found.
+    const { tenantId: xeroTenantId, orgName } = await getXeroTenantId(tokenData.access_token);
+
+    // Save encrypted tokens + xeroTenantId alongside existing credentials
     const updatedCredentials = {
       ...credentials,
       orgName,
+      xeroTenantId,
       accessToken: tokenData.access_token,
       refreshToken: tokenData.refresh_token ?? "",
       expiresAt

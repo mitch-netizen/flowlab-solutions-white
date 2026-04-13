@@ -19,7 +19,7 @@ export default async function SettingsPage() {
         eyebrow="Setup"
         title="Control your business profile, pricing, and brand setup."
         description="This is the configuration layer of the portal: how the business appears, how pricing is shaped, and how the customer-facing experience stays on-brand."
-        section="operations"
+        section="setup"
       />
       <div className="cards-2">
         <form className="surface form-grid" action="/api/tenant/settings/profile" method="post">

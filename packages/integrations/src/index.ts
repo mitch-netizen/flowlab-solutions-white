@@ -888,6 +888,48 @@ export async function testIntegration(service: IntegrationService, credentials: 
     }
   }
 
+  if (service === "xero") {
+    const { accessToken, refreshToken, xeroTenantId } = credentials;
+    if (!accessToken || !refreshToken || !xeroTenantId) {
+      return {
+        service,
+        ok: false,
+        status: "error",
+        message: "Xero is not connected. Use the 'Connect Xero' button to authorise FlowLab.",
+        testedAt
+      };
+    }
+    try {
+      const { testXeroConnection } = await import("./xero.js");
+      const result = await testXeroConnection({
+        clientId: credentials.clientId ?? "",
+        clientSecret: credentials.clientSecret ?? "",
+        accessToken,
+        refreshToken,
+        expiresAt: credentials.expiresAt ?? new Date(0).toISOString(),
+        xeroTenantId,
+        orgName: credentials.orgName
+      });
+      return {
+        service,
+        ok: result.ok,
+        status: result.ok ? "connected" : "error",
+        message: result.ok
+          ? `Connected to Xero organisation "${result.orgName ?? credentials.orgName ?? "Unknown"}". Invoices will be created in Xero.`
+          : result.error ?? "Xero connection test failed",
+        testedAt
+      };
+    } catch (error) {
+      return {
+        service,
+        ok: false,
+        status: "error",
+        message: error instanceof Error ? error.message : "Xero test failed",
+        testedAt
+      };
+    }
+  }
+
   const hasValues = Object.values(credentials).some(Boolean);
 
   return {

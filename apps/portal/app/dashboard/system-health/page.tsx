@@ -31,7 +31,7 @@ export default async function SystemHealthPage() {
         eyebrow="Growth and ops"
         title="Keep a close eye on automation health and service status."
         description="Use this screen to spot failures early, reconnect expiring services, and understand whether jobs, events, and integrations are still flowing as expected."
-        section="operations"
+        section="setup"
       />
 
       {hasAlerts ? (

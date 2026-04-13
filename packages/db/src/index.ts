@@ -755,6 +755,42 @@ export async function getTenantJobRecord(tenantId: string, jobId: string) {
   };
 }
 
+/**
+ * Returns all jobs for the tenant grouped by status — used for the job board view.
+ * Each job includes the customer name and whether an invoice exists.
+ */
+export async function getJobBoard(tenantId: string) {
+  const jobs = await prisma.job.findMany({
+    where: { tenantId },
+    include: {
+      customer: { select: { id: true, firstName: true, lastName: true } },
+      invoice: { select: { id: true, number: true, status: true, xeroInvoiceId: true } }
+    },
+    orderBy: { scheduledFor: "asc" }
+  });
+
+  const statuses = ["quoted", "scheduled", "in_progress", "complete", "invoiced", "paid"] as const;
+  type JobStatus = typeof statuses[number];
+
+  const grouped: Record<JobStatus, typeof jobs> = {
+    quoted: [],
+    scheduled: [],
+    in_progress: [],
+    complete: [],
+    invoiced: [],
+    paid: []
+  };
+
+  for (const job of jobs) {
+    const status = job.status as JobStatus;
+    if (status in grouped) {
+      grouped[status].push(job);
+    }
+  }
+
+  return { jobs, grouped, statuses };
+}
+
 export async function getTenantInvoiceRecord(tenantId: string, invoiceId: string) {
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, tenantId },
@@ -1682,75 +1718,8 @@ export async function createInvoiceDraft(input: {
     include: { customer: true }
   });
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: input.tenantId },
-    include: {
-      profile: true
-    }
-  });
-
-  const stripeSecretKey = await getTenantStripeSecretKey(input.tenantId);
-  let payment = buildStripePaymentLink({
-    tenantSlug: tenant?.slug ?? "tenant",
-    invoiceToken: invoice.accessToken,
-    invoiceNumber: invoice.number,
-    amount: invoice.amount,
-    rootDomain: getCanonicalRootDomain()
-  });
-
-  if (stripeSecretKey) {
-    const stripe = getStripeClient(stripeSecretKey);
-    const publicUrl = buildTenantUrl(tenant?.slug ?? "tenant", `/invoice/${invoice.accessToken}`);
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      success_url: `${publicUrl}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${publicUrl}?checkout=cancelled`,
-      customer_email: customer.email,
-      client_reference_id: invoice.id,
-      metadata: {
-        tenantId: input.tenantId,
-        invoiceId: invoice.id,
-        invoiceToken: invoice.accessToken,
-        invoiceNumber: invoice.number
-      },
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "aud",
-            product_data: {
-              name: `${tenant?.profile?.businessName ?? tenant?.slug ?? "FlowLab"} invoice ${invoice.number}`,
-              description: input.note || "Field service invoice"
-            },
-            unit_amount: Math.round(invoice.amount * 100)
-          }
-        }
-      ]
-    });
-
-    payment = {
-      provider: "stripe",
-      sessionId: session.id,
-      url: session.url ?? payment.url,
-      metadata: {
-        invoiceToken: invoice.accessToken,
-        invoiceNumber: invoice.number,
-        amount: invoice.amount
-      }
-    };
-  }
-
-  const updatedInvoice = await prisma.invoice.update({
-    where: { id: invoice.id },
-    data: {
-      paymentLink: payment.url,
-      stripeSessionId: payment.sessionId
-    },
-    include: {
-      customer: true
-    }
-  });
-
+  // Local-only fallback: no Stripe, no Xero (Xero path is handled at the API route level).
+  // This path is used when Xero is not connected — invoice is created locally only.
   await prisma.platformEventLog.create({
     data: {
       tenantId: input.tenantId,
@@ -1758,7 +1727,7 @@ export async function createInvoiceDraft(input: {
       service: "stripe",
       direction: "outbound",
       status: "success",
-      requestSummary: `Created invoice ${updatedInvoice.number}`,
+      requestSummary: `Created invoice ${invoice.number}`,
       responseSummary: input.note ?? `Invoice sent for ${customer.firstName} ${customer.lastName}`,
       triggeredBy: "tenant_invoice_creator",
       jobId: input.jobId ?? null,
@@ -1777,14 +1746,14 @@ export async function createInvoiceDraft(input: {
     tenantId: input.tenantId,
     kind: "invoice.created",
     payload: {
-      invoiceId: updatedInvoice.id,
-      invoiceNumber: updatedInvoice.number,
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.number,
       customerId: customer.id,
       customerName: `${customer.firstName} ${customer.lastName}`
     }
   });
 
-  return updatedInvoice;
+  return invoice;
 }
 
 export async function updateTenantProfileSettings(input: {
