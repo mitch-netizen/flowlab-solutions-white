@@ -306,7 +306,8 @@ CREATE POLICY "public_read_by_token" ON "Invoice"
   AS PERMISSIVE FOR SELECT TO anon
   USING ("accessToken" IS NOT NULL);
 
--- Feedback — customers submit ratings after a job (anon INSERT, no SELECT)
+-- Feedback — customers submit ratings via /api/public/feedback/[token] (server-side Prisma)
+-- No direct anon access needed — all writes go through service_role via the Next.js handler.
 ALTER TABLE "Feedback" ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "service_role_all" ON "Feedback"
   AS PERMISSIVE FOR ALL TO service_role
@@ -315,10 +316,6 @@ CREATE POLICY "tenant_isolation" ON "Feedback"
   AS PERMISSIVE FOR ALL TO authenticated
   USING ("tenantId" = current_setting('app.tenant_id', true)::text)
   WITH CHECK ("tenantId" = current_setting('app.tenant_id', true)::text);
--- Public: INSERT only — customers submit a rating but cannot read others
-CREATE POLICY "public_insert_feedback" ON "Feedback"
-  AS PERMISSIVE FOR INSERT TO anon
-  WITH CHECK (true);
 
 -- =============================================================================
 -- VERIFICATION QUERY (run manually to confirm)
