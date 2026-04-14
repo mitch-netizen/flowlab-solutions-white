@@ -37,7 +37,13 @@ export async function POST(request: Request) {
         notes?: string;
       };
 
-  const { firstName, lastName, email, phone, address, suburb, notes } = body;
+  const firstName = String(body.firstName ?? "").trim();
+  const lastName = String(body.lastName ?? "").trim();
+  const email = String(body.email ?? "").trim();
+  const phone = body.phone ? String(body.phone).trim() : undefined;
+  const address = body.address ? String(body.address).trim() : undefined;
+  const suburb = body.suburb ? String(body.suburb).trim() : undefined;
+  const notes = body.notes ? String(body.notes).trim() : undefined;
 
   if (!firstName || !lastName || !email) {
     if (contentType.includes("application/json")) {
@@ -101,7 +107,7 @@ export async function POST(request: Request) {
         phone,
         address,
         suburb,
-        xeroContactId: null,
+        xeroContactId: existingCustomer?.xeroContactId ?? customer.xeroContactId ?? null,
       });
 
       // Save Xero Contact ID and refresh tokens if needed

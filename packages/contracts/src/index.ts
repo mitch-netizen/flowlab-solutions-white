@@ -173,6 +173,35 @@ export interface AutomationBlueprintDescriptor {
   webhookKey: string;
 }
 
+export const automationPreferenceKeySchema = z.enum([
+  "enquiry_confirmation",
+  "booking_confirmation",
+  "invoice_reminders",
+  "feedback_requests",
+  "review_requests",
+  "rebook_reminders",
+  "morning_digest",
+  "weekly_analysis",
+  "advanced_make_webhooks"
+]);
+export type AutomationPreferenceKey = z.infer<typeof automationPreferenceKeySchema>;
+
+export interface AutomationPreferenceDescriptor {
+  key: AutomationPreferenceKey;
+  title: string;
+  description: string;
+  group: "built_in" | "advanced";
+  defaultEnabled: boolean;
+  channels: string;
+}
+
+export interface AutomationRecipeDescriptor {
+  key: "operator_essentials" | "cash_flow_booster" | "growth_follow_up";
+  title: string;
+  description: string;
+  enables: AutomationPreferenceKey[];
+}
+
 export interface FeatureFlags {
   customDomain: boolean;
   noFlowLabAttribution: boolean;
@@ -257,6 +286,102 @@ export const automationBlueprints: AutomationBlueprintDescriptor[] = [
   description,
   webhookKey
 }));
+
+export const automationPreferenceDescriptors: AutomationPreferenceDescriptor[] = [
+  {
+    key: "enquiry_confirmation",
+    title: "Send enquiry confirmation",
+    description: "Acknowledge new enquiries so the customer knows their request landed and the operator sees it in context.",
+    group: "built_in",
+    defaultEnabled: true,
+    channels: "Email"
+  },
+  {
+    key: "booking_confirmation",
+    title: "Send booking confirmation",
+    description: "Confirm the booked time when a job is scheduled or rescheduled from FlowLab.",
+    group: "built_in",
+    defaultEnabled: true,
+    channels: "SMS + Email"
+  },
+  {
+    key: "invoice_reminders",
+    title: "Send invoice reminders",
+    description: "Chase overdue invoices after the normal waiting period without the operator having to remember.",
+    group: "built_in",
+    defaultEnabled: true,
+    channels: "SMS"
+  },
+  {
+    key: "feedback_requests",
+    title: "Request feedback after completed work",
+    description: "Ask for feedback after a job is completed so the operator keeps a clean record of customer satisfaction.",
+    group: "built_in",
+    defaultEnabled: true,
+    channels: "SMS"
+  },
+  {
+    key: "review_requests",
+    title: "Ask for reviews after 5-star feedback",
+    description: "Turn happy customers into public reviews without needing a separate follow-up step.",
+    group: "built_in",
+    defaultEnabled: true,
+    channels: "SMS"
+  },
+  {
+    key: "rebook_reminders",
+    title: "Remind customers to rebook",
+    description: "Bring back repeat work when seasonal or recurring jobs are due again.",
+    group: "built_in",
+    defaultEnabled: true,
+    channels: "SMS"
+  },
+  {
+    key: "morning_digest",
+    title: "Send the daily operator brief",
+    description: "Deliver the next-day schedule, overdue invoices, and priority items to the business owner each morning.",
+    group: "built_in",
+    defaultEnabled: true,
+    channels: "SMS + Email"
+  },
+  {
+    key: "weekly_analysis",
+    title: "Run weekly learning analysis",
+    description: "Analyse historical jobs and surface pricing and scheduling suggestions each week.",
+    group: "built_in",
+    defaultEnabled: true,
+    channels: "Internal"
+  },
+  {
+    key: "advanced_make_webhooks",
+    title: "Send FlowLab events to Make.com",
+    description: "Optional advanced automation for teams that want to push FlowLab events into Slack, Sheets, Airtable, Notion, or other tools.",
+    group: "advanced",
+    defaultEnabled: false,
+    channels: "Webhook"
+  }
+];
+
+export const automationRecipeDescriptors: AutomationRecipeDescriptor[] = [
+  {
+    key: "operator_essentials",
+    title: "Operator essentials",
+    description: "Keep the owner informed and customers reassured with confirmations and the daily brief.",
+    enables: ["enquiry_confirmation", "booking_confirmation", "morning_digest"]
+  },
+  {
+    key: "cash_flow_booster",
+    title: "Cash flow booster",
+    description: "Turn on the reminders that help invoices get paid on time without awkward manual follow-up.",
+    enables: ["invoice_reminders", "morning_digest"]
+  },
+  {
+    key: "growth_follow_up",
+    title: "Growth follow-up",
+    description: "Keep the pipeline warm with feedback, reviews, and rebooking nudges.",
+    enables: ["feedback_requests", "review_requests", "rebook_reminders"]
+  }
+];
 
 export const publicRouteTokenSchema = z.object({
   token: z.string().min(12)

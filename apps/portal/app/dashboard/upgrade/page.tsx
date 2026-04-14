@@ -1,5 +1,5 @@
 import { prisma } from "@flowlab/db";
-import { getPlanFeatures } from "@flowlab/contracts";
+
 import DashboardPageHeader from "../../../components/dashboard-page-header";
 import { requireTenantSession } from "../../../lib/session";
 
@@ -13,11 +13,11 @@ const PLANS = [
     period: "/ month",
     highlight: false,
     features: [
-      "FlowLab subdomain (yourbusiness.flowlabsolutions.au)",
+      "FlowLab subdomain for customer-facing pages",
       "Up to 50 jobs per month",
       "Up to 50 AI quotes per month",
-      "Full automation suite (SMS, email, reminders)",
-      "Enquiry form, agreements, invoices, payments",
+      "SMS, email, and reminder automations",
+      "Enquiry form, agreements, invoices, and payments",
       "FlowLab branding on customer-facing pages"
     ]
   },
@@ -28,12 +28,12 @@ const PLANS = [
     period: "/ month",
     highlight: true,
     features: [
-      "Custom domain (yourbusiness.com.au)",
+      "Custom domain support",
       "Up to 200 jobs per month",
       "Up to 200 AI quotes per month",
-      "Full automation suite (SMS, email, reminders)",
-      "No FlowLab branding — 100% your brand",
-      "Make.com blueprint pack (16 automation templates)"
+      "Full automation suite with branded customer surfaces",
+      "No FlowLab branding",
+      "Optional Make.com blueprint pack for advanced automations"
     ]
   },
   {
@@ -57,7 +57,12 @@ export default async function UpgradePage() {
   const session = await requireTenantSession();
   const tenant = await prisma.tenant.findUnique({
     where: { id: session.tenantId },
-    select: { plan: true, status: true, trialEndsAt: true, profile: { select: { businessName: true } } }
+    select: {
+      plan: true,
+      status: true,
+      trialEndsAt: true,
+      profile: { select: { businessName: true } }
+    }
   });
 
   const currentPlan = tenant?.plan ?? "starter";
@@ -71,82 +76,101 @@ export default async function UpgradePage() {
     <div className="stack">
       <DashboardPageHeader
         eyebrow="Setup"
-        title="Choose the plan that fits the next stage of the business."
+        title="Choose the plan that matches the next stage of the business."
         description={
           status === "trial" && trialDaysLeft !== null && trialDaysLeft > 0
-            ? `You have ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left in your free trial. All plans include everything you tested during the trial.`
+            ? `You have ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left in your free trial. This page should make the differences between plans obvious at a glance.`
             : status === "trial" && (trialDaysLeft === null || trialDaysLeft <= 0)
               ? "Your trial has ended. Pick a plan below to restore full access."
-              : `You're currently on ${currentPlan}. Upgrade at any time and your data, automations, and setup carry over.`
+              : `You are currently on ${currentPlan}. Upgrading should be straightforward, with your data, automations, and setup carrying over intact.`
         }
         section="setup"
       />
 
-      <div className="cards-3">
-        {PLANS.map((plan) => {
-          const isCurrent = currentPlan === plan.key && status !== "trial";
-          return (
-            <div
-              key={plan.key}
-              className="surface"
-              style={{
-                outline: plan.highlight ? "2px solid #3b82f6" : undefined,
-                position: "relative"
-              }}
-            >
-              {plan.highlight && (
-                <div style={{
-                  position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
-                  background: "#3b82f6", color: "#fff",
-                  fontSize: 11, fontWeight: 700, padding: "3px 12px", borderRadius: 999,
-                  whiteSpace: "nowrap"
-                }}>
-                  Most popular
-                </div>
-              )}
-              {isCurrent && (
-                <div style={{ marginBottom: 8 }}>
-                  <span style={{ background: "#14532d", color: "#86efac", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999 }}>
-                    Current plan
-                  </span>
-                </div>
-              )}
-              <div className="eyebrow">{plan.name}</div>
-              <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1, margin: "8px 0 4px" }}>
-                {plan.price}
-                <span style={{ fontSize: 16, fontWeight: 400, color: "#94a3b8" }}>{plan.period}</span>
-              </div>
-              <ul style={{ listStyle: "none", padding: 0, margin: "16px 0 24px", display: "flex", flexDirection: "column", gap: 8 }}>
-                {plan.features.map((f) => (
-                  <li key={f} style={{ display: "flex", gap: 8, color: "#cbd5e1", fontSize: 14 }}>
-                    <span style={{ color: "#22c55e", flexShrink: 0 }}>✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              {isCurrent ? (
-                <div style={{ color: "#64748b", fontSize: 13 }}>You&apos;re on this plan</div>
-              ) : (
-                <a
-                  href={`mailto:hello@flowlabsolutions.au?subject=Upgrade to ${plan.name}&body=Hi, I'd like to upgrade ${tenant?.profile?.businessName ?? "my account"} to the ${plan.name} plan.`}
-                  className="cta"
-                  style={{ display: "block", textAlign: "center", ...(plan.highlight ? {} : { background: "transparent", border: "1px solid #334155", color: "#e2e8f0" }) }}
-                >
-                  {status === "trial" || currentPlan === "starter" ? `Get ${plan.name}` : `Switch to ${plan.name}`}
-                </a>
-              )}
+      <div className="surface">
+        <div className="setup-summary">
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Current plan</div>
+            <div className="setup-summary-value">{currentPlan}</div>
+            <p className="setup-summary-copy">The tenant stays on this plan until you switch.</p>
+          </div>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Account status</div>
+            <div className="setup-summary-value">{status}</div>
+            <p className="setup-summary-copy">{status === "trial" ? "Trial access is still active." : "Billing is active on the current plan."}</p>
+          </div>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Trial timing</div>
+            <div className="setup-summary-value">
+              {trialDaysLeft === null ? "n/a" : trialDaysLeft <= 0 ? "Ended" : `${trialDaysLeft}d`}
             </div>
-          );
-        })}
+            <p className="setup-summary-copy">
+              {trialDaysLeft === null ? "No trial end is currently set." : trialDaysLeft <= 0 ? "The free trial period has expired." : "Time remaining before a paid plan is needed."}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="surface-soft" style={{ textAlign: "center", color: "#94a3b8", fontSize: 14 }}>
-        <p style={{ margin: "0 0 8px" }}>
-          All plans include a 14-day free trial. No credit card required to start.
-        </p>
-        <p style={{ margin: 0 }}>
-          Questions? Email <a href="mailto:hello@flowlabsolutions.au" style={{ color: "#3b82f6" }}>hello@flowlabsolutions.au</a>
-        </p>
+      <div className="surface setup-section">
+        <div className="setup-section-header">
+          <div className="setup-section-copy">
+            <div className="eyebrow">Plans</div>
+            <h2>Keep the comparison simple and legible</h2>
+            <p>Plans should compare like product options, not like a stack of oversized pricing cards. Price, fit, and the important inclusions stay in one clean row each.</p>
+          </div>
+        </div>
+
+        <div className="setup-plan-list">
+          {PLANS.map((plan) => {
+            const isCurrent = currentPlan === plan.key && status !== "trial";
+
+            return (
+              <div key={plan.key} className="setup-plan-row">
+                <div className="setup-plan-main">
+                  <div className="setup-row-meta">
+                    {plan.highlight ? <span className="status-pill is-on">Recommended</span> : null}
+                    {isCurrent ? <span className="status-pill is-off">Current plan</span> : null}
+                  </div>
+
+                  <div className="setup-plan-heading">
+                    <h3>{plan.name}</h3>
+                    <div className="setup-plan-price">
+                      {plan.price}
+                      <span className="setup-plan-period">{plan.period}</span>
+                    </div>
+                  </div>
+
+                  <ul className="setup-bullet-list">
+                    {plan.features.map((feature) => (
+                      <li key={feature}>{feature}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="setup-row-actions">
+                  {isCurrent ? (
+                    <span className="setup-note">You&apos;re on this plan.</span>
+                  ) : (
+                    <a
+                      href={`mailto:hello@flowlabsolutions.au?subject=Upgrade to ${plan.name}&body=Hi, I'd like to upgrade ${tenant?.profile?.businessName ?? "my account"} to the ${plan.name} plan.`}
+                      className={plan.highlight ? "cta" : "ghost"}
+                    >
+                      {status === "trial" || currentPlan === "starter" ? `Get ${plan.name}` : `Switch to ${plan.name}`}
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="surface setup-section">
+        <div className="setup-section-copy">
+          <div className="eyebrow">Support</div>
+          <h2 style={{ marginBottom: 8 }}>Questions before switching?</h2>
+          <p>All plans include a 14-day free trial and the same core workflow you already tested. If you need help choosing, email <a href="mailto:hello@flowlabsolutions.au" className="inline-entity-link">hello@flowlabsolutions.au</a>.</p>
+        </div>
       </div>
     </div>
   );

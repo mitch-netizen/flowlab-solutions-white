@@ -215,131 +215,170 @@ export default async function DashboardPage({
           Brief sent — check your SMS and email.
         </div>
       )}
+
       {query.error === "digest_failed" && (
         <div className="surface-soft" style={{ color: "#fca5a5" }}>
           Brief could not be sent. Check that your SMS and email integrations are connected in Setup.
         </div>
       )}
 
-      <div className="cards-3">
-        <div className="surface-soft">
-          <strong>New enquiries this week</strong>
-          <div style={{ fontSize: 34, marginTop: 10 }}>{enquiriesThisWeek}</div>
-          <div style={{ color: "#94a3b8", marginTop: 8, fontSize: 13 }}>Fresh demand coming through the public form.</div>
-        </div>
-        <div className="surface-soft">
-          <strong>Jobs booked this week</strong>
-          <div style={{ fontSize: 34, marginTop: 10 }}>{bookedJobsThisWeek}</div>
-          <div style={{ color: "#94a3b8", marginTop: 8, fontSize: 13 }}>Scheduled, in progress, complete, invoiced, or paid.</div>
-        </div>
-        <div className="surface-soft">
-          <strong>Tomorrow&apos;s run sheet</strong>
-          <div style={{ fontSize: 34, marginTop: 10 }}>{tomorrowJobs.length}</div>
-          <div style={{ color: "#94a3b8", marginTop: 8, fontSize: 13 }}>
-            {tomorrowJobs.length === 0 ? "No jobs scheduled yet." : "Ready to review before the day starts."}
+      <div className="surface">
+        <div className="setup-summary">
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">New enquiries this week</div>
+            <div className="setup-summary-value">{enquiriesThisWeek}</div>
+            <p className="setup-summary-copy">Fresh demand coming through the public form.</p>
+          </div>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Jobs booked this week</div>
+            <div className="setup-summary-value">{bookedJobsThisWeek}</div>
+            <p className="setup-summary-copy">Scheduled, in progress, complete, invoiced, or paid.</p>
+          </div>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Tomorrow&apos;s run sheet</div>
+            <div className="setup-summary-value">{tomorrowJobs.length}</div>
+            <p className="setup-summary-copy">
+              {tomorrowJobs.length === 0 ? "No jobs scheduled yet." : "Ready to review before the day starts."}
+            </p>
           </div>
         </div>
       </div>
 
       <div className="cards-2">
-        <div className="surface">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <h2 style={{ margin: 0 }}>Tomorrow</h2>
-            <Link href="/dashboard/scheduler" className="inline-entity-link">Open scheduler</Link>
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
+              <div className="eyebrow">Tomorrow</div>
+              <h2>Run sheet preview</h2>
+              <p>The next day should be the first thing the operator can scan, without opening a second screen.</p>
+            </div>
+            <Link href="/dashboard/scheduler" className="ghost">Open scheduler</Link>
           </div>
-          <div className="stack" style={{ marginTop: 16 }}>
+
+          <div className="setup-list">
             {tomorrowJobs.length > 0 ? tomorrowJobs.map((job) => (
-              <div key={job.id} className="surface-soft">
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                  <div>
+              <div key={job.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <span>{job.scheduledFor ? new Date(job.scheduledFor).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "TBD"}</span>
+                    <span>{job.suburb ?? job.customer.suburb ?? "Suburb not set"}</span>
+                  </div>
+                  <h3>
                     <Link className="inline-entity-link" href={getJobPrimaryHref(job)}>{job.summary}</Link>
-                    <div style={{ color: "#cbd5e1", marginTop: 8 }}>
-                      <CustomerLink customerId={job.customer.id} className="inline-entity-link">
-                        {job.customer.firstName} {job.customer.lastName}
-                      </CustomerLink>
-                      {" "}· {job.suburb ?? job.customer.suburb ?? "Suburb not set"}
-                    </div>
-                  </div>
-                  <div style={{ color: "#94a3b8", fontSize: 13 }}>
-                    {job.scheduledFor ? new Date(job.scheduledFor).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "TBD"}
-                  </div>
+                  </h3>
+                  <p>
+                    <CustomerLink customerId={job.customer.id} className="inline-entity-link">
+                      {job.customer.firstName} {job.customer.lastName}
+                    </CustomerLink>
+                  </p>
                 </div>
               </div>
-            )) : <div className="surface-soft">Tomorrow is still open. Head into the scheduler if you want to build the run sheet now.</div>}
+            )) : <p className="setup-note">Tomorrow is still open. Head into the scheduler if you want to build the run sheet now.</p>}
           </div>
         </div>
 
-        <div className="surface">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <h2 style={{ margin: 0 }}>Needs your eyes</h2>
-            <Link href="/dashboard/system-health" className="inline-entity-link">Review issues</Link>
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
+              <div className="eyebrow">Needs your eyes</div>
+              <h2>Attention queue</h2>
+              <p>Keep the highest-friction items together so the operator does not have to infer what matters most.</p>
+            </div>
+            <Link href="/dashboard/system-health" className="ghost">Review issues</Link>
           </div>
-          <div className="stack" style={{ marginTop: 16 }}>
+
+          <div className="setup-list">
             {attentionItems.length > 0 ? attentionItems.map((item) => (
-              <Link key={item.title} href={item.href} className="surface-soft">
-                <strong>{item.title}</strong>
-                <div style={{ color: "#cbd5e1", marginTop: 8 }}>{item.detail}</div>
-              </Link>
-            )) : <div className="surface-soft">Nothing urgent right now. FlowLab is clear on overdue invoices, failed jobs, and integration alerts.</div>}
+              <div key={item.title} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <span className="status-pill is-warning">Attention</span>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{item.detail}</p>
+                </div>
+                <div className="setup-row-actions">
+                  <Link className="ghost" href={item.href}>Open</Link>
+                </div>
+              </div>
+            )) : <p className="setup-note">Nothing urgent right now. FlowLab is clear on overdue invoices, failed jobs, and integration alerts.</p>}
           </div>
         </div>
       </div>
 
       <div className="cards-2">
-        <div className="surface">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <h2 style={{ margin: 0 }}>Top customers</h2>
-            <Link href="/dashboard/crm" className="inline-entity-link">Open CRM</Link>
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
+              <div className="eyebrow">Top customers</div>
+              <h2>Relationship depth</h2>
+              <p>Keep the strongest customer records close to the overview so repeat work and risk stay visible.</p>
+            </div>
+            <Link href="/dashboard/crm" className="ghost">Open CRM</Link>
           </div>
-          <div className="stack" style={{ marginTop: 16 }}>
+
+          <div className="setup-list">
             {topCustomerRows.map((customer) => (
-              <div key={customer.id} className="surface-soft">
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                  <div>
+              <div key={customer.id} className="setup-row">
+                <div className="setup-row-main">
+                  <h3>
                     <CustomerLink customerId={customer.id} className="inline-entity-link">
                       {customer.firstName} {customer.lastName}
                     </CustomerLink>
-                    <div style={{ color: "#cbd5e1", marginTop: 8 }}>
-                      {customer.suburb ?? "Suburb not set"} · Rating {customer.ratingAverage?.toFixed(1) ?? "—"}
-                    </div>
-                  </div>
-                  <div style={{ color: "#94a3b8", fontSize: 13, textAlign: "right" }}>
-                    <div>{customer._count.jobs} jobs</div>
-                    <div>{customer._count.invoices} invoices</div>
-                    <div>{customer._count.quotes} quotes</div>
-                  </div>
+                  </h3>
+                  <p>{customer.suburb ?? "Suburb not set"} · Rating {customer.ratingAverage?.toFixed(1) ?? "—"}</p>
+                </div>
+                <div className="setup-row-actions" style={{ color: "#94a3b8", fontSize: 13 }}>
+                  <span>{customer._count.jobs} jobs</span>
+                  <span>{customer._count.invoices} invoices</span>
+                  <span>{customer._count.quotes} quotes</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="surface">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <h2 style={{ margin: 0 }}>FlowLab handled this</h2>
-            <Link href="/dashboard/system-health" className="inline-entity-link">Open event trail</Link>
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
+              <div className="eyebrow">FlowLab handled this</div>
+              <h2>Recent automated wins</h2>
+              <p>Make the system’s recent work visible so the operator trusts that things are still moving in the background.</p>
+            </div>
+            <Link href="/dashboard/system-health" className="ghost">Open event trail</Link>
           </div>
-          <div className="stack" style={{ marginTop: 16 }}>
+
+          <div className="setup-list">
             {automationWins.length > 0 ? automationWins.map((item) => (
-              <Link key={item.id} href={item.href} className="surface-soft">
-                <strong>{item.title}</strong>
-                <div style={{ color: "#cbd5e1", marginTop: 8 }}>{item.detail}</div>
-                <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 8 }}>
-                  {new Date(item.createdAt).toLocaleString()}
+              <div key={item.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <span className="status-pill is-on">Success</span>
+                    <span>{new Date(item.createdAt).toLocaleString()}</span>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{item.detail}</p>
                 </div>
-              </Link>
-            )) : <div className="surface-soft">Automated wins will show up here as FlowLab sends, records, and follows up on behalf of the business.</div>}
+                <div className="setup-row-actions">
+                  <Link className="ghost" href={item.href}>Open</Link>
+                </div>
+              </div>
+            )) : <p className="setup-note">Automated wins will show up here as FlowLab sends, records, and follows up on behalf of the business.</p>}
           </div>
         </div>
       </div>
 
       <div className="cards-2">
-        <div className="surface">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <h2 style={{ margin: 0 }}>Recent jobs</h2>
-            <Link href="/dashboard/scheduler" className="inline-entity-link">Open jobs</Link>
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
+              <div className="eyebrow">Recent jobs</div>
+              <h2>Latest work created</h2>
+            </div>
+            <Link href="/dashboard/scheduler" className="ghost">Open jobs</Link>
           </div>
-          <table className="table" style={{ marginTop: 12 }}>
+
+          <table className="table">
             <thead>
               <tr>
                 <th>Job</th>
@@ -363,12 +402,16 @@ export default async function DashboardPage({
           </table>
         </div>
 
-        <div className="surface">
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <h2 style={{ margin: 0 }}>Recent invoices</h2>
-            <Link href="/dashboard/invoices" className="inline-entity-link">Open billing</Link>
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
+              <div className="eyebrow">Recent invoices</div>
+              <h2>Latest billing activity</h2>
+            </div>
+            <Link href="/dashboard/invoices" className="ghost">Open billing</Link>
           </div>
-          <table className="table" style={{ marginTop: 12 }}>
+
+          <table className="table">
             <thead>
               <tr>
                 <th>Invoice</th>

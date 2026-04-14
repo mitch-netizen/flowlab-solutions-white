@@ -5,12 +5,20 @@ import { getCustomerCrmRecord } from "@flowlab/db";
 
 import CustomerLink from "../../../../components/customer-link";
 import DashboardPageHeader from "../../../../components/dashboard-page-header";
+import ManualCommunicationForm from "../../../../components/manual-communication-form";
 import { getInvoiceRecordHref, getJobRecordHref } from "../../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../../lib/session";
 
-export default async function CustomerRecordPage({ params }: { params: Promise<{ customerId: string }> }) {
+export default async function CustomerRecordPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ customerId: string }>;
+  searchParams: Promise<{ updated?: string; message?: string; error?: string }>;
+}) {
   const session = await requireTenantSession();
   const { customerId } = await params;
+  const query = await searchParams;
   const record = await getCustomerCrmRecord(session.tenantId, customerId);
 
   if (!record) {
@@ -24,7 +32,7 @@ export default async function CustomerRecordPage({ params }: { params: Promise<{
       <DashboardPageHeader
         eyebrow="CRM"
         title={`${customer.firstName} ${customer.lastName}`}
-        description="This CRM record brings the full customer relationship together: work history, quotes, invoices, reminders, and recent communication."
+        description="This record should read like a customer relationship summary: contact details, work history, billing, follow-up, and recent messages in one place."
         section="crm"
         actions={(
           <Link className="ghost" href="/dashboard/crm">
@@ -33,152 +41,311 @@ export default async function CustomerRecordPage({ params }: { params: Promise<{
         )}
       />
 
-      <div className="cards-3">
-        <div className="surface-soft">
-          <strong>Jobs</strong>
-          <div style={{ fontSize: 30, marginTop: 10 }}>{customer.jobs.length}</div>
+      {query.updated === "1" ? (
+        <div className="surface surface-alert is-success">
+          <p>Customer details updated.</p>
         </div>
-        <div className="surface-soft">
-          <strong>Quotes</strong>
-          <div style={{ fontSize: 30, marginTop: 10 }}>{customer.quotes.length}</div>
+      ) : null}
+      {query.message === "sent" ? (
+        <div className="surface surface-alert is-success">
+          <p>Message sent and logged on the customer record.</p>
         </div>
-        <div className="surface-soft">
-          <strong>Invoices</strong>
-          <div style={{ fontSize: 30, marginTop: 10 }}>{customer.invoices.length}</div>
+      ) : null}
+      {query.error ? (
+        <div className="surface surface-alert is-danger">
+          <p>FlowLab could not complete that action. Check the integrations and try again.</p>
         </div>
-      </div>
+      ) : null}
 
-      <div className="cards-2">
-        <div className="surface">
-          <h2 style={{ marginTop: 0 }}>Contact details</h2>
-          <div className="stack" style={{ gap: 12 }}>
-            <div><strong>Email</strong><div style={{ color: "#cbd5e1", marginTop: 6 }}>{customer.email}</div></div>
-            <div><strong>Phone</strong><div style={{ color: "#cbd5e1", marginTop: 6 }}>{customer.phone ?? "Not set"}</div></div>
-            <div><strong>Address</strong><div style={{ color: "#cbd5e1", marginTop: 6 }}>{customer.address ?? "Not set"}</div></div>
-            <div><strong>Suburb</strong><div style={{ color: "#cbd5e1", marginTop: 6 }}>{customer.suburb ?? "Not set"}</div></div>
-            <div><strong>Rating</strong><div style={{ color: "#cbd5e1", marginTop: 6 }}>{customer.ratingAverage?.toFixed(1) ?? "No ratings yet"}</div></div>
+      <div className="surface">
+        <div className="setup-summary">
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Jobs</div>
+            <div className="setup-summary-value">{customer.jobs.length}</div>
+            <p className="setup-summary-copy">Work records already attached to this customer.</p>
           </div>
-        </div>
-
-        <div className="surface">
-          <h2 style={{ marginTop: 0 }}>Recent communication</h2>
-          <div className="stack">
-            {communications.length > 0 ? communications.map((entry) => (
-              <div key={entry.id} className="surface-soft">
-                <strong>{entry.channel.toUpperCase()} · {entry.status}</strong>
-                <div style={{ color: "#cbd5e1", marginTop: 8 }}>{entry.subject ?? entry.body}</div>
-              </div>
-            )) : <div className="surface-soft">No communication recorded for this customer yet.</div>}
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Quotes</div>
+            <div className="setup-summary-value">{customer.quotes.length}</div>
+            <p className="setup-summary-copy">Drafted or accepted quote history on the account.</p>
+          </div>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Invoices</div>
+            <div className="setup-summary-value">{customer.invoices.length}</div>
+            <p className="setup-summary-copy">Billing records tied back to the same customer.</p>
           </div>
         </div>
       </div>
 
       <div className="cards-2">
-        <div className="surface">
-          <h2 style={{ marginTop: 0 }}>Jobs</h2>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Job</th>
-                <th>Status</th>
-                <th>Scheduled</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customer.jobs.map((job) => (
-                <tr key={job.id}>
-                  <td><Link className="inline-entity-link" href={getJobRecordHref(job.id)}>{job.summary}</Link></td>
-                  <td>{job.status}</td>
-                  <td>{job.scheduledFor ? new Date(job.scheduledFor).toLocaleString() : "TBD"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
+            <div className="eyebrow">Contact details</div>
+            <h2 style={{ marginBottom: 8 }}>Core information at a glance</h2>
+            <p>The customer basics should be readable without scrolling through forms first.</p>
+          </div>
 
-        <div className="surface">
-          <h2 style={{ marginTop: 0 }}>Invoices</h2>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Invoice</th>
-                <th>Status</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {customer.invoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td><Link className="inline-entity-link" href={getInvoiceRecordHref(invoice.id)}>{invoice.number}</Link></td>
-                  <td>{invoice.status}</td>
-                  <td>${invoice.amount}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="cards-2">
-        <div className="surface">
-          <h2 style={{ marginTop: 0 }}>Enquiries</h2>
-          <div className="stack">
-            {enquiries.length > 0 ? enquiries.map((enquiry) => (
-              <div key={enquiry.id} className="surface-soft">
-                <strong>{enquiry.status}</strong>
-                <div style={{ color: "#cbd5e1", marginTop: 8 }}>{enquiry.serviceRequest}</div>
-                <div style={{ color: "#94a3b8", marginTop: 8 }}>
-                  {new Date(enquiry.createdAt).toLocaleString()}
-                  {enquiry.quote ? (
-                    <>
-                      {" "}· <Link className="inline-entity-link" href={`/quote/${enquiry.quote.accessToken}`}>Open linked quote</Link>
-                    </>
-                  ) : null}
+          <div className="setup-list">
+            {[
+              ["Email", customer.email],
+              ["Phone", customer.phone ?? "Not set"],
+              ["Address", customer.address ?? "Not set"],
+              ["Suburb", customer.suburb ?? "Not set"],
+              ["Rating", customer.ratingAverage?.toFixed(1) ?? "No ratings yet"]
+            ].map(([label, value]) => (
+              <div key={label} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <span className="status-pill is-off">{label}</span>
+                  </div>
+                  <p>{value}</p>
                 </div>
               </div>
-            )) : <div className="surface-soft">No enquiries recorded for this customer yet.</div>}
+            ))}
           </div>
         </div>
 
-        <div className="surface">
-          <h2 style={{ marginTop: 0 }}>Quotes and agreements</h2>
-          <div className="stack">
+        <form action={`/api/tenant/crm/customers/${customer.id}/update`} method="post" className="surface form-grid">
+          <div className="setup-section-copy">
+            <div className="eyebrow">Edit customer</div>
+            <h2 style={{ marginBottom: 8 }}>Keep the record current</h2>
+            <p>Update the customer once here and let the rest of the CRM inherit the change.</p>
+          </div>
+
+          <input type="hidden" name="returnTo" value={`/dashboard/crm/${customer.id}`} />
+
+          <div className="setup-field-grid">
+            <label className="label">
+              First name
+              <input className="input" name="firstName" defaultValue={customer.firstName} required />
+            </label>
+            <label className="label">
+              Last name
+              <input className="input" name="lastName" defaultValue={customer.lastName} required />
+            </label>
+            <label className="label">
+              Email
+              <input className="input" name="email" type="email" defaultValue={customer.email} required />
+            </label>
+            <label className="label">
+              Phone
+              <input className="input" name="phone" defaultValue={customer.phone ?? ""} />
+            </label>
+            <label className="label">
+              Address
+              <input className="input" name="address" defaultValue={customer.address ?? ""} />
+            </label>
+            <label className="label">
+              Suburb
+              <input className="input" name="suburb" defaultValue={customer.suburb ?? ""} />
+            </label>
+            <label className="label is-full">
+              Notes
+              <textarea className="textarea" name="notes" defaultValue={customer.notes ?? ""} />
+            </label>
+          </div>
+
+          <button className="cta" type="submit">Save customer</button>
+        </form>
+      </div>
+
+      <div className="cards-2">
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
+            <div className="eyebrow">Jobs</div>
+            <h2 style={{ marginBottom: 8 }}>Work history</h2>
+            <p>Jobs stay dense, but the summary and timing should still scan quickly.</p>
+          </div>
+
+          <div className="setup-table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Job</th>
+                  <th>Status</th>
+                  <th>Scheduled</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customer.jobs.length > 0 ? customer.jobs.map((job) => (
+                  <tr key={job.id}>
+                    <td><Link className="inline-entity-link" href={getJobRecordHref(job.id)}>{job.summary}</Link></td>
+                    <td>{job.status}</td>
+                    <td>{job.scheduledFor ? new Date(job.scheduledFor).toLocaleString() : "TBD"}</td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={3} style={{ color: "#64748b", textAlign: "center" }}>No jobs recorded yet.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
+            <div className="eyebrow">Invoices</div>
+            <h2 style={{ marginBottom: 8 }}>Billing history</h2>
+            <p>Outstanding or historic invoices remain easy to reopen from the customer record.</p>
+          </div>
+
+          <div className="setup-table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Status</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customer.invoices.length > 0 ? customer.invoices.map((invoice) => (
+                  <tr key={invoice.id}>
+                    <td><Link className="inline-entity-link" href={getInvoiceRecordHref(invoice.id)}>{invoice.number}</Link></td>
+                    <td>{invoice.status}</td>
+                    <td>${invoice.amount}</td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={3} style={{ color: "#64748b", textAlign: "center" }}>No invoices recorded yet.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div className="cards-2">
+        <ManualCommunicationForm
+          customerId={customer.id}
+          returnTo={`/dashboard/crm/${customer.id}`}
+          title="Send manual message"
+        />
+
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
+            <div className="eyebrow">Recent communication</div>
+            <h2 style={{ marginBottom: 8 }}>Latest outreach</h2>
+            <p>Messages should read like a timeline, not a pile of floating cards.</p>
+          </div>
+
+          <div className="setup-list">
+            {communications.length > 0 ? communications.map((entry) => (
+              <div key={entry.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <span className="status-pill is-off">{entry.channel.toUpperCase()}</span>
+                    <span>{entry.status}</span>
+                  </div>
+                  <p>{entry.subject ?? entry.body}</p>
+                </div>
+              </div>
+            )) : <p className="setup-note">No communication recorded for this customer yet.</p>}
+          </div>
+        </div>
+      </div>
+
+      <div className="surface setup-section">
+        <div className="setup-section-header">
+          <div className="setup-section-copy">
+            <div className="eyebrow">Enquiries</div>
+            <h2>New requests still tied to this customer</h2>
+            <p>Enquiries should stay visible with their next useful link, especially when a quote was already created from the request.</p>
+          </div>
+        </div>
+
+        <div className="setup-list">
+          {enquiries.length > 0 ? enquiries.map((enquiry) => (
+            <div key={enquiry.id} className="setup-row">
+              <div className="setup-row-main">
+                <div className="setup-row-meta">
+                  <span className={`status-pill ${enquiry.status === "new" ? "is-warning" : "is-off"}`}>{enquiry.status}</span>
+                  <span>{new Date(enquiry.createdAt).toLocaleString()}</span>
+                </div>
+                <h3>{enquiry.serviceRequest}</h3>
+              </div>
+              <div className="setup-row-actions">
+                {enquiry.quote ? (
+                  <Link className="ghost" href={`/quote/${enquiry.quote.accessToken}`}>Open linked quote</Link>
+                ) : null}
+              </div>
+            </div>
+          )) : <p className="setup-note">No enquiries recorded for this customer yet.</p>}
+        </div>
+      </div>
+
+      <div className="cards-2">
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
+            <div className="eyebrow">Quotes and agreements</div>
+            <h2 style={{ marginBottom: 8 }}>Commercial history</h2>
+            <p>Quotes and agreements both belong in the same commercial timeline for the customer.</p>
+          </div>
+
+          <div className="setup-list">
             {customer.quotes.map((quote) => (
-              <div key={quote.id} className="surface-soft">
-                <strong>{quote.title}</strong>
-                <div style={{ color: "#cbd5e1", marginTop: 8 }}>{quote.status} · ${quote.amount}</div>
+              <div key={quote.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <span className="status-pill is-off">Quote</span>
+                    <span>{quote.status}</span>
+                  </div>
+                  <h3>{quote.title}</h3>
+                  <p>${quote.amount}</p>
+                </div>
               </div>
             ))}
             {customer.agreements.map((agreement) => (
-              <div key={agreement.id} className="surface-soft">
-                <strong>{agreement.title}</strong>
-                <div style={{ color: "#cbd5e1", marginTop: 8 }}>{agreement.status}</div>
+              <div key={agreement.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <span className="status-pill is-off">Agreement</span>
+                    <span>{agreement.status}</span>
+                  </div>
+                  <h3>{agreement.title}</h3>
+                </div>
               </div>
             ))}
+            {customer.quotes.length === 0 && customer.agreements.length === 0 ? (
+              <p className="setup-note">No quotes or agreements recorded yet.</p>
+            ) : null}
           </div>
         </div>
 
-        <div className="surface">
-          <h2 style={{ marginTop: 0 }}>Feedback and reminders</h2>
-          <div className="stack">
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
+            <div className="eyebrow">Feedback and reminders</div>
+            <h2 style={{ marginBottom: 8 }}>Follow-up signals</h2>
+            <p>Recent sentiment and rebooking reminders should stay close together so the next call or message has context.</p>
+          </div>
+
+          <div className="setup-list">
             {feedback.map((entry) => (
-              <div key={entry.id} className="surface-soft">
-                <strong>{entry.rating} stars</strong>
-                <div style={{ color: "#cbd5e1", marginTop: 8 }}>{entry.comment ?? "No comment supplied."}</div>
+              <div key={entry.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <span className={`status-pill ${entry.rating >= 5 ? "is-on" : "is-off"}`}>{entry.rating} stars</span>
+                  </div>
+                  <p>{entry.comment ?? "No comment supplied."}</p>
+                </div>
               </div>
             ))}
             {reminders.map((reminder) => (
-              <div key={reminder.id} className="surface-soft">
-                <strong>Rebook reminder</strong>
-                <div style={{ color: "#cbd5e1", marginTop: 8 }}>
-                  {reminder.status} · due {new Date(reminder.dueAt).toLocaleDateString()}
+              <div key={reminder.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <span className={`status-pill ${reminder.status === "pending" ? "is-warning" : "is-off"}`}>Rebook reminder</span>
+                  </div>
+                  <p>{reminder.status} · due {new Date(reminder.dueAt).toLocaleDateString()}</p>
                 </div>
               </div>
             ))}
             {feedback.length === 0 && reminders.length === 0 ? (
-              <div className="surface-soft">
+              <p className="setup-note">
                 No feedback or rebook reminders recorded for <CustomerLink customerId={customer.id} className="inline-entity-link">{customer.firstName}</CustomerLink> yet.
-              </div>
+              </p>
             ) : null}
           </div>
         </div>

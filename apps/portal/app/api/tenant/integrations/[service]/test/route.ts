@@ -25,6 +25,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ser
   const result = await testIntegration(service, credentials);
 
   if (tenantId) {
+    const isNotConfigured = result.status === "not_configured";
     await updateIntegrationTestResult({
       tenantId,
       service,
@@ -35,13 +36,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ ser
 
     await logPlatformEvent({
       tenantId,
-      eventType: result.ok ? "info" : "error",
+      eventType: isNotConfigured || result.ok ? "info" : "error",
       service,
       direction: "outbound",
-      status: result.ok ? "success" : "failed",
+      status: isNotConfigured || result.ok ? "success" : "failed",
       requestSummary: `Integration test initiated for ${service}`,
-      responseSummary: result.ok ? "Credential set accepted for downstream live verification." : null,
-      errorMessage: result.ok ? null : result.message,
+      responseSummary: isNotConfigured
+        ? result.message
+        : result.ok
+          ? "Credential set accepted for downstream live verification."
+          : null,
+      errorMessage: isNotConfigured || result.ok ? null : result.message,
       triggeredBy: "tenant_integration_test"
     });
   }

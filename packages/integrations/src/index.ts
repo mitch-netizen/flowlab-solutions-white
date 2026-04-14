@@ -651,7 +651,7 @@ export const integrationHelpText: Record<IntegrationService, string> = {
   docuseal: "Send agreements for e-signature and track signing completion.",
   google_maps: "Estimate routes, drive times, and map service areas.",
   xero: "Create invoices in Xero and sync invoice status back into FlowLab.",
-  make_com: "Push automation triggers to the tenant's own Make.com scenarios.",
+  make_com: "Optional advanced automation. Push FlowLab events into your own Make.com scenarios when you want extra orchestration.",
   claude: "Use FlowLab-managed AI for quoting, scheduling, and learning."
 };
 
@@ -737,12 +737,12 @@ export async function testIntegration(service: IntegrationService, credentials: 
     const missingWebhookCount = automationBlueprints.length - webhookCount;
     return {
       service,
-      ok: webhookCount > 0,
-      status: webhookCount > 0 ? "connected" : "error",
+      ok: true,
+      status: webhookCount > 0 ? "connected" : "not_configured",
       message:
         webhookCount > 0
           ? `${webhookCount} Make.com webhook${webhookCount === 1 ? "" : "s"} configured${missingWebhookCount > 0 ? `, ${missingWebhookCount} still missing.` : "."}`
-          : "Add at least one Make.com webhook URL to test connectivity.",
+          : "Make.com is optional. Add webhook URLs only when you want FlowLab to trigger your own external scenarios.",
       testedAt
     };
   }

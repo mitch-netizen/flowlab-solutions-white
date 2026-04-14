@@ -64,7 +64,7 @@ const PLANS = [
       "200 jobs per month",
       "200 AI quotes per month",
       "No FlowLab branding — 100% your brand",
-      "Make.com automation blueprint pack (16 templates)"
+      "Optional Make.com automation blueprint pack (16 templates)"
     ]
   },
   {

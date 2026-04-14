@@ -1,0 +1,7 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: FlowLab tenant routing
+      - heading "Tenant login unavailable" [level=1] [ref=e5]
+      - paragraph [ref=e6]: This portal address is not linked to an active tenant yet. Double-check the URL or contact FlowLab support.
+  - alert [ref=e7]

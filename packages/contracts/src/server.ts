@@ -49,7 +49,7 @@ export function requireServerEnv(name: string) {
   return value;
 }
 
-const appEnvRequirements = {
+export const appEnvRequirements = {
   web: ["DATABASE_URL", "DIRECT_URL", "JWT_SECRET", "ENCRYPTION_MASTER_KEY", "DEFAULT_ROOT_DOMAIN"],
   portal: ["DATABASE_URL", "DIRECT_URL", "JWT_SECRET", "ENCRYPTION_MASTER_KEY", "DEFAULT_ROOT_DOMAIN", "CRON_SECRET"],
   worker: ["DATABASE_URL", "DIRECT_URL", "JWT_SECRET", "ENCRYPTION_MASTER_KEY", "DEFAULT_ROOT_DOMAIN", "CRON_SECRET"]

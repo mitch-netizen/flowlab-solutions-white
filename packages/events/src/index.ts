@@ -3,6 +3,8 @@ import { prisma } from "@flowlab/db";
 
 export async function logPlatformEvent(input: {
   tenantId?: string | null;
+  customerId?: string | null;
+  jobId?: string | null;
   eventType: PlatformEventType;
   service: string;
   direction: "outbound" | "inbound";
@@ -16,6 +18,8 @@ export async function logPlatformEvent(input: {
   return prisma.platformEventLog.create({
     data: {
       tenantId: input.tenantId ?? null,
+      customerId: input.customerId ?? null,
+      jobId: input.jobId ?? null,
       eventType: input.eventType,
       service: input.service,
       direction: input.direction,

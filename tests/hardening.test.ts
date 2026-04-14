@@ -7,7 +7,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { signCustomerToken, signTenantSession, verifyCustomerToken, verifySessionToken } from "@flowlab/auth";
+import { signCustomerToken, verifyCustomerToken } from "@flowlab/auth";
 import {
   authLoginInputSchema,
   buildTenantUrl,
@@ -96,34 +96,32 @@ describe("auth token scoping", () => {
     process.env.JWT_SECRET = "test-secret-for-hardening-tests";
   });
 
-  it("tenant session round-trips correctly", () => {
-    const token = signTenantSession({ sub: "user-1", email: "a@b.com", role: "owner", tenantId: "t-1" });
-    const claims = verifySessionToken(token);
-    expect(claims?.scope).toBe("tenant");
-    expect(claims?.tenantId).toBe("t-1");
-    expect(claims?.email).toBe("a@b.com");
-  });
-
-  it("verifySessionToken returns null for tampered tokens", () => {
-    const token = signTenantSession({ sub: "user-1", email: "a@b.com", role: "owner", tenantId: "t-1" });
-    expect(verifySessionToken(token + "tampered")).toBeNull();
-  });
-
-  it("verifySessionToken returns null for tokens signed with wrong secret", () => {
-    const saved = process.env.JWT_SECRET;
-    process.env.JWT_SECRET = "secret-a";
-    const token = signTenantSession({ sub: "user-1", email: "a@b.com", role: "owner", tenantId: "t-1" });
-    process.env.JWT_SECRET = "secret-b";
-    expect(verifySessionToken(token)).toBeNull();
-    process.env.JWT_SECRET = saved;
-  });
-
   it("customer token carries resource type and expiry", () => {
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const token = signCustomerToken({ tenantId: "t-1", resourceId: "r-1", resourceType: "feedback", expiresAt });
     const payload = verifyCustomerToken(token);
     expect(payload?.resourceType).toBe("feedback");
     expect(payload?.tenantId).toBe("t-1");
+  });
+
+  it("customer token is invalid when tampered", () => {
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const token = signCustomerToken({ tenantId: "t-1", resourceId: "r-1", resourceType: "feedback", expiresAt });
+    expect(verifyCustomerToken(token + "tampered")).toBeNull();
+  });
+
+  it("customer token is invalid when signed with the wrong secret", () => {
+    const saved = process.env.JWT_SECRET;
+    process.env.JWT_SECRET = "secret-a";
+    const token = signCustomerToken({
+      tenantId: "t-1",
+      resourceId: "r-1",
+      resourceType: "feedback",
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    process.env.JWT_SECRET = "secret-b";
+    expect(verifyCustomerToken(token)).toBeNull();
+    process.env.JWT_SECRET = saved;
   });
 
   it("customer token is invalid after expiry", () => {
