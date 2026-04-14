@@ -3,7 +3,11 @@
 import { useRef, useState } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 
-const TURNSTILE_SITE_KEY = "0x4AAAAAAC5e9PqgPNA4tJ2F";
+// Use NEXT_PUBLIC_TURNSTILE_SITE_KEY from env when available.
+// Locally, set this to Cloudflare's always-pass test key (1x00000000000000000000AA)
+// so the widget renders and submits without error.
+const TURNSTILE_SITE_KEY =
+  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "0x4AAAAAAC5e9PqgPNA4tJ2F";
 
 interface Props {
   action: (formData: FormData) => Promise<void>;
