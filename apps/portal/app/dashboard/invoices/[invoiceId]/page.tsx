@@ -40,6 +40,11 @@ export default async function InvoiceRecordPage({
             <form action={`/api/tenant/invoices/${invoice.id}/sync`} method="post">
               <button className="ghost" type="submit">Sync from Xero</button>
             </form>
+            {invoice.status !== "paid" && invoice.status !== "voided" ? (
+              <form action={`/api/tenant/invoices/${invoice.id}/mark-paid`} method="post">
+                <button className="ghost" type="submit">Mark as paid</button>
+              </form>
+            ) : null}
             {invoice.paymentLink ? (
               <a className="ghost" href={invoice.paymentLink} target="_blank" rel="noreferrer">
                 {invoice.xeroInvoiceId ? "Open Xero invoice" : "Open online invoice"}
@@ -52,6 +57,14 @@ export default async function InvoiceRecordPage({
       {query.message === "sent" ? (
         <div className="surface surface-alert is-success">
           <p>Message sent and linked to this invoice.</p>
+        </div>
+      ) : query.message === "marked_paid" ? (
+        <div className="surface surface-alert is-success">
+          <p>Invoice marked as paid. Payment confirmation automation queued.</p>
+        </div>
+      ) : query.message === "already_paid" ? (
+        <div className="surface surface-alert is-warning">
+          <p>This invoice is already marked as paid.</p>
         </div>
       ) : null}
       {query.error ? (

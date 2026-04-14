@@ -51,6 +51,11 @@ export default async function CustomerRecordPage({
           <p>Message sent and logged on the customer record.</p>
         </div>
       ) : null}
+      {(query as Record<string, string>).reminder === "created" ? (
+        <div className="surface surface-alert is-success">
+          <p>Rebook reminder set.</p>
+        </div>
+      ) : null}
       {query.error ? (
         <div className="surface surface-alert is-danger">
           <p>FlowLab could not complete that action. Check the integrations and try again.</p>
@@ -347,6 +352,19 @@ export default async function CustomerRecordPage({
                 No feedback or rebook reminders recorded for <CustomerLink customerId={customer.id} className="inline-entity-link">{customer.firstName}</CustomerLink> yet.
               </p>
             ) : null}
+
+            <div className="setup-row" style={{ paddingTop: 16 }}>
+              <form className="form-grid" action="/api/tenant/reminders/create" method="post" style={{ width: "100%" }}>
+                <input type="hidden" name="customerId" value={customer.id} />
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                  <label className="label" style={{ flex: 1, minWidth: 180 }}>
+                    Remind me on
+                    <input className="input" type="date" name="dueAt" required />
+                  </label>
+                  <button className="ghost" type="submit" style={{ marginBottom: 0 }}>Set reminder</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
