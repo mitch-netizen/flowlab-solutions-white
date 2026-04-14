@@ -213,6 +213,8 @@ model PlatformEventLog {
   triggeredBy     String?
   reviewedAt      DateTime?
   tenant          Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
 }
 
 model PlatformUser {
@@ -263,6 +265,8 @@ model Customer {
   agreements     Agreement[]
   invoices       Invoice[]
   communications Communication[]
+
+  @@index([tenantId])
 }
 
 model Enquiry {
@@ -292,6 +296,8 @@ model Service {
   defaultPrice    Float?
   defaultDuration Int?
   tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model Job {
@@ -315,6 +321,9 @@ model Job {
   feedbacks       Feedback[]
   invoice         Invoice?
   communications  Communication[]
+
+  @@index([tenantId])
+  @@index([customerId])
 }
 
 model Quote {
@@ -332,6 +341,9 @@ model Quote {
   enquiry        Enquiry?
   tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   job            Job?
+
+  @@index([tenantId])
+  @@index([customerId])
 }
 
 model Agreement {
@@ -350,6 +362,10 @@ model Agreement {
   customer       Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   contractTemplate TenantAgreementTemplate? @relation(fields: [contractTemplateId], references: [id], onDelete: SetNull)
   tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([contractTemplateId])
 }
 
 model TenantAgreementTemplate {
@@ -398,6 +414,7 @@ model Invoice {
   communications  Communication[]
 
   @@unique([tenantId, number])
+  @@index([customerId])
 }
 
 model Communication {
@@ -420,6 +437,9 @@ model Communication {
   @@index([tenantId, customerId, createdAt])
   @@index([tenantId, jobId, createdAt])
   @@index([tenantId, invoiceId, createdAt])
+  @@index([customerId])
+  @@index([jobId])
+  @@index([invoiceId])
 }
 
 model Feedback {
@@ -433,6 +453,9 @@ model Feedback {
   source      String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   job         Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([customerId])
 }
 
 model RebookReminder {
@@ -443,6 +466,9 @@ model RebookReminder {
   sentAt      DateTime?
   status      String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, dueAt])
+  @@index([customerId])
 }
 
 model PricingRate {
@@ -462,6 +488,8 @@ model PricingRate {
   gstEnabled           Boolean  @default(true)
   scheduleBufferPct    Float?   @default(10)
   tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model ServiceRateTemplate {
@@ -471,6 +499,8 @@ model ServiceRateTemplate {
   defaultPrice    Float?
   defaultDuration Int?
   tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model TimeEstimateHistory {
@@ -482,6 +512,8 @@ model TimeEstimateHistory {
   actualMins    Int
   variancePct   Float
   tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
 }
 
 model WorkSchedule {
@@ -491,6 +523,8 @@ model WorkSchedule {
   startTime   String
   endTime     String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model TimeOff {
@@ -500,6 +534,8 @@ model TimeOff {
   startAt     DateTime
   endAt       DateTime
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model PersonalCommitment {
@@ -512,6 +548,8 @@ model PersonalCommitment {
   startTime   String
   endTime     String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model TenantApiKey {
@@ -522,6 +560,8 @@ model TenantApiKey {
   createdAt   DateTime @default(now())
   lastUsedAt  DateTime?
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model AutomationJob {
@@ -540,6 +580,7 @@ model AutomationJob {
   tenant       Tenant?             @relation(fields: [tenantId], references: [id], onDelete: SetNull)
 
   @@index([status, availableAt])
+  @@index([tenantId])
 }
 
 model AutomationPreference {
