@@ -161,8 +161,9 @@ export async function GET(request: Request) {
       triggeredBy: "tenant_xero_oauth"
     });
 
+    // Do not surface raw error messages to the client — full detail is in platform event log.
     return NextResponse.redirect(
-      new URL(`/dashboard/integrations?xero_error=${encodeURIComponent(err instanceof Error ? err.message : "OAuth failed")}`, request.url)
+      new URL("/dashboard/integrations?xero_error=oauth_failed", request.url)
     );
   }
 }

@@ -71,11 +71,10 @@ export async function POST(request: Request) {
         });
       }
     } catch (err) {
-      // If Xero contact sync fails, abort — don't create a dangling local invoice
-      return NextResponse.json(
-        { error: `Failed to sync customer to Xero: ${err instanceof Error ? err.message : String(err)}` },
-        { status: 502 }
-      );
+      // If Xero contact sync fails, abort — don't create a dangling local invoice.
+      // Log internally but return a generic code so internals aren't leaked to the client.
+      console.error("[invoice/create] Xero contact sync failed:", err instanceof Error ? err.message : String(err));
+      return NextResponse.json({ error: "xero_contact_sync_failed" }, { status: 502 });
     }
 
     // 2. Determine invoice number (peek at count to keep consistent with local numbering)
@@ -111,10 +110,8 @@ export async function POST(request: Request) {
         });
       }
     } catch (err) {
-      return NextResponse.json(
-        { error: `Failed to create invoice in Xero: ${err instanceof Error ? err.message : String(err)}` },
-        { status: 502 }
-      );
+      console.error("[invoice/create] Xero invoice creation failed:", err instanceof Error ? err.message : String(err));
+      return NextResponse.json({ error: "xero_invoice_create_failed" }, { status: 502 });
     }
 
     // 4. Create local mirror record (reflects the Xero invoice)

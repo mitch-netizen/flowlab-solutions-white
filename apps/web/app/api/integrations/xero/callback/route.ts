@@ -195,9 +195,11 @@ export async function GET(request: Request) {
       triggeredBy: scope === "platform" ? "platform_xero_oauth" : "tenant_xero_oauth"
     });
 
+    // Do not surface raw error messages to the client — log internally and return a
+    // generic code so the UI can show a user-friendly message without leaking internals.
     const destination = scope === "tenant" && tenant?.slug
-      ? buildTenantUrl(tenant.slug, `/dashboard/integrations?xero_error=${encodeURIComponent(err instanceof Error ? err.message : "OAuth failed")}`)
-      : `/admin?xero_error=${encodeURIComponent(err instanceof Error ? err.message : "OAuth failed")}`;
+      ? buildTenantUrl(tenant.slug, "/dashboard/integrations?xero_error=oauth_failed")
+      : "/admin?xero_error=oauth_failed";
 
     return NextResponse.redirect(new URL(destination, request.url));
   }
