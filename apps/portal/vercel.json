@@ -6,6 +6,10 @@
     {
       "path": "/api/internal/automation/process",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/internal/automation/enqueue-recurring",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
