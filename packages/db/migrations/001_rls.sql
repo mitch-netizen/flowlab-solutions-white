@@ -242,6 +242,26 @@ CREATE POLICY "tenant_isolation" ON "PersonalCommitment"
   USING ("tenantId" = current_setting('app.tenant_id', true)::text)
   WITH CHECK ("tenantId" = current_setting('app.tenant_id', true)::text);
 
+-- Enquiry — inbound leads from the public enquiry form (written server-side via Prisma)
+ALTER TABLE "Enquiry" ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "service_role_all" ON "Enquiry"
+  AS PERMISSIVE FOR ALL TO service_role
+  USING (true) WITH CHECK (true);
+CREATE POLICY "tenant_isolation" ON "Enquiry"
+  AS PERMISSIVE FOR ALL TO authenticated
+  USING ("tenantId" = current_setting('app.tenant_id', true)::text)
+  WITH CHECK ("tenantId" = current_setting('app.tenant_id', true)::text);
+
+-- AutomationPreference — per-tenant toggle for each automation kind
+ALTER TABLE "AutomationPreference" ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "service_role_all" ON "AutomationPreference"
+  AS PERMISSIVE FOR ALL TO service_role
+  USING (true) WITH CHECK (true);
+CREATE POLICY "tenant_isolation" ON "AutomationPreference"
+  AS PERMISSIVE FOR ALL TO authenticated
+  USING ("tenantId" = current_setting('app.tenant_id', true)::text)
+  WITH CHECK ("tenantId" = current_setting('app.tenant_id', true)::text);
+
 -- =============================================================================
 -- PUBLIC-ACCESSIBLE TABLES  (token-gated reads + limited anon writes)
 -- =============================================================================
