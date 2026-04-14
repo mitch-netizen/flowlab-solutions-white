@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 
 import { dashboardNavGroups, dashboardUtilityLinks, isDashboardHrefActive } from "../lib/dashboard-nav";
 
-// App icons — simple SVG marks for each section
+// App icons — restrained glyphs to keep the sidebar easy to scan
 const sectionIcon: Record<string, string> = {
-  Overview: "◈",
-  CRM:      "◉",
-  Jobs:     "◳",
-  Revenue:  "◎",
-  Setup:    "◫"
+  Overview: "○",
+  CRM: "◇",
+  Jobs: "▣",
+  Revenue: "△",
+  Setup: "✦"
 };
 
 type PortalSidebarNavProps = {
@@ -47,9 +47,7 @@ export default function PortalSidebarNav({
             >
               <span className="sidebar-app-icon">{icon}</span>
               <span className="sidebar-app-label">{group.title}</span>
-              {group.items.length > 1 ? (
-                <span className="sidebar-app-count">{group.items.length}</span>
-              ) : null}
+              {group.items.length > 1 ? <span className="sidebar-app-count">{group.items.length}</span> : null}
             </Link>
 
             {/* Sub-pages (visible when this section is active) */}

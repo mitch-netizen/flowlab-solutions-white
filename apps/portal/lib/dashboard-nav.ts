@@ -47,6 +47,7 @@ export const dashboardNavGroups: DashboardNavGroup[] = [
   {
     title: "Setup",
     items: [
+      { href: "/dashboard/automations", label: "Automations", description: "Built-in and advanced workflows" },
       { href: "/dashboard/integrations", label: "Integrations", description: "Xero, Brevo, DocuSeal, and more" },
       { href: "/dashboard/settings", label: "Settings", description: "Business profile and pricing" },
       { href: "/dashboard/system-health", label: "System health", description: "Automation queues and alerts" },
@@ -84,6 +85,7 @@ export const dashboardSectionTabs = {
     { href: "/dashboard/invoices", label: "Invoices" }
   ],
   setup: [
+    { href: "/dashboard/automations", label: "Automations" },
     { href: "/dashboard/integrations", label: "Integrations" },
     { href: "/dashboard/settings", label: "Settings" },
     { href: "/dashboard/system-health", label: "System health" },

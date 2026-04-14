@@ -130,6 +130,7 @@ model Tenant {
   events                PlatformEventLog[]
   apiKeys               TenantApiKey[]
   automationJobs        AutomationJob[]
+  automationPreferences AutomationPreference[]
 }
 
 model TenantProfile {
@@ -261,6 +262,7 @@ model Customer {
   quotes         Quote[]
   agreements     Agreement[]
   invoices       Invoice[]
+  communications Communication[]
 }
 
 model Enquiry {
@@ -312,6 +314,7 @@ model Job {
   quote           Quote?     @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   feedbacks       Feedback[]
   invoice         Invoice?
+  communications  Communication[]
 }
 
 model Quote {
@@ -392,6 +395,7 @@ model Invoice {
   customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   job             Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
   tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  communications  Communication[]
 
   @@unique([tenantId, number])
 }
@@ -400,6 +404,8 @@ model Communication {
   id          String   @id @default(uuid())
   tenantId    String
   customerId  String?
+  jobId       String?
+  invoiceId   String?
   createdAt   DateTime @default(now())
   channel     String
   direction   String
@@ -407,6 +413,13 @@ model Communication {
   body        String
   status      String
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  job         Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  invoice     Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, customerId, createdAt])
+  @@index([tenantId, jobId, createdAt])
+  @@index([tenantId, invoiceId, createdAt])
 }
 
 model Feedback {
@@ -514,6 +527,7 @@ model TenantApiKey {
 model AutomationJob {
   id           String              @id @default(uuid())
   tenantId     String?
+  dedupeKey    String?             @unique
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   kind         String
@@ -526,6 +540,19 @@ model AutomationJob {
   tenant       Tenant?             @relation(fields: [tenantId], references: [id], onDelete: SetNull)
 
   @@index([status, availableAt])
+}
+
+model AutomationPreference {
+  id        String   @id @default(uuid())
+  tenantId   String
+  key       String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+  @@index([tenantId, enabled])
 }
 
 model RateLimitBucket {

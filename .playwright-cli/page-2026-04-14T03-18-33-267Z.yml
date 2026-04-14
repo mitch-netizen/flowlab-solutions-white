@@ -1,0 +1,18 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: Lawn & Order Mowing
+        - heading "Operator dashboard login" [level=1] [ref=e6]
+        - paragraph [ref=e7]: Enter your operator credentials to access the dashboard.
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - text: Email
+          - textbox "Email" [ref=e10]
+        - generic [ref=e11]:
+          - text: Password
+          - textbox "Password" [ref=e12]
+        - button "Open dashboard" [ref=e13] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e19] [cursor=pointer]:
+    - img [ref=e20]
+  - alert [ref=e23]

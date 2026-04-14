@@ -14,7 +14,7 @@ FlowLab runs as a white-label SaaS. Each customer gets their own subdomain (or c
 | **CRM** | Customer records, enquiries, communication history, feedback |
 | **Jobs** | Job board (swim-lane view), job cards, scheduling, mobile field view |
 | **Revenue** | Invoices (Xero-backed), payment status, billing trail |
-| **Setup** | Integrations (Xero, DocuSeal, Make.com), settings, system health |
+| **Setup** | Integrations (Xero, DocuSeal, optional Make.com), settings, system health |
 
 Everything is linked. A customer has a Xero Contact (`xeroContactId`). An invoice has a Xero Invoice (`xeroInvoiceId`). A job links to one invoice. Nothing is inferred or guessed.
 
@@ -44,15 +44,18 @@ flowlab-solutions/
 - **Auth**: Supabase Auth (`@supabase/ssr`), lazy migration from bcrypt
 - **Invoicing**: Xero API (OAuth 2.0) — source of truth for all invoices
 - **Agreements**: DocuSeal
-- **Automation**: Make.com blueprint templates
+- **Automation**: Optional Make.com blueprint templates for external orchestration
 - **Multi-tenancy**: Host-based tenant resolution, RLS on every table
 - **Monorepo**: npm workspaces + Turborepo
 
 ## Quick start
 
 ```bash
-cp .env.example .env          # fill in Supabase, Xero, and DocuSeal credentials
+cp .env.example .env.local    # fill in the exact env names below
 npm install
+npm run env:check:web         # confirm required envs for web
+npm run env:check:portal      # confirm required envs for portal
+npm run env:check:worker      # confirm required envs for worker
 npm run db:generate           # generate Prisma client
 npm run db:push               # push schema to your Supabase project
 npm run db:seed               # seed demo tenant (Lawn & Order)
@@ -63,6 +66,38 @@ npm run dev:portal            # tenant portal → localhost:3001?tenant=lawnorde
 **Demo login** (after seed): `owner@lawnorder.com.au` / `LawnOrder123!`
 
 > **Dev note**: `*.localhost` subdomains don't resolve reliably in browsers. Use `localhost:3001?tenant=<slug>` instead. The slug is persisted in a `__flowlab_dev_tenant` cookie for subsequent requests.
+
+## Required environment variables
+
+FlowLab reads exact variable names from `packages/contracts/src/server.ts`. The most important ones are:
+
+```bash
+DATABASE_URL
+DIRECT_URL
+DEFAULT_ROOT_DOMAIN
+JWT_SECRET
+ENCRYPTION_MASTER_KEY
+```
+
+App-specific checks:
+
+- `web`: `npm run env:check:web`
+- `portal`: `npm run env:check:portal`
+- `worker`: `npm run env:check:worker`
+
+Supabase/Auth variables that need to exist anywhere the app uses login, signup, or session refresh:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+```
+
+Portal and worker also require:
+
+```bash
+CRON_SECRET
+```
 
 ## Key design principles
 
@@ -77,7 +112,7 @@ npm run dev:portal            # tenant portal → localhost:3001?tenant=lawnorde
 |-------------|--------|-------------|
 | **Xero** | OAuth 2.0, token refresh | Contacts + Invoices (AUTHORISED on create) |
 | **DocuSeal** | API key | Service agreement generation and signing |
-| **Make.com** | Webhook triggers | Automation blueprint pack (follow-up, review prompts, rebook) |
+| **Make.com** | Optional webhook triggers | Automation blueprint pack for external follow-up, review prompts, rebook, and custom scenarios |
 
 ## Tenant onboarding flow
 

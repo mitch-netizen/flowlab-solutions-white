@@ -128,15 +128,18 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       <main className="portal-shell">
         <aside className="sidebar">
           <div className="sidebar-brand">
-            <div className="eyebrow">{tenant.branding.businessName}</div>
-            <h2 style={{ marginTop: 8 }}>{tenant.branding.tagline ?? "Your business, automated."}</h2>
+            <div className="eyebrow">Operator workspace</div>
+            <h2 style={{ margin: "6px 0 4px", lineHeight: 1.08 }}>{tenant.branding.businessName}</h2>
+            <div style={{ color: "#cbd5e1", fontSize: 15, fontWeight: 600 }}>
+              {tenant.branding.tagline ?? "Your business, automated."}
+            </div>
             <p className="sidebar-brand-copy">
-              Run the day-to-day from one place: enquiries, quoting, jobs, invoices, and follow-up.
+              Daily control for enquiries, quoting, jobs, invoices, and follow-up.
             </p>
           </div>
 
           <div className="sidebar-status-card">
-            <div style={{ marginBottom: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
               <span style={{
                 display: "inline-block",
                 padding: "3px 10px",
@@ -154,20 +157,20 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                     : "Trial"
                 : status}
               </span>
-              <span style={{ color: "#64748b", fontSize: 12, marginLeft: 8, textTransform: "capitalize" }}>
+              <span style={{ color: "#64748b", fontSize: 12, textTransform: "capitalize" }}>
                 {plan}
               </span>
             </div>
-            <div style={{ fontSize: 13, color: "#cbd5e1" }}>
+            <div style={{ fontSize: 13, color: "#cbd5e1", marginBottom: 6 }}>
               {!onboardingComplete
                 ? `Setup in progress · Step ${onboardingStep} of 6`
                 : "Setup complete"}
             </div>
-            {features.jobsPerMonth !== null && (
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
-                Up to {features.jobsPerMonth} jobs / month
-              </div>
-            )}
+            <div style={{ fontSize: 12, color: "#64748b" }}>
+              {features.jobsPerMonth !== null
+                ? `Up to ${features.jobsPerMonth} jobs / month`
+                : "Unlimited jobs on this plan"}
+            </div>
           </div>
 
           <PortalSidebarNav

@@ -1,6 +1,6 @@
 import {
   PrismaClient,
-  type Prisma,
+  Prisma,
   type BusinessType,
   type TenantPlan,
   IntegrationService as PrismaIntegrationService,
@@ -8,6 +8,7 @@ import {
 } from "@prisma/client";
 import { signCustomerToken, verifyCustomerToken } from "@flowlab/auth";
 import type {
+  AutomationPreferenceKey,
   IntegrationService,
   IntegrationStatus,
   MobileJobAction,
@@ -16,7 +17,12 @@ import type {
   TenantIntegration,
   TenantProfile
 } from "@flowlab/contracts";
-import { getPlanFeatures, getPricingModel } from "@flowlab/contracts";
+import {
+  automationPreferenceDescriptors,
+  automationRecipeDescriptors,
+  getPlanFeatures,
+  getPricingModel
+} from "@flowlab/contracts";
 import {
   buildTenantUrl,
   getCanonicalRootDomain,
@@ -78,6 +84,76 @@ function toTenantProfile(record: Prisma.TenantProfileGetPayload<{ include: { ten
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+function getLocalDateParts(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date);
+
+  const lookup = new Map(parts.map((part) => [part.type, part.value]));
+  const year = Number(lookup.get("year"));
+  const month = Number(lookup.get("month"));
+  const day = Number(lookup.get("day"));
+  const hour = Number(lookup.get("hour"));
+  const minute = Number(lookup.get("minute"));
+  const weekday = (lookup.get("weekday") ?? "").toLowerCase();
+
+  return {
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    weekday,
+    dateKey: `${lookup.get("year")}-${lookup.get("month")}-${lookup.get("day")}`
+  };
+}
+
+function getIsoWeekKey(parts: { year: number; month: number; day: number }) {
+  const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+const automationPreferenceDefaults = Object.fromEntries(
+  automationPreferenceDescriptors.map((descriptor) => [descriptor.key, descriptor.defaultEnabled])
+) as Record<AutomationPreferenceKey, boolean>;
+
+const automationPreferenceKinds: Record<AutomationPreferenceKey, string[]> = {
+  enquiry_confirmation: ["enquiry.received"],
+  booking_confirmation: ["job.scheduled"],
+  invoice_reminders: ["billing.payment_reminder"],
+  feedback_requests: ["retention.feedback_request"],
+  review_requests: ["retention.review_request"],
+  rebook_reminders: ["retention.rebook_reminder"],
+  morning_digest: ["operator.morning_digest"],
+  weekly_analysis: ["learning.weekly_analysis"],
+  advanced_make_webhooks: []
+};
+
+function buildAutomationPreferenceMap(
+  rows: Array<{ key: string; enabled: boolean }>
+): Record<AutomationPreferenceKey, boolean> {
+  const map = { ...automationPreferenceDefaults };
+
+  for (const row of rows) {
+    if (row.key in map) {
+      map[row.key as AutomationPreferenceKey] = row.enabled;
+    }
+  }
+
+  return map;
 }
 
 export async function listTenants(opts: { limit?: number; cursor?: string } = {}) {
@@ -388,7 +464,13 @@ export async function getTenantQuotes(tenantId: string) {
   return prisma.quote.findMany({
     where: { tenantId },
     include: {
-      customer: true
+      customer: true,
+      job: {
+        select: {
+          id: true,
+          status: true
+        }
+      }
     },
     orderBy: { createdAt: "desc" }
   });
@@ -764,14 +846,24 @@ export async function getTenantJobRecord(tenantId: string, jobId: string) {
     return null;
   }
 
-  const [feedback, communications, otherCustomerInvoices] = await Promise.all([
+  const [feedback, jobCommunications, customerCommunications, otherCustomerInvoices] = await Promise.all([
     prisma.feedback.findMany({
       where: { tenantId, OR: [{ jobId }, { customerId: job.customerId }] },
       orderBy: { createdAt: "desc" },
       take: 10
     }),
     prisma.communication.findMany({
-      where: { tenantId, customerId: job.customerId },
+      where: { tenantId, jobId },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    }),
+    prisma.communication.findMany({
+      where: {
+        tenantId,
+        customerId: job.customerId,
+        jobId: null,
+        invoiceId: null
+      },
       orderBy: { createdAt: "desc" },
       take: 10
     }),
@@ -789,7 +881,8 @@ export async function getTenantJobRecord(tenantId: string, jobId: string) {
   return {
     job,
     feedback,
-    communications,
+    jobCommunications,
+    customerCommunications,
     otherCustomerInvoices
   };
 }
@@ -879,7 +972,7 @@ export async function createTenantJob(input: {
     }
   });
 
-  if (job.scheduledFor) {
+  if (job.scheduledFor && (await isAutomationPreferenceEnabled(input.tenantId, "booking_confirmation"))) {
     await enqueueAutomationJob({
       tenantId: input.tenantId,
       kind: "job.scheduled",
@@ -893,6 +986,105 @@ export async function createTenantJob(input: {
   }
 
   return job;
+}
+
+export async function updateTenantJobSchedule(input: {
+  tenantId: string;
+  jobId: string;
+  scheduledFor: Date;
+}) {
+  const job = await prisma.job.findFirst({
+    where: { id: input.jobId, tenantId: input.tenantId },
+    include: {
+      invoice: { select: { id: true } }
+    }
+  });
+
+  if (!job) {
+    throw new Error("Job not found for tenant");
+  }
+
+  if ((job.status === "invoiced" || job.status === "paid") && job.invoice) {
+    throw new Error("Invoiced jobs cannot be rescheduled from FlowLab");
+  }
+
+  const nextStatus = job.status === "quoted" ? "scheduled" : job.status;
+  const updated = await prisma.job.update({
+    where: { id: job.id },
+    data: {
+      scheduledFor: input.scheduledFor,
+      status: nextStatus
+    }
+  });
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId: input.tenantId,
+      eventType: "info",
+      service: "internal",
+      direction: "outbound",
+      status: "success",
+      requestSummary: "Job scheduled",
+      responseSummary: `${updated.summary} · ${input.scheduledFor.toISOString()}`,
+      triggeredBy: "tenant_job_schedule_update",
+      customerId: updated.customerId,
+      jobId: updated.id
+    }
+  });
+
+  if (await isAutomationPreferenceEnabled(input.tenantId, "booking_confirmation")) {
+    await enqueueAutomationJob({
+      tenantId: input.tenantId,
+      kind: "job.scheduled",
+      dedupeKey: null,
+      payload: {
+        jobId: updated.id,
+        customerId: updated.customerId,
+        summary: updated.summary,
+        scheduledFor: updated.scheduledFor?.toISOString() ?? null
+      }
+    });
+  }
+
+  return updated;
+}
+
+export async function updateTenantJobActualHours(input: {
+  tenantId: string;
+  jobId: string;
+  actualHours: number;
+}) {
+  const job = await prisma.job.findFirst({
+    where: { id: input.jobId, tenantId: input.tenantId }
+  });
+
+  if (!job) {
+    throw new Error("Job not found for tenant");
+  }
+
+  const updated = await prisma.job.update({
+    where: { id: job.id },
+    data: {
+      actualHours: input.actualHours
+    }
+  });
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId: input.tenantId,
+      eventType: "info",
+      service: "internal",
+      direction: "outbound",
+      status: "success",
+      requestSummary: "Job actual hours updated",
+      responseSummary: `${updated.summary} · ${input.actualHours}h`,
+      triggeredBy: "tenant_job_actuals_update",
+      customerId: updated.customerId,
+      jobId: updated.id
+    }
+  });
+
+  return updated;
 }
 
 export async function updateTenantJobStatus(input: {
@@ -940,7 +1132,11 @@ export async function updateTenantJobStatus(input: {
     }
   });
 
-  if (input.status === "scheduled" && job.status !== "scheduled") {
+  if (
+    input.status === "scheduled" &&
+    job.status !== "scheduled" &&
+    (await isAutomationPreferenceEnabled(input.tenantId, "booking_confirmation"))
+  ) {
     await enqueueAutomationJob({
       tenantId: input.tenantId,
       kind: "job.scheduled",
@@ -966,9 +1162,19 @@ export async function getTenantInvoiceRecord(tenantId: string, invoiceId: string
     return null;
   }
 
-  const [communications, otherCustomerJobs] = await Promise.all([
+  const [invoiceCommunications, customerCommunications, otherCustomerJobs] = await Promise.all([
     prisma.communication.findMany({
-      where: { tenantId, customerId: invoice.customerId },
+      where: { tenantId, invoiceId },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    }),
+    prisma.communication.findMany({
+      where: {
+        tenantId,
+        customerId: invoice.customerId,
+        jobId: null,
+        invoiceId: null
+      },
       orderBy: { createdAt: "desc" },
       take: 10
     }),
@@ -985,7 +1191,8 @@ export async function getTenantInvoiceRecord(tenantId: string, invoiceId: string
 
   return {
     invoice,
-    communications,
+    invoiceCommunications,
+    customerCommunications,
     otherCustomerJobs
   };
 }
@@ -1464,15 +1671,17 @@ export async function createEnquiry(input: {
     }
   });
 
-  await enqueueAutomationJob({
-    tenantId: input.tenantId,
-    kind: "enquiry.received",
-    payload: {
-      enquiryId: enquiry.id,
-      customerId: customer.id,
-      serviceRequest: input.serviceRequest
-    }
-  });
+  if (await isAutomationPreferenceEnabled(input.tenantId, "enquiry_confirmation")) {
+    await enqueueAutomationJob({
+      tenantId: input.tenantId,
+      kind: "enquiry.received",
+      payload: {
+        enquiryId: enquiry.id,
+        customerId: customer.id,
+        serviceRequest: input.serviceRequest
+      }
+    });
+  }
 
   return { customer, enquiry };
 }
@@ -2487,20 +2696,162 @@ export async function markAgreementSignedByToken(token: string) {
   return updated;
 }
 
+export async function closeTenantEnquiry(input: {
+  tenantId: string;
+  enquiryId: string;
+}) {
+  const enquiry = await prisma.enquiry.findFirst({
+    where: {
+      id: input.enquiryId,
+      tenantId: input.tenantId
+    }
+  });
+
+  if (!enquiry) {
+    throw new Error("Enquiry not found for tenant");
+  }
+
+  if (enquiry.quoteId) {
+    throw new Error("Quoted enquiries cannot be closed from the queue");
+  }
+
+  const updated = await prisma.enquiry.update({
+    where: { id: enquiry.id },
+    data: {
+      status: "closed"
+    }
+  });
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId: input.tenantId,
+      eventType: "info",
+      service: "internal",
+      direction: "outbound",
+      status: "success",
+      requestSummary: "Enquiry closed",
+      responseSummary: updated.serviceRequest.slice(0, 160),
+      triggeredBy: "tenant_enquiry_close",
+      customerId: updated.customerId
+    }
+  });
+
+  return updated;
+}
+
 export async function enqueueAutomationJob(input: {
   tenantId?: string | null;
   kind: string;
   payload: Record<string, unknown>;
   availableAt?: Date;
+  dedupeKey?: string | null;
 }) {
-  return prisma.automationJob.create({
-    data: {
-      tenantId: input.tenantId ?? null,
-      kind: input.kind,
-      payloadJson: JSON.stringify(input.payload),
-      availableAt: input.availableAt ?? new Date()
+  if (input.dedupeKey) {
+    const existing = await prisma.automationJob.findUnique({
+      where: { dedupeKey: input.dedupeKey }
+    });
+
+    if (existing) {
+      return existing;
+    }
+  }
+
+  try {
+    return await prisma.automationJob.create({
+      data: {
+        tenantId: input.tenantId ?? null,
+        dedupeKey: input.dedupeKey ?? null,
+        kind: input.kind,
+        payloadJson: JSON.stringify(input.payload),
+        availableAt: input.availableAt ?? new Date()
+      }
+    });
+  } catch (error) {
+    if (
+      input.dedupeKey &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const existing = await prisma.automationJob.findUnique({
+        where: { dedupeKey: input.dedupeKey }
+      });
+
+      if (existing) {
+        return existing;
+      }
+    }
+
+    throw error;
+  }
+}
+
+export async function enqueueRecurringAutomationJobs(now = new Date()) {
+  const tenants = await prisma.tenant.findMany({
+    select: {
+      id: true,
+      profile: {
+        select: {
+          timezone: true
+        }
+      }
     }
   });
+
+  let scheduled = 0;
+
+  for (const tenant of tenants) {
+    const preferences = await getTenantAutomationPreferencesMap(tenant.id);
+    const timeZone = tenant.profile?.timezone || "Australia/Brisbane";
+    const local = getLocalDateParts(now, timeZone);
+    const minutes = local.hour * 60 + local.minute;
+    const isoWeekKey = getIsoWeekKey(local);
+    const jsDay = new Date(Date.UTC(local.year, local.month - 1, local.day)).getUTCDay();
+    const isoWeekday = jsDay === 0 ? 7 : jsDay;
+
+    if (preferences.morning_digest && minutes >= 5 * 60 + 30) {
+      const dedupeKey = `morning-digest:${tenant.id}:${local.dateKey}`;
+      const existing = await prisma.automationJob.findUnique({
+        where: { dedupeKey }
+      });
+
+      if (!existing) {
+        await enqueueAutomationJob({
+          tenantId: tenant.id,
+          kind: "operator.morning_digest",
+          dedupeKey,
+          payload: {
+            scheduledForLocalDate: local.dateKey,
+            timeZone,
+            queuedAt: now.toISOString()
+          }
+        });
+        scheduled += 1;
+      }
+    }
+
+    if (preferences.weekly_analysis && (isoWeekday > 1 || (isoWeekday === 1 && minutes >= 6 * 60))) {
+      const dedupeKey = `weekly-analysis:${tenant.id}:${isoWeekKey}`;
+      const existing = await prisma.automationJob.findUnique({
+        where: { dedupeKey }
+      });
+
+      if (!existing) {
+        await enqueueAutomationJob({
+          tenantId: tenant.id,
+          kind: "learning.weekly_analysis",
+          dedupeKey,
+          payload: {
+            weekKey: isoWeekKey,
+            timeZone,
+            queuedAt: now.toISOString()
+          }
+        });
+        scheduled += 1;
+      }
+    }
+  }
+
+  return { tenants: tenants.length, scheduled };
 }
 
 export async function syncMobileJobActions(input: {
@@ -2667,10 +3018,11 @@ async function hasRecentOutboundCommunication(input: {
 }
 
 export async function enqueueRetentionRun(tenantId: string) {
+  const preferences = await getTenantAutomationPreferencesMap(tenantId);
   const retention = await getRetentionSnapshot(tenantId);
   const jobs = [];
 
-  for (const invoice of retention.invoices.filter((entry) => entry.dueAt && entry.dueAt < new Date())) {
+  for (const invoice of preferences.invoice_reminders ? retention.invoices.filter((entry) => entry.dueAt && entry.dueAt < new Date()) : []) {
     const subject = `Payment reminder · ${invoice.number}`;
     const alreadySent = await hasRecentOutboundCommunication({
       tenantId,
@@ -2696,7 +3048,7 @@ export async function enqueueRetentionRun(tenantId: string) {
     );
   }
 
-  for (const reminder of retention.reminders.filter((entry) => entry.status !== "sent")) {
+  for (const reminder of preferences.rebook_reminders ? retention.reminders.filter((entry) => entry.status !== "sent") : []) {
     const alreadySent = await hasRecentOutboundCommunication({
       tenantId,
       customerId: reminder.customerId,
@@ -2720,7 +3072,7 @@ export async function enqueueRetentionRun(tenantId: string) {
     );
   }
 
-  for (const job of retention.completedJobs.slice(0, 5)) {
+  for (const job of preferences.feedback_requests ? retention.completedJobs.slice(0, 5) : []) {
     const hasFeedback = retention.feedback.some((entry) => entry.jobId === job.id);
     const alreadySent = await hasRecentOutboundCommunication({
       tenantId,
@@ -2745,7 +3097,7 @@ export async function enqueueRetentionRun(tenantId: string) {
     );
   }
 
-  for (const item of retention.feedback.filter((entry) => entry.rating === 5).slice(0, 5)) {
+  for (const item of preferences.review_requests ? retention.feedback.filter((entry) => entry.rating === 5).slice(0, 5) : []) {
     const alreadySent = await hasRecentOutboundCommunication({
       tenantId,
       customerId: item.customerId,
@@ -2894,6 +3246,124 @@ export async function getTenantAutomationHealth(tenantId: string) {
   };
 }
 
+export async function getTenantAutomationPreferencesMap(tenantId: string) {
+  const rows = await prisma.automationPreference.findMany({
+    where: { tenantId },
+    select: { key: true, enabled: true }
+  });
+
+  return buildAutomationPreferenceMap(rows);
+}
+
+export async function isAutomationPreferenceEnabled(tenantId: string, key: AutomationPreferenceKey) {
+  const preference = await prisma.automationPreference.findUnique({
+    where: {
+      tenantId_key: {
+        tenantId,
+        key
+      }
+    },
+    select: { enabled: true }
+  });
+
+  return preference?.enabled ?? automationPreferenceDefaults[key];
+}
+
+export async function saveAutomationPreference(input: {
+  tenantId: string;
+  key: AutomationPreferenceKey;
+  enabled: boolean;
+}) {
+  const preference = await prisma.automationPreference.upsert({
+    where: {
+      tenantId_key: {
+        tenantId: input.tenantId,
+        key: input.key
+      }
+    },
+    create: {
+      tenantId: input.tenantId,
+      key: input.key,
+      enabled: input.enabled
+    },
+    update: {
+      enabled: input.enabled
+    }
+  });
+
+  if (!input.enabled && automationPreferenceKinds[input.key].length > 0) {
+    await prisma.automationJob.deleteMany({
+      where: {
+        tenantId: input.tenantId,
+        status: "pending",
+        kind: { in: automationPreferenceKinds[input.key] }
+      }
+    });
+  }
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId: input.tenantId,
+      eventType: "info",
+      service: "internal",
+      direction: "outbound",
+      status: "success",
+      requestSummary: `Automation ${input.enabled ? "enabled" : "disabled"}: ${input.key.replace(/_/g, " ")}`,
+      responseSummary: input.enabled ? "Preference saved" : "Preference saved and pending jobs cleared where applicable",
+      triggeredBy: "tenant_automation_preference"
+    }
+  });
+
+  return preference;
+}
+
+export async function applyAutomationRecipe(input: {
+  tenantId: string;
+  recipeKey: (typeof automationRecipeDescriptors)[number]["key"];
+}) {
+  const recipe = automationRecipeDescriptors.find((entry) => entry.key === input.recipeKey);
+
+  if (!recipe) {
+    throw new Error("Automation recipe not found");
+  }
+
+  await prisma.$transaction(
+    recipe.enables.map((key) =>
+      prisma.automationPreference.upsert({
+        where: {
+          tenantId_key: {
+            tenantId: input.tenantId,
+            key
+          }
+        },
+        create: {
+          tenantId: input.tenantId,
+          key,
+          enabled: true
+        },
+        update: {
+          enabled: true
+        }
+      })
+    )
+  );
+
+  await prisma.platformEventLog.create({
+    data: {
+      tenantId: input.tenantId,
+      eventType: "info",
+      service: "internal",
+      direction: "outbound",
+      status: "success",
+      requestSummary: `Automation recipe applied: ${recipe.title}`,
+      responseSummary: `${recipe.enables.length} automation preference${recipe.enables.length === 1 ? "" : "s"} enabled`,
+      triggeredBy: "tenant_automation_recipe"
+    }
+  });
+
+  return recipe;
+}
+
 export async function retryAutomationJob(input: { tenantId: string; jobId: string }) {
   return prisma.automationJob.updateMany({
     where: {
@@ -3013,6 +3483,7 @@ export async function updateIntegrationTestResult(input: {
   ok: boolean;
   message: string;
 }) {
+  const isNotConfigured = input.status === "not_configured";
   return prisma.tenantIntegration.update({
     where: {
       tenantId_service: {
@@ -3023,8 +3494,8 @@ export async function updateIntegrationTestResult(input: {
     data: {
       status: input.status as PrismaIntegrationStatus,
       lastTestedAt: new Date(),
-      lastTestResult: input.ok ? "success" : "failed",
-      lastErrorMessage: input.ok ? null : input.message
+      lastTestResult: isNotConfigured ? null : input.ok ? "success" : "failed",
+      lastErrorMessage: isNotConfigured || input.ok ? null : input.message
     }
   });
 }
@@ -3181,7 +3652,7 @@ export async function submitFeedbackByToken(token: string, input: { rating: numb
     }
   });
 
-  if (input.rating === 5) {
+  if (input.rating === 5 && (await isAutomationPreferenceEnabled(payload.tenantId, "review_requests"))) {
     await enqueueAutomationJob({
       tenantId: payload.tenantId,
       kind: "retention.review_request",

@@ -3,9 +3,11 @@ import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 import {
   claimPendingAutomationJobs,
   completeAutomationJob,
+  enqueueRecurringAutomationJobs,
   failAutomationJob,
   getPendingRateSuggestions,
   getSchedulerRecommendations,
+  isAutomationPreferenceEnabled,
   getTenantIntegrationRecord,
   prisma,
   saveRateSuggestions
@@ -46,6 +48,8 @@ async function getJob(jobId: string) {
 async function recordCommunication(input: {
   tenantId: string;
   customerId?: string | null;
+  jobId?: string | null;
+  invoiceId?: string | null;
   channel: "email" | "sms";
   subject: string;
   body: string;
@@ -55,6 +59,8 @@ async function recordCommunication(input: {
     data: {
       tenantId: input.tenantId,
       customerId: input.customerId ?? null,
+      jobId: input.jobId ?? null,
+      invoiceId: input.invoiceId ?? null,
       channel: input.channel,
       direction: "outbound",
       subject: input.subject,
@@ -82,6 +88,59 @@ async function getCredentials(tenantId: string, service: "twilio" | "sendgrid" |
   return record?.credentialsJson ? decryptJson(record.credentialsJson) : {};
 }
 
+function shouldLogMakeWebhookResult(result: { status: number; body: string }) {
+  return !(result.status === 0 && result.body.startsWith("No webhook URL configured for key:"));
+}
+
+async function maybeLogMakeWebhookResult(input: {
+  tenantId: string;
+  result: { ok: boolean; status: number; body: string };
+  requestSummary: string;
+  triggeredBy: string;
+  eventType?: "webhook_fired" | "info";
+}) {
+  if (!shouldLogMakeWebhookResult(input.result)) {
+    return;
+  }
+
+  await logPlatformEvent({
+    tenantId: input.tenantId,
+    eventType: input.eventType ?? "webhook_fired",
+    service: "make",
+    direction: "outbound",
+    status: input.result.ok ? "success" : input.result.status === 0 ? "pending" : "failed",
+    requestSummary: input.requestSummary,
+    responseSummary: input.result.body.slice(0, 200),
+    triggeredBy: input.triggeredBy
+  });
+}
+
+async function fireTenantMakeWebhook(input: {
+  tenantId: string;
+  credentials: Record<string, string>;
+  webhookKey: string;
+  payload: Record<string, unknown>;
+  requestSummary: string;
+  triggeredBy: string;
+  eventType?: "webhook_fired" | "info";
+}) {
+  const enabled = await isAutomationPreferenceEnabled(input.tenantId, "advanced_make_webhooks");
+
+  if (!enabled) {
+    return { ok: false, status: 0, body: "Advanced Make webhooks disabled" };
+  }
+
+  const result = await fireMakeWebhook(input.credentials, input.webhookKey, input.payload);
+  await maybeLogMakeWebhookResult({
+    tenantId: input.tenantId,
+    result,
+    requestSummary: input.requestSummary,
+    triggeredBy: input.triggeredBy,
+    eventType: input.eventType
+  });
+  return result;
+}
+
 async function processJob(job: ClaimedJob) {
   const payload = job.payload as Record<string, string>;
   const tenantId = job.tenantId ?? "";
@@ -95,31 +154,27 @@ async function processJob(job: ClaimedJob) {
       ]);
 
       const businessName = tenant?.profile?.businessName ?? "Your service provider";
-      const makeResult = await fireMakeWebhook(makeCredentials, "quoteAcceptedWebhookUrl", {
-        tenant_slug: tenant?.slug,
-        business_name: businessName,
-        event_key: "quoteAccepted",
-        triggered_at: new Date().toISOString(),
-        quote_id: payload.quoteId,
-        agreement_id: payload.agreementId,
-        quote_title: payload.title,
-        customer: {
-          id: customer?.id,
-          name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
-          phone: customer?.phone,
-          email: customer?.email
-        }
-      });
-
-      await logPlatformEvent({
+      await fireTenantMakeWebhook({
         tenantId,
-        eventType: "webhook_fired",
-        service: "make",
-        direction: "outbound",
-        status: makeResult.ok ? "success" : makeResult.status === 0 ? "pending" : "failed",
+        credentials: makeCredentials,
+        webhookKey: "quoteAcceptedWebhookUrl",
         requestSummary: "Make.com quote accepted webhook",
-        responseSummary: makeResult.body.slice(0, 200),
-        triggeredBy: "worker_quote_accepted"
+        triggeredBy: "worker_quote_accepted",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: businessName,
+          event_key: "quoteAccepted",
+          triggered_at: new Date().toISOString(),
+          quote_id: payload.quoteId,
+          agreement_id: payload.agreementId,
+          quote_title: payload.title,
+          customer: {
+            id: customer?.id,
+            name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
+            phone: customer?.phone,
+            email: customer?.email
+          }
+        }
       });
 
       if (customer?.phone) {
@@ -178,31 +233,27 @@ async function processJob(job: ClaimedJob) {
       ]);
 
       const businessName = tenant?.profile?.businessName ?? "Your service provider";
-      const makeResult = await fireMakeWebhook(makeCredentials, "agreementSignedWebhookUrl", {
-        tenant_slug: tenant?.slug,
-        business_name: businessName,
-        event_key: "agreementSigned",
-        triggered_at: new Date().toISOString(),
-        agreement_id: payload.agreementId,
-        quote_id: payload.quoteId,
-        agreement_title: payload.title,
-        customer: {
-          id: customer?.id,
-          name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
-          phone: customer?.phone,
-          email: customer?.email
-        }
-      });
-
-      await logPlatformEvent({
+      await fireTenantMakeWebhook({
         tenantId,
-        eventType: "webhook_fired",
-        service: "make",
-        direction: "outbound",
-        status: makeResult.ok ? "success" : makeResult.status === 0 ? "pending" : "failed",
+        credentials: makeCredentials,
+        webhookKey: "agreementSignedWebhookUrl",
         requestSummary: "Make.com agreement signed webhook",
-        responseSummary: makeResult.body.slice(0, 200),
-        triggeredBy: "worker_agreement_signed"
+        triggeredBy: "worker_agreement_signed",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: businessName,
+          event_key: "agreementSigned",
+          triggered_at: new Date().toISOString(),
+          agreement_id: payload.agreementId,
+          quote_id: payload.quoteId,
+          agreement_title: payload.title,
+          customer: {
+            id: customer?.id,
+            name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
+            phone: customer?.phone,
+            email: customer?.email
+          }
+        }
       });
 
       if (customer?.email) {
@@ -284,32 +335,28 @@ async function processJob(job: ClaimedJob) {
       const businessName = tenant?.profile?.businessName ?? "Your service provider";
       const amount = invoice?.amount ? `$${invoice.amount.toFixed(2)}` : "an amount";
       const paymentLink = invoice?.paymentLink ?? null;
-      const makeResult = await fireMakeWebhook(makeCredentials, "jobCompleteWebhookUrl", {
-        tenant_slug: tenant?.slug,
-        business_name: businessName,
-        event_key: "invoiceCreated",
-        triggered_at: new Date().toISOString(),
-        invoice_id: invoice?.id,
-        invoice_number: invoice?.number ?? payload.invoiceNumber,
-        amount: invoice?.amount,
-        payment_link: paymentLink,
-        customer: {
-          id: customer?.id,
-          name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
-          phone: customer?.phone,
-          email: customer?.email
-        }
-      });
-
-      await logPlatformEvent({
+      await fireTenantMakeWebhook({
         tenantId,
-        eventType: "webhook_fired",
-        service: "make",
-        direction: "outbound",
-        status: makeResult.ok ? "success" : makeResult.status === 0 ? "pending" : "failed",
+        credentials: makeCredentials,
+        webhookKey: "jobCompleteWebhookUrl",
         requestSummary: "Make.com invoice created webhook",
-        responseSummary: makeResult.body.slice(0, 200),
-        triggeredBy: "worker_invoice_created"
+        triggeredBy: "worker_invoice_created",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: businessName,
+          event_key: "invoiceCreated",
+          triggered_at: new Date().toISOString(),
+          invoice_id: invoice?.id,
+          invoice_number: invoice?.number ?? payload.invoiceNumber,
+          amount: invoice?.amount,
+          payment_link: paymentLink,
+          customer: {
+            id: customer?.id,
+            name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
+            phone: customer?.phone,
+            email: customer?.email
+          }
+        }
       });
 
       if (customer?.email) {
@@ -342,6 +389,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            invoiceId: invoice?.id ?? payload.invoiceId,
             channel: "email",
             subject,
             body: `Invoice ${invoice?.number ?? payload.invoiceNumber} issued for ${amount}.`,
@@ -362,6 +410,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            invoiceId: invoice?.id ?? payload.invoiceId,
             channel: "email",
             subject,
             body: `Invoice ${invoice?.number ?? payload.invoiceNumber} issued for ${amount}.`,
@@ -389,6 +438,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            invoiceId: invoice?.id ?? payload.invoiceId,
             channel: "sms",
             subject: `Invoice issued · ${invoice?.number ?? payload.invoiceNumber}`,
             body: smsBody,
@@ -409,6 +459,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            invoiceId: invoice?.id ?? payload.invoiceId,
             channel: "sms",
             subject: `Invoice issued · ${invoice?.number ?? payload.invoiceNumber}`,
             body: smsBody,
@@ -439,31 +490,27 @@ async function processJob(job: ClaimedJob) {
       ]);
 
       const businessName = tenant?.profile?.businessName ?? "Your service provider";
-      const makeResult = await fireMakeWebhook(makeCredentials, "jobCompleteWebhookUrl", {
-        tenant_slug: tenant?.slug,
-        business_name: businessName,
-        event_key: "invoicePaid",
-        triggered_at: new Date().toISOString(),
-        invoice_id: invoice?.id,
-        invoice_number: invoice?.number ?? payload.invoiceNumber,
-        amount: invoice?.amount,
-        customer: {
-          id: customer?.id,
-          name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
-          phone: customer?.phone,
-          email: customer?.email
-        }
-      });
-
-      await logPlatformEvent({
+      await fireTenantMakeWebhook({
         tenantId,
-        eventType: "webhook_fired",
-        service: "make",
-        direction: "outbound",
-        status: makeResult.ok ? "success" : makeResult.status === 0 ? "pending" : "failed",
+        credentials: makeCredentials,
+        webhookKey: "jobCompleteWebhookUrl",
         requestSummary: "Make.com invoice paid webhook",
-        responseSummary: makeResult.body.slice(0, 200),
-        triggeredBy: "worker_invoice_paid"
+        triggeredBy: "worker_invoice_paid",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: businessName,
+          event_key: "invoicePaid",
+          triggered_at: new Date().toISOString(),
+          invoice_id: invoice?.id,
+          invoice_number: invoice?.number ?? payload.invoiceNumber,
+          amount: invoice?.amount,
+          customer: {
+            id: customer?.id,
+            name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
+            phone: customer?.phone,
+            email: customer?.email
+          }
+        }
       });
 
       if (customer?.email) {
@@ -492,6 +539,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            invoiceId: invoice?.id ?? payload.invoiceId,
             channel: "email",
             subject,
             body: `Payment received for invoice ${invoice?.number ?? payload.invoiceNumber} (${amount}).`,
@@ -512,6 +560,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            invoiceId: invoice?.id ?? payload.invoiceId,
             channel: "email",
             subject,
             body: `Payment received for invoice ${invoice?.number ?? payload.invoiceNumber} (${amount}).`,
@@ -551,6 +600,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            invoiceId: invoice?.id ?? payload.invoiceId,
             channel: "sms",
             subject: `Payment reminder · ${invoice?.number ?? payload.invoiceNumber}`,
             body: smsBody,
@@ -571,6 +621,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            invoiceId: invoice?.id ?? payload.invoiceId,
             channel: "sms",
             subject: `Payment reminder · ${invoice?.number ?? payload.invoiceNumber}`,
             body: smsBody,
@@ -677,6 +728,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            jobId: payload.jobId,
             channel: "sms",
             subject: `Feedback request · ${payload.jobId}`,
             body: smsBody,
@@ -697,6 +749,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            jobId: payload.jobId,
             channel: "sms",
             subject: `Feedback request · ${payload.jobId}`,
             body: smsBody,
@@ -733,6 +786,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            jobId: payload.jobId,
             channel: "sms",
             subject: `Review request · ${payload.feedbackId ?? customer.id}`,
             body: smsBody,
@@ -753,6 +807,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            jobId: payload.jobId ?? null,
             channel: "sms",
             subject: `Review request · ${payload.feedbackId ?? customer.id}`,
             body: smsBody,
@@ -785,30 +840,26 @@ async function processJob(job: ClaimedJob) {
       const businessName = tenant?.profile?.businessName ?? "Your service provider";
       const enquiryText = String(payload.serviceRequest ?? "New enquiry received");
 
-      const makeResult = await fireMakeWebhook(makeCredentials, "enquiryWebhookUrl", {
-        tenant_slug: tenant?.slug,
-        business_name: businessName,
-        event_key: "newEnquiry",
-        triggered_at: new Date().toISOString(),
-        enquiry_id: payload.enquiryId,
-        service_request: enquiryText,
-        customer: {
-          id: customer?.id,
-          name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
-          phone: customer?.phone,
-          email: customer?.email
-        }
-      });
-
-      await logPlatformEvent({
+      await fireTenantMakeWebhook({
         tenantId,
-        eventType: "webhook_fired",
-        service: "make",
-        direction: "outbound",
-        status: makeResult.ok ? "success" : makeResult.status === 0 ? "pending" : "failed",
+        credentials: makeCredentials,
+        webhookKey: "enquiryWebhookUrl",
         requestSummary: "Make.com new enquiry webhook",
-        responseSummary: makeResult.body.slice(0, 200),
-        triggeredBy: "worker_enquiry_received"
+        triggeredBy: "worker_enquiry_received",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: businessName,
+          event_key: "newEnquiry",
+          triggered_at: new Date().toISOString(),
+          enquiry_id: payload.enquiryId,
+          service_request: enquiryText,
+          customer: {
+            id: customer?.id,
+            name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
+            phone: customer?.phone,
+            email: customer?.email
+          }
+        }
       });
 
       if (customer?.email) {
@@ -926,31 +977,27 @@ async function processJob(job: ClaimedJob) {
         ? new Date(jobRecord.scheduledFor).toLocaleString("en-AU")
         : "the scheduled time provided";
 
-      const makeResult = await fireMakeWebhook(makeCredentials, "jobScheduledWebhookUrl", {
-        tenant_slug: tenant?.slug,
-        business_name: businessName,
-        event_key: "jobScheduled",
-        triggered_at: new Date().toISOString(),
-        job_id: payload.jobId,
-        scheduled_for: jobRecord?.scheduledFor?.toISOString() ?? payload.scheduledFor,
-        summary: jobRecord?.summary ?? payload.summary,
-        customer: {
-          id: customer?.id,
-          name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
-          phone: customer?.phone,
-          email: customer?.email
-        }
-      });
-
-      await logPlatformEvent({
+      await fireTenantMakeWebhook({
         tenantId,
-        eventType: "webhook_fired",
-        service: "make",
-        direction: "outbound",
-        status: makeResult.ok ? "success" : makeResult.status === 0 ? "pending" : "failed",
+        credentials: makeCredentials,
+        webhookKey: "jobScheduledWebhookUrl",
         requestSummary: "Make.com job scheduled webhook",
-        responseSummary: makeResult.body.slice(0, 200),
-        triggeredBy: "worker_job_scheduled"
+        triggeredBy: "worker_job_scheduled",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: businessName,
+          event_key: "jobScheduled",
+          triggered_at: new Date().toISOString(),
+          job_id: payload.jobId,
+          scheduled_for: jobRecord?.scheduledFor?.toISOString() ?? payload.scheduledFor,
+          summary: jobRecord?.summary ?? payload.summary,
+          customer: {
+            id: customer?.id,
+            name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
+            phone: customer?.phone,
+            email: customer?.email
+          }
+        }
       });
 
       if (customer?.email) {
@@ -973,6 +1020,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            jobId: payload.jobId,
             channel: "email",
             subject,
             body: `${jobRecord?.summary ?? payload.summary ?? "Scheduled service"} · ${scheduledText}`,
@@ -982,6 +1030,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            jobId: payload.jobId,
             channel: "email",
             subject,
             body: `${jobRecord?.summary ?? payload.summary ?? "Scheduled service"} · ${scheduledText}`,
@@ -997,6 +1046,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            jobId: payload.jobId,
             channel: "sms",
             subject: `Job scheduled · ${payload.jobId}`,
             body: smsBody,
@@ -1006,6 +1056,7 @@ async function processJob(job: ClaimedJob) {
           await recordCommunication({
             tenantId,
             customerId: customer.id,
+            jobId: payload.jobId,
             channel: "sms",
             subject: `Job scheduled · ${payload.jobId}`,
             body: smsBody,
@@ -1026,24 +1077,21 @@ async function processJob(job: ClaimedJob) {
       const flagged = recommendations.filter((entry) => entry.severity !== "ok");
 
       if (flagged.length > 0) {
-        const makeResult = await fireMakeWebhook(makeCredentials, "scheduleUpdateWebhookUrl", {
-          tenant_slug: tenant?.slug,
-          business_name: tenant?.profile?.businessName,
-          event_key: "scheduleUpdate",
-          triggered_at: new Date().toISOString(),
-          flagged_count: flagged.length,
-          recommendations: flagged.map((entry) => ({ severity: entry.severity, summary: entry.summary }))
-        });
-
-        await logPlatformEvent({
+        await fireTenantMakeWebhook({
           tenantId,
-          eventType: makeResult.ok ? "webhook_fired" : "info",
-          service: "make",
-          direction: "outbound",
-          status: makeResult.ok ? "success" : "pending",
+          credentials: makeCredentials,
+          webhookKey: "scheduleUpdateWebhookUrl",
           requestSummary: `Schedule update webhook: ${flagged.length} flagged jobs`,
-          responseSummary: makeResult.body.slice(0, 200),
-          triggeredBy: "worker_schedule_recalculate"
+          triggeredBy: "worker_schedule_recalculate",
+          eventType: "info",
+          payload: {
+            tenant_slug: tenant?.slug,
+            business_name: tenant?.profile?.businessName,
+            event_key: "scheduleUpdate",
+            triggered_at: new Date().toISOString(),
+            flagged_count: flagged.length,
+            recommendations: flagged.map((entry) => ({ severity: entry.severity, summary: entry.summary }))
+          }
         });
       }
 
@@ -1315,27 +1363,23 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
 
       // ── Make.com webhook ──────────────────────────────────────────────
       const makeCredentials = await getCredentials(tenantId, "make_com");
-      const makeResult = await fireMakeWebhook(makeCredentials, "morningDigestWebhookUrl", {
-        tenant_slug: tenant?.slug,
-        business_name: businessName,
-        event_key: "morningDigest",
-        triggered_at: new Date().toISOString(),
-        tomorrow_job_count: tomorrowJobCount,
-        overdue_invoice_count: overdueInvoiceCount,
-        open_enquiry_count: openEnquiryCount,
-        pending_quote_count: pendingQuoteCount,
-        failed_automation_count: recentFailedJobCount
-      });
-
-      await logPlatformEvent({
+      await fireTenantMakeWebhook({
         tenantId,
-        eventType: "webhook_fired",
-        service: "make",
-        direction: "outbound",
-        status: makeResult.ok ? "success" : makeResult.status === 0 ? "pending" : "failed",
+        credentials: makeCredentials,
+        webhookKey: "morningDigestWebhookUrl",
         requestSummary: "Make.com morning digest webhook",
-        responseSummary: makeResult.body.slice(0, 200),
-        triggeredBy: "worker_morning_digest"
+        triggeredBy: "worker_morning_digest",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: businessName,
+          event_key: "morningDigest",
+          triggered_at: new Date().toISOString(),
+          tomorrow_job_count: tomorrowJobCount,
+          overdue_invoice_count: overdueInvoiceCount,
+          open_enquiry_count: openEnquiryCount,
+          pending_quote_count: pendingQuoteCount,
+          failed_automation_count: recentFailedJobCount
+        }
       });
 
       break;
@@ -1357,6 +1401,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
 }
 
 export async function processAutomationBatch(limit = 25) {
+  await enqueueRecurringAutomationJobs();
   const jobs = await claimPendingAutomationJobs(limit);
   let completed = 0;
   let failed = 0;
