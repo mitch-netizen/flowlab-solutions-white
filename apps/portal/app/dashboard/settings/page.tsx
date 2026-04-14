@@ -17,8 +17,13 @@ function getPricingModelLabel(model: ReturnType<typeof getPricingModel>) {
   }
 }
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | undefined>>;
+}) {
   const session = await requireTenantSession();
+  const params = searchParams ? await searchParams : {};
   const [snapshot, rateSuggestions] = await Promise.all([
     getTenantSettingsSnapshot(session.tenantId),
     getPendingRateSuggestions(session.tenantId)
@@ -181,6 +186,16 @@ export default async function SettingsPage() {
             <p>Templates keep quoting and job creation faster when the common service types are already defined.</p>
           </div>
 
+          {params.service === "created" ? (
+            <div className="surface-alert is-success" style={{ margin: "0 0 12px", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "#86efac" }}>
+              Service template added.
+            </div>
+          ) : params.service === "deleted" ? (
+            <div className="surface-alert is-warning" style={{ margin: "0 0 12px", padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "#fde68a" }}>
+              Service template removed.
+            </div>
+          ) : null}
+
           <div className="setup-list">
             {snapshot.serviceTemplates.length > 0 ? snapshot.serviceTemplates.map((service) => (
               <div key={service.id} className="setup-row">
@@ -191,9 +206,33 @@ export default async function SettingsPage() {
                   <h3>{service.name}</h3>
                   <p>${service.defaultPrice ?? 0} · {service.defaultDuration ?? 0} mins</p>
                 </div>
+                <div className="setup-row-actions">
+                  <form action={`/api/tenant/settings/services?id=${service.id}`} method="post">
+                    <input type="hidden" name="_method" value="DELETE" />
+                    <button className="ghost" type="submit" style={{ fontSize: 12 }}>Remove</button>
+                  </form>
+                </div>
               </div>
             )) : <p className="setup-note">No service templates saved yet.</p>}
           </div>
+
+          <form action="/api/tenant/settings/services" method="post" style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <label className="label" style={{ flex: "2 1 160px" }}>
+                Service name
+                <input className="input" name="name" placeholder="e.g. Lawn mow — standard block" required />
+              </label>
+              <label className="label" style={{ flex: "1 1 90px" }}>
+                Price ($)
+                <input className="input" name="defaultPrice" type="number" min="0" step="0.01" placeholder="0.00" />
+              </label>
+              <label className="label" style={{ flex: "1 1 90px" }}>
+                Duration (mins)
+                <input className="input" name="defaultDuration" type="number" min="0" step="5" placeholder="60" />
+              </label>
+              <button className="ghost" type="submit">Add template</button>
+            </div>
+          </form>
         </div>
       </div>
 
