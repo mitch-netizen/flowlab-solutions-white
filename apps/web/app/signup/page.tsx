@@ -98,6 +98,30 @@ async function createSignup(formData: FormData) {
 
   const portalUrl = buildTenantUrl(tenant.slug, "/login");
 
+  // Register tenant subdomain with Vercel so SSL cert is provisioned automatically.
+  // The wildcard CNAME in Cloudflare handles DNS; Vercel needs the individual domain
+  // registered to issue a certificate for it.
+  try {
+    const vercelToken = process.env.VERCEL_API_TOKEN;
+    const vercelTeamId = process.env.VERCEL_TEAM_ID;
+    const vercelPortalProjectId = process.env.VERCEL_PORTAL_PROJECT_ID;
+    if (vercelToken && vercelTeamId && vercelPortalProjectId) {
+      await fetch(
+        `https://api.vercel.com/v10/projects/${vercelPortalProjectId}/domains?teamId=${vercelTeamId}`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${vercelToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name: `${tenant.slug}.flowlabsolutions.au` }),
+        }
+      );
+    }
+  } catch {
+    // Non-fatal — DNS will still route, cert provisioning retries automatically
+  }
+
   // Send welcome email using platform-level Brevo credentials
   try {
     const apiKey = process.env.BREVO_API_KEY;
