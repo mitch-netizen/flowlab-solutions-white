@@ -96,7 +96,50 @@ async function createSignup(formData: FormData) {
     plan: parsed.data.plan,
   });
 
-  redirect(`${buildTenantUrl(tenant.slug, "/login")}?created=1`);
+  const portalUrl = buildTenantUrl(tenant.slug, "/login");
+
+  // Send welcome email using platform-level Brevo credentials
+  try {
+    const apiKey = process.env.BREVO_API_KEY;
+    const fromEmail = process.env.BREVO_FROM_EMAIL ?? "hello@flowlabsolutions.au";
+    const fromName = process.env.BREVO_FROM_NAME ?? "FlowLab";
+
+    if (apiKey) {
+      await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "api-key": apiKey },
+        body: JSON.stringify({
+          sender: { name: fromName, email: fromEmail },
+          to: [{ email: parsed.data.email, name: parsed.data.ownerName }],
+          subject: `Your FlowLab portal is ready — ${parsed.data.businessName}`,
+          htmlContent: `
+            <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:2rem">
+              <h2 style="margin:0 0 1rem">Welcome to FlowLab, ${parsed.data.ownerName}! 👋</h2>
+              <p>Your <strong>${parsed.data.businessName}</strong> portal has been created and is being set up now.</p>
+              <p>It will be ready within a few minutes at:</p>
+              <p style="margin:1.5rem 0">
+                <a href="${portalUrl}" style="background:#6366f1;color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;text-decoration:none;font-weight:600">
+                  Open my portal →
+                </a>
+              </p>
+              <p style="color:#888;font-size:0.875rem">
+                If the button doesn't work, copy this link into your browser:<br>
+                <a href="${portalUrl}">${portalUrl}</a>
+              </p>
+              <hr style="border:none;border-top:1px solid #eee;margin:2rem 0">
+              <p style="color:#888;font-size:0.8rem">FlowLab Solutions · <a href="https://flowlabsolutions.au">flowlabsolutions.au</a></p>
+            </div>
+          `,
+        }),
+      });
+    }
+  } catch {
+    // Non-fatal — portal is still created, email failure shouldn't block redirect
+  }
+
+  redirect(
+    `/getting-started?slug=${encodeURIComponent(tenant.slug)}&name=${encodeURIComponent(parsed.data.businessName)}&email=${encodeURIComponent(parsed.data.email)}`
+  );
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
