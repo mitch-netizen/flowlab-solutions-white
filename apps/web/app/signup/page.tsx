@@ -99,8 +99,21 @@ async function createSignup(formData: FormData) {
   redirect(`${buildTenantUrl(tenant.slug, "/login")}?created=1`);
 }
 
-export default function SignupPage() {
+const ERROR_MESSAGES: Record<string, string> = {
+  rate_limited: "Too many attempts. Please wait 30 minutes and try again.",
+  invalid: "Please check your details and try again.",
+  captcha: "Security check failed. Please refresh and try again.",
+  auth: "Could not create your account. That email may already be registered.",
+};
+
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const startedAt = Date.now();
+  const { error } = await searchParams;
+  const errorMessage = error ? (ERROR_MESSAGES[error] ?? "Something went wrong. Please try again.") : null;
 
   return (
     <main className="shell">
@@ -112,6 +125,11 @@ export default function SignupPage() {
             Create your tenant, owner login, and branded workspace in one step.
             The onboarding wizard handles the rest on first login.
           </p>
+          {errorMessage && (
+            <p style={{ color: "var(--color-danger, #ef4444)", background: "rgba(239,68,68,0.08)", padding: "0.75rem 1rem", borderRadius: "0.5rem", margin: "0 0 1rem", fontSize: "0.9rem" }}>
+              {errorMessage}
+            </p>
+          )}
           <SignupForm action={createSignup} startedAt={startedAt} />
         </div>
         <div className="panel">
