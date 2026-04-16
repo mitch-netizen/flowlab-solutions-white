@@ -227,12 +227,12 @@ export default async function DashboardPage({
           <div className="setup-summary-block">
             <div className="setup-summary-label">New enquiries this week</div>
             <div className="setup-summary-value">{enquiriesThisWeek}</div>
-            <p className="setup-summary-copy">Fresh demand coming through the public form.</p>
+            <p className="setup-summary-copy">Submitted via your public enquiry form.</p>
           </div>
           <div className="setup-summary-block">
             <div className="setup-summary-label">Jobs booked this week</div>
             <div className="setup-summary-value">{bookedJobsThisWeek}</div>
-            <p className="setup-summary-copy">Scheduled, in progress, complete, invoiced, or paid.</p>
+            <p className="setup-summary-copy">In any active or completed stage.</p>
           </div>
           <div className="setup-summary-block">
             <div className="setup-summary-label">Tomorrow&apos;s run sheet</div>
@@ -249,8 +249,8 @@ export default async function DashboardPage({
           <div className="setup-section-header">
             <div className="setup-section-copy">
               <div className="eyebrow">Tomorrow</div>
-              <h2>Run sheet preview</h2>
-              <p>The next day should be the first thing the operator can scan, without opening a second screen.</p>
+              <h2>Run sheet</h2>
+              <p>Jobs scheduled for tomorrow, in order.</p>
             </div>
             <Link href="/dashboard/scheduler" className="ghost">Open scheduler</Link>
           </div>
@@ -280,11 +280,11 @@ export default async function DashboardPage({
         <div className="surface setup-section">
           <div className="setup-section-header">
             <div className="setup-section-copy">
-              <div className="eyebrow">Needs your eyes</div>
-              <h2>Attention queue</h2>
-              <p>Keep the highest-friction items together so the operator does not have to infer what matters most.</p>
+              <div className="eyebrow">Action required</div>
+              <h2>Needs attention</h2>
+              <p>Overdue invoices, failed automations, and expiring integrations in one place.</p>
             </div>
-            <Link href="/dashboard/system-health" className="ghost">Review issues</Link>
+            <Link href="/dashboard/system-health" className="ghost">View all</Link>
           </div>
 
           <div className="setup-list">
@@ -301,7 +301,7 @@ export default async function DashboardPage({
                   <Link className="ghost" href={item.href}>Open</Link>
                 </div>
               </div>
-            )) : <p className="setup-note">Nothing urgent right now. FlowLab is clear on overdue invoices, failed jobs, and integration alerts.</p>}
+            )) : <p className="setup-note">All clear — no overdue invoices, failed automations, or integration alerts right now.</p>}
           </div>
         </div>
       </div>
@@ -311,8 +311,8 @@ export default async function DashboardPage({
           <div className="setup-section-header">
             <div className="setup-section-copy">
               <div className="eyebrow">Top customers</div>
-              <h2>Relationship depth</h2>
-              <p>Keep the strongest customer records close to the overview so repeat work and risk stay visible.</p>
+              <h2>Most active clients</h2>
+              <p>Your highest-volume customers by jobs, invoices, and quotes.</p>
             </div>
             <Link href="/dashboard/crm" className="ghost">Open CRM</Link>
           </div>
@@ -341,9 +341,9 @@ export default async function DashboardPage({
         <div className="surface setup-section">
           <div className="setup-section-header">
             <div className="setup-section-copy">
-              <div className="eyebrow">FlowLab handled this</div>
-              <h2>Recent automated wins</h2>
-              <p>Make the system’s recent work visible so the operator trusts that things are still moving in the background.</p>
+              <div className="eyebrow">Running in the background</div>
+              <h2>Recent automations</h2>
+              <p>The latest actions your automations have handled on your behalf.</p>
             </div>
             <Link href="/dashboard/system-health" className="ghost">Open event trail</Link>
           </div>
@@ -363,7 +363,7 @@ export default async function DashboardPage({
                   <Link className="ghost" href={item.href}>Open</Link>
                 </div>
               </div>
-            )) : <p className="setup-note">Automated wins will show up here as FlowLab sends, records, and follows up on behalf of the business.</p>}
+            )) : <p className="setup-note">Automation activity will appear here once your workflows start firing.</p>}
           </div>
         </div>
       </div>

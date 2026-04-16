@@ -32,7 +32,7 @@ export default async function InvoiceRecordPage({
       <DashboardPageHeader
         eyebrow="Revenue"
         title={invoice.number}
-        description="This record should make invoice status, payment timing, customer context, and nearby work history readable without turning the page into a finance dashboard."
+        description="Invoice status, payment details, linked job, and customer communication in one place."
         section="revenue"
         actions={(
           <>
@@ -69,7 +69,7 @@ export default async function InvoiceRecordPage({
       ) : null}
       {query.error ? (
         <div className="surface surface-alert is-danger">
-          <p>FlowLab could not complete that invoice action.</p>
+          <p>Something went wrong. Please try again.</p>
         </div>
       ) : null}
 
@@ -99,8 +99,7 @@ export default async function InvoiceRecordPage({
         <div className="surface setup-section">
           <div className="setup-section-copy">
             <div className="eyebrow">Customer and payment</div>
-            <h2 style={{ marginBottom: 8 }}>Who owes it and how it gets paid</h2>
-            <p>The invoice basics should remain readable even before the operator scrolls into job history or comms.</p>
+            <h2 style={{ marginBottom: 8 }}>Customer &amp; payment</h2>
           </div>
 
           <div className="setup-list">
@@ -153,7 +152,7 @@ export default async function InvoiceRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Related jobs</div>
             <h2 style={{ marginBottom: 8 }}>Nearby work history</h2>
-            <p>Linked or adjacent jobs help explain what the invoice is for without forcing a jump into the customer record.</p>
+            <p>The job this invoice was raised for, plus other recent work for this customer.</p>
           </div>
 
           <div className="setup-list">
@@ -204,7 +203,7 @@ export default async function InvoiceRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Invoice communication</div>
             <h2 style={{ marginBottom: 8 }}>Messages linked directly to this invoice</h2>
-            <p>Keep reminder or follow-up messages obvious without mixing them into every other customer update.</p>
+            <p>Messages sent specifically about this invoice.</p>
           </div>
 
           <div className="setup-list">
@@ -227,7 +226,7 @@ export default async function InvoiceRecordPage({
         <div className="setup-section-copy">
           <div className="eyebrow">Customer communication</div>
           <h2 style={{ marginBottom: 8 }}>Broader customer timeline</h2>
-          <p>These messages provide surrounding context before another billing follow-up goes out.</p>
+          <p>Other messages sent to this customer, for context.</p>
         </div>
 
         <div className="setup-list">

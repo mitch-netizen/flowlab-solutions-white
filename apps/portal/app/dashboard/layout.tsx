@@ -141,7 +141,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       <main className="portal-shell">
         <aside className="sidebar">
           <div className="sidebar-brand">
-            <div className="eyebrow">Operator workspace</div>
+            <div className="eyebrow">Your workspace</div>
             <h2 style={{ margin: "6px 0 4px", lineHeight: 1.08 }}>{tenant.branding.businessName}</h2>
             <div style={{ color: "#cbd5e1", fontSize: 15, fontWeight: 600 }}>
               {tenant.branding.tagline ?? "Your business, automated."}

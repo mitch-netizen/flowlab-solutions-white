@@ -32,14 +32,14 @@ export default async function SettingsPage({
   const pricingModel = getPricingModel(snapshot.profile?.businessType);
   const domainStatus = snapshot.profile?.customDomain
     ? snapshot.profile?.customDomainVerified ? "Verified" : "Pending"
-    : "FlowLab subdomain";
+    : "Default subdomain";
 
   return (
     <div className="stack">
       <DashboardPageHeader
         eyebrow="Setup"
-        title="Keep profile, pricing, and brand settings readable."
-        description="This page should feel like business configuration, not admin sprawl. Update the business identity, confirm pricing logic, and keep the customer-facing brand consistent."
+        title="Settings"
+        description="Update your business details, branding colours, pricing rates, and service templates."
         section="setup"
       />
 
@@ -58,7 +58,7 @@ export default async function SettingsPage({
           <div className="setup-summary-block">
             <div className="setup-summary-label">Custom domain</div>
             <div className="setup-summary-value">{domainStatus}</div>
-            <p className="setup-summary-copy">{snapshot.profile?.customDomain ?? `${snapshot.tenant?.slug ?? "your-business"}.flowlabsolutions.au`}</p>
+            <p className="setup-summary-copy">{snapshot.profile?.customDomain ?? `${snapshot.tenant?.slug ?? "your-business"}.portal.domain`}</p>
           </div>
         </div>
       </div>
@@ -68,7 +68,7 @@ export default async function SettingsPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Business details</div>
             <h2 style={{ marginBottom: 8 }}>Core contact and service information</h2>
-            <p>The main business facts should live together so the operator can update them without hunting across multiple forms.</p>
+            <p>Your business name, contact details, and service area all in one form.</p>
           </div>
 
           <div className="setup-field-grid">
@@ -107,7 +107,7 @@ export default async function SettingsPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Branding</div>
             <h2 style={{ marginBottom: 8 }}>Customer-facing colour system</h2>
-            <p>These colours carry through your quote, agreement, invoice, and public surfaces, so the controls should stay compact and obvious.</p>
+            <p>Applied to your quote, agreement, invoice, and all other customer-facing pages.</p>
           </div>
 
           <input type="hidden" name="businessName" value={snapshot.profile?.businessName ?? ""} />
@@ -148,7 +148,7 @@ export default async function SettingsPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Pricing rates</div>
             <h2 style={{ marginBottom: 8 }}>Current pricing configuration</h2>
-            <p>The operator should be able to confirm the pricing basis in one scan before jumping back into onboarding to edit it.</p>
+            <p>Your current pricing model and configured rates. Edit them from the onboarding wizard.</p>
           </div>
 
           <div className="setup-list">

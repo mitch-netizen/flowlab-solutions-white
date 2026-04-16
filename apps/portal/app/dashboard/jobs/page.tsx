@@ -41,8 +41,8 @@ export default async function JobBoardPage() {
     <div className="stack">
       <DashboardPageHeader
         eyebrow="Jobs"
-        title="Job board that is easier to run from."
-        description="See the flow from quoted work to paid work in one place, with the next action sitting close to the job rather than buried in the card."
+        title="Job board"
+        description="Track work from quoted through to paid. Each card shows the next action so nothing slips between stages."
         section="jobs"
         actions={
           <>
@@ -57,12 +57,12 @@ export default async function JobBoardPage() {
           <div className="setup-summary-block">
             <div className="setup-summary-label">All jobs</div>
             <div className="setup-summary-value">{totalJobs}</div>
-            <p className="setup-summary-copy">Every job linked to a customer record, from quoted through to paid.</p>
+            <p className="setup-summary-copy">All stages — quoted through to paid.</p>
           </div>
           <div className="setup-summary-block">
             <div className="setup-summary-label">Active now</div>
             <div className="setup-summary-value">{activeJobs}</div>
-            <p className="setup-summary-copy">Scheduled or in progress jobs that need operator attention.</p>
+            <p className="setup-summary-copy">Scheduled or currently in progress.</p>
           </div>
           <div className="setup-summary-block">
             <div className="setup-summary-label">Awaiting invoice</div>
@@ -77,7 +77,7 @@ export default async function JobBoardPage() {
           <div className="setup-section-copy">
             <div className="eyebrow">Create job</div>
             <h2 style={{ marginBottom: 8 }}>Add work straight into the board</h2>
-            <p>Create the job once, optionally schedule it now, and let the later statuses flow from actual work and invoice progress.</p>
+            <p>Add work directly to the board. You can schedule it now or leave it as a quote to confirm later.</p>
           </div>
           <label className="label">
             Customer
@@ -116,8 +116,8 @@ export default async function JobBoardPage() {
         <div className="surface setup-section">
           <div className="setup-section-copy">
             <div className="eyebrow">How the board works</div>
-            <h2 style={{ marginBottom: 8 }}>The status logic stays simple</h2>
-            <p>The operator should not have to remember what each lane means. Keep the movement obvious and let the invoice lifecycle drive the final billing states.</p>
+            <h2 style={{ marginBottom: 8 }}>Status guide</h2>
+            <p>Each lane represents a stage in the job lifecycle. Move jobs forward as work progresses.</p>
           </div>
 
           <div className="setup-list">
@@ -126,8 +126,8 @@ export default async function JobBoardPage() {
                 <div className="setup-row-meta">
                   <span className="status-pill is-off">Quoted</span>
                 </div>
-                <h3>Quoted means not booked yet</h3>
-                <p>These jobs are the easiest growth lever on the page. Book them or leave them clearly parked.</p>
+                <h3>Quoted — not yet booked</h3>
+                <p>Move to Scheduled once the customer confirms, or leave parked until they do.</p>
               </div>
             </div>
             <div className="setup-row">
@@ -135,8 +135,8 @@ export default async function JobBoardPage() {
                 <div className="setup-row-meta">
                   <span className="status-pill is-on">Scheduled / in progress</span>
                 </div>
-                <h3>Active work needs the shortest path to the full card</h3>
-                <p>Open the job, update the schedule, and let communications and actuals attach back to the same record.</p>
+                <h3>Scheduled &amp; in progress</h3>
+                <p>Open the job to update timing, log hours, or send a customer message.</p>
               </div>
             </div>
             <div className="setup-row">
@@ -156,8 +156,7 @@ export default async function JobBoardPage() {
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Board view</div>
-            <h2>Keep the board as the working surface, not a wall of decorations</h2>
-            <p>Each lane only needs status, customer, timing, and the next obvious action. Anything deeper belongs in the job record.</p>
+            <h2>All jobs</h2>
           </div>
         </div>
 
