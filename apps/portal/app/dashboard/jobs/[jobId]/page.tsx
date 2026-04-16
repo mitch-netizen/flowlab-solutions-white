@@ -33,7 +33,7 @@ export default async function JobRecordPage({
       <DashboardPageHeader
         eyebrow="Jobs"
         title={job.summary}
-        description="This record should carry the operational story of the job: who it belongs to, when it is happening, how long it really took, what billing is linked, and what was communicated."
+        description="Who, when, how long, what was billed, and what was communicated — all in one place."
         section="jobs"
         actions={(
           <>
@@ -60,7 +60,7 @@ export default async function JobRecordPage({
       ) : null}
       {query.error ? (
         <div className="surface surface-alert is-danger">
-          <p>FlowLab could not complete that job action.</p>
+          <p>Something went wrong. Please try again.</p>
         </div>
       ) : null}
 
@@ -93,7 +93,7 @@ export default async function JobRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Job details</div>
             <h2 style={{ marginBottom: 8 }}>Operational basics</h2>
-            <p>The who, where, and risk flags should be readable without needing to inspect the full billing or comms sections.</p>
+            <p>Customer, location, and any risk flags for this job.</p>
           </div>
 
           <div className="setup-list">
@@ -140,7 +140,7 @@ export default async function JobRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Timing</div>
             <h2 style={{ marginBottom: 8 }}>Schedule and actuals</h2>
-            <p>Both the planned visit time and the actual hours should be editable without leaving the record.</p>
+            <p>Update the scheduled time or log actual hours once the work is done.</p>
           </div>
 
           <form action={`/api/tenant/jobs/${job.id}/schedule`} method="post" className="form-grid">
@@ -173,8 +173,8 @@ export default async function JobRecordPage({
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Billing trail</div>
-            <h2>Keep the linked invoice close to the job</h2>
-            <p>The billing relationship should be visible immediately so work does not get completed and then lost in the handoff to revenue.</p>
+            <h2>Billing</h2>
+            <p>Invoice linked to this job, or create one if the work is complete.</p>
           </div>
         </div>
 
@@ -250,7 +250,7 @@ export default async function JobRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Job communication</div>
             <h2 style={{ marginBottom: 8 }}>Messages linked directly to this job</h2>
-            <p>Job-specific updates stay separate from the broader customer relationship timeline.</p>
+            <p>Messages sent specifically about this job.</p>
           </div>
 
           <div className="setup-list">
@@ -274,7 +274,7 @@ export default async function JobRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Customer communication</div>
             <h2 style={{ marginBottom: 8 }}>Broader customer timeline</h2>
-            <p>These messages give the operator context before sending another update from the job itself.</p>
+            <p>Other messages sent to this customer, for context.</p>
           </div>
 
           <div className="setup-list">
@@ -296,7 +296,7 @@ export default async function JobRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Feedback</div>
             <h2 style={{ marginBottom: 8 }}>Recent sentiment</h2>
-            <p>Feedback closes the loop on whether the work actually landed well with the customer.</p>
+            <p>Post-job rating and comments from this customer.</p>
           </div>
 
           <div className="setup-list">

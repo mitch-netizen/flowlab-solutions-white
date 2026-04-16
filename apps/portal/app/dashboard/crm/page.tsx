@@ -36,7 +36,7 @@ export default async function CrmPage({
 
       {query.error ? (
         <div className="surface" style={{ borderLeft: "3px solid #ef4444" }}>
-          FlowLab could not complete that CRM action.
+          Something went wrong. Please try again.
         </div>
       ) : null}
 
@@ -65,7 +65,7 @@ export default async function CrmPage({
           <div className="setup-section-copy">
             <div className="eyebrow">New customer</div>
             <h2 style={{ marginBottom: 8 }}>Add a customer record</h2>
-            <p>Create the contact once and let FlowLab hang quotes, jobs, invoices, communication, and feedback off the same record.</p>
+            <p>Add a contact once and everything — quotes, jobs, invoices, and messages — links back to the same record.</p>
           </div>
           <label className="label">
             First name
@@ -93,7 +93,7 @@ export default async function CrmPage({
           </label>
           <label className="label">
             Notes
-            <textarea className="textarea" name="notes" placeholder="Anything the operator should remember about this customer." />
+            <textarea className="textarea" name="notes" placeholder="Internal notes — not visible to the customer." />
           </label>
           <button className="cta" type="submit">Create customer</button>
         </form>
@@ -101,8 +101,8 @@ export default async function CrmPage({
         <div className="surface setup-section">
           <div className="setup-section-copy">
             <div className="eyebrow">Priority view</div>
-            <h2 style={{ marginBottom: 8 }}>What deserves attention first</h2>
-            <p>This screen is most useful when it acts like a triage board, not a contact database.</p>
+            <h2 style={{ marginBottom: 8 }}>What needs your attention</h2>
+            <p>Open enquiries and overdue invoices across all your customers.</p>
           </div>
 
           <div className="setup-list">
@@ -137,8 +137,8 @@ export default async function CrmPage({
                 <div className="setup-row-meta">
                   <span className="status-pill is-off">Record quality</span>
                 </div>
-                <h3>Unified customer history</h3>
-                <p>Quotes, jobs, invoices, reminders, and feedback all live on the same customer record, which keeps the operator from bouncing between disconnected screens.</p>
+                <h3>Full customer history</h3>
+                <p>Quotes, jobs, invoices, messages, and feedback all live on the same customer record.</p>
               </div>
             </div>
           </div>
@@ -149,8 +149,8 @@ export default async function CrmPage({
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Recent enquiries</div>
-            <h2>New requests should read like a queue, not a spreadsheet</h2>
-            <p>Each enquiry needs one clear next action: open the quote that exists already, create one, or close the request if it is no longer active.</p>
+            <h2>Incoming requests</h2>
+            <p>Create a quote, or close the enquiry if it&apos;s no longer active.</p>
           </div>
         </div>
 
@@ -195,8 +195,7 @@ export default async function CrmPage({
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Customer directory</div>
-            <h2>See who has active work, debt, or history worth protecting</h2>
-            <p>Keep the table dense enough to scan, but let the customer name stay as the primary link into the full record.</p>
+            <h2>All customers</h2>
           </div>
         </div>
 
@@ -249,7 +248,7 @@ export default async function CrmPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Recent feedback</div>
             <h2 style={{ marginBottom: 8 }}>Customer sentiment</h2>
-            <p>Keep the latest feedback close to the CRM so the operator can spot patterns quickly.</p>
+            <p>Post-job ratings and comments from your customers.</p>
           </div>
           <div className="setup-list">
             {snapshot.feedback.length > 0 ? snapshot.feedback.map((entry) => (
@@ -270,7 +269,7 @@ export default async function CrmPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Recent communication</div>
             <h2 style={{ marginBottom: 8 }}>Latest messages and outreach</h2>
-            <p>Recent outbound and inbound communication should be easy to skim before anyone calls the customer again.</p>
+            <p>Recent outbound messages sent to your customers.</p>
           </div>
           <div className="setup-list">
             {snapshot.communications.length > 0 ? snapshot.communications.map((entry) => (

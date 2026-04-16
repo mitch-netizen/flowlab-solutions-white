@@ -15,8 +15,8 @@ export default async function RetentionPage() {
     <div className="stack">
       <DashboardPageHeader
         eyebrow="CRM"
-        title="Keep customers coming back and close the loop after each job."
-        description="Track rebooking opportunities, overdue invoices, review outreach, and customer sentiment from one operating surface instead of scattered reminders."
+        title="Retention"
+        description="Track rebook reminders, overdue invoices, and recent customer feedback in one place."
         section="crm"
         actions={(
           <form action="/api/tenant/retention/run" method="post">

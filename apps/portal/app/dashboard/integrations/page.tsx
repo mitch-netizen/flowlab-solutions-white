@@ -26,8 +26,8 @@ export default async function IntegrationsPage() {
     <div className="stack">
       <DashboardPageHeader
         eyebrow="Setup"
-        title="Connect the tools your business needs without turning setup into a scavenger hunt."
-        description="Core services live here with clear status, save, and test actions. Make stays in its own advanced area so routine setup stays easy to scan."
+        title="Integrations"
+        description="Connect and manage the external services your business relies on. Core integrations are listed first — Make.com is in the advanced section below."
         section="setup"
       />
 
@@ -36,7 +36,7 @@ export default async function IntegrationsPage() {
           <div className="setup-summary-block">
             <div className="setup-summary-label">Core integrations</div>
             <div className="setup-summary-value">{visibleIntegrations.length}</div>
-            <p className="setup-summary-copy">Xero, messaging, documents, routing, and AI setup all live in one place.</p>
+            <p className="setup-summary-copy">Xero, messaging, documents, and AI all configured here.</p>
           </div>
           <div className="setup-summary-block">
             <div className="setup-summary-label">Make setup</div>
@@ -46,9 +46,9 @@ export default async function IntegrationsPage() {
             </p>
           </div>
           <div className="setup-summary-block">
-            <div className="setup-summary-label">Operator guidance</div>
+            <div className="setup-summary-label">Quick tip</div>
             <div className="setup-summary-value">2</div>
-            <p className="setup-summary-copy">Use Automations for day-to-day switches. Use Integrations for credentials, OAuth, and connection checks.</p>
+            <p className="setup-summary-copy">Use Automations to toggle workflows on/off. Use Integrations to manage credentials and OAuth connections.</p>
           </div>
         </div>
       </div>
@@ -56,8 +56,8 @@ export default async function IntegrationsPage() {
       <div className="surface setup-section">
         <div className="setup-section-copy">
           <div className="eyebrow">Core tools</div>
-          <h2>Handle the services that keep jobs moving and invoices flowing</h2>
-          <p>Each integration shows its current status first, then gives you the smallest possible setup action set: save credentials, reconnect if needed, and run a quick check.</p>
+          <h2>Core integrations</h2>
+          <p>Each integration shows its current status. Save credentials, reconnect if needed, and run a connection check from here.</p>
         </div>
 
         <div className="cards-2">
@@ -87,7 +87,7 @@ export default async function IntegrationsPage() {
 
                 {isExpiringSoon ? (
                   <p className="setup-note" style={{ color: "#fbbf24" }}>
-                    This connection expires {daysUntilExpiry! <= 0 ? "today" : `in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"}`}. Reconnect it before your operator notices.
+                    This connection expires {daysUntilExpiry! <= 0 ? "today" : `in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"}`}. Reconnect it to avoid any disruption.
                   </p>
                 ) : null}
 
@@ -136,7 +136,7 @@ export default async function IntegrationsPage() {
                     </form>
                   </div>
                 ) : (
-                  <p className="setup-note">Managed by FlowLab. There’s nothing the tenant needs to configure here.</p>
+                  <p className="setup-note">Managed automatically — no configuration required.</p>
                 )}
               </div>
             );
@@ -168,7 +168,7 @@ export default async function IntegrationsPage() {
                 <span>Last tested: {makeIntegration.lastTestedAt ? new Date(makeIntegration.lastTestedAt).toLocaleString() : "Never"}</span>
               </div>
               <h3>Make.com</h3>
-              <p>FlowLab keeps running without Make. This section is only for teams that want CRM, scheduling, or billing events to fan out into Slack, Airtable, Sheets, Notion, or other external tools.</p>
+              <p>This section is optional. Enable it only if you want CRM, scheduling, or billing events to flow into external tools like Slack, Airtable, Sheets, or Notion.</p>
             </div>
             <div className="setup-row-actions">
               <form action="/api/tenant/integrations/make_com/test" method="post" className="setup-row-actions">
@@ -209,7 +209,7 @@ export default async function IntegrationsPage() {
             })}
 
             <div className="setup-row" style={{ paddingBottom: 0 }}>
-              <p className="setup-note">FlowLab stores these webhook URLs encrypted. Save once, then use the connection check when you want a quick sanity pass.</p>
+              <p className="setup-note">Webhook URLs are stored encrypted. Save once, then use the connection check below to verify the setup at any time.</p>
               <div className="setup-row-actions">
                 <button className="cta" type="submit">Save Make webhook URLs</button>
               </div>

@@ -22,8 +22,8 @@ export default async function SchedulerPage() {
     <div className="stack">
       <DashboardPageHeader
         eyebrow="Jobs"
-        title="Run the week from a clearer scheduling surface."
-        description="Use the scheduler to understand what needs moving, where life commitments are already blocking time, and which jobs still need a safer slot."
+        title="Scheduler"
+        description="See upcoming jobs alongside your availability, personal commitments, and time off — all in one view."
         section="jobs"
         actions={(
           <form action="/api/tenant/scheduler/analyze" method="post">
@@ -44,12 +44,12 @@ export default async function SchedulerPage() {
           <div className="setup-summary-block">
             <div className="setup-summary-label">Upcoming jobs</div>
             <div className="setup-summary-value">{snapshot.jobs.length}</div>
-            <p className="setup-summary-copy">Scheduled work currently sitting in the planner.</p>
+            <p className="setup-summary-copy">Jobs with a confirmed date and time.</p>
           </div>
           <div className="setup-summary-block">
             <div className="setup-summary-label">Blocked time</div>
             <div className="setup-summary-value">{totalBlocks}</div>
-            <p className="setup-summary-copy">Personal commitments and time off already competing with jobs.</p>
+            <p className="setup-summary-copy">Personal commitments and time off logged against your schedule.</p>
           </div>
         </div>
       </div>
@@ -58,8 +58,8 @@ export default async function SchedulerPage() {
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Recommendations</div>
-            <h2>Lead with the jobs that need a decision</h2>
-            <p>Suggestions are only useful if they read like next actions, not generic advice. Keep the customer and the reason close to the job link.</p>
+            <h2>Scheduling recommendations</h2>
+            <p>Jobs flagged by the analysis as needing attention — check the reason, then open the job to take action.</p>
           </div>
         </div>
 
@@ -105,7 +105,7 @@ export default async function SchedulerPage() {
           <div className="setup-section-copy">
             <div className="eyebrow">Work week</div>
             <h2 style={{ marginBottom: 8 }}>Default working windows</h2>
-            <p>These are the operator hours FlowLab should assume before it starts trying to place or analyze work.</p>
+            <p>Your default working hours, used when analysing and placing jobs.</p>
           </div>
 
           <div className="setup-list">
@@ -127,7 +127,7 @@ export default async function SchedulerPage() {
           <div className="setup-section-copy">
             <div className="eyebrow">Personal commitments</div>
             <h2 style={{ marginBottom: 8 }}>Existing weekly blocks</h2>
-            <p>These commitments should be visible without needing to mentally merge them with the job list.</p>
+            <p>Recurring blocks that compete with job slots each week.</p>
           </div>
 
           <div className="setup-list">
@@ -150,8 +150,8 @@ export default async function SchedulerPage() {
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Upcoming jobs</div>
-            <h2>Rescheduling should happen inline, without fighting a giant table</h2>
-            <p>Each row keeps the job context on the left and the new time entry on the right so the operator can adjust quickly.</p>
+            <h2>Upcoming jobs</h2>
+            <p>Adjust the scheduled time for any job directly from this view.</p>
           </div>
         </div>
 
@@ -204,8 +204,8 @@ export default async function SchedulerPage() {
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Time off</div>
-            <h2>Longer absences should stay visible at the same level as jobs</h2>
-            <p>Time off is part of the scheduling picture, so it should be easy to scan without diving into settings.</p>
+            <h2>Time off</h2>
+            <p>Periods when you&apos;re unavailable — visible alongside your job schedule.</p>
           </div>
         </div>
 

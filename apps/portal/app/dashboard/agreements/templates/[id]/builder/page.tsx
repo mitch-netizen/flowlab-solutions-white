@@ -27,7 +27,7 @@ export default async function AgreementTemplateBuilderPage({ params }: { params:
         <div className="eyebrow">Agreement Builder</div>
         <h1>{state.template.name}</h1>
         <p style={{ color: "#cbd5e1" }}>
-          Place the required signer fields below, save the template in the embedded builder, then validate it back in FlowLab.
+          Place the required signer fields below, then save and validate the template before sending it to customers.
         </p>
       </div>
 

@@ -12,8 +12,8 @@ export default async function MobilePage() {
     <div className="stack">
       <DashboardPageHeader
         eyebrow="Jobs"
-        title="Run jobs from the field, even when reception drops out."
-        description="The mobile workspace keeps actions moving while the operator is on-site. Timers, completion notes, and sync status stay visible in one place."
+        title="Field view"
+        description="Manage today&apos;s jobs from on-site. Start timers, log completion notes, and sync status back when you&apos;re done."
         section="jobs"
       />
       <MobileJobApp
