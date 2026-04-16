@@ -40,8 +40,8 @@ export default async function InvoicesPage({
     <div className="stack">
       <DashboardPageHeader
         eyebrow="Revenue"
-        title="Invoice customers clearly and keep payment status visible."
-        description="Create invoices in Xero, keep the linked job and customer together, and sync local invoice status back to the Xero source of truth."
+        title="Invoices"
+        description="Create invoices via Xero, track payment status, and keep billing linked to the right job and customer."
         section="revenue"
         actions={xeroConnected ? (
           <form action="/api/tenant/invoices/sync" method="post">
@@ -51,7 +51,7 @@ export default async function InvoicesPage({
       />
       {query.error === "xero_sync_failed" ? (
         <div className="surface" style={{ borderLeft: "3px solid #ef4444", color: "#fecaca" }}>
-          FlowLab could not refresh invoice status from Xero just now. Check the Xero connection and try again.
+          Could not refresh invoice status from Xero. Check the Xero connection and try again.
         </div>
       ) : null}
       {syncedCount > 0 || failedCount > 0 ? (
@@ -66,7 +66,7 @@ export default async function InvoicesPage({
         <div className="surface" style={{ borderLeft: "3px solid #f59e0b" }}>
           <h2 style={{ marginTop: 0, color: "#fde68a" }}>Connect Xero before invoicing</h2>
           <p style={{ color: "#cbd5e1", marginBottom: 16 }}>
-            FlowLab no longer creates local-only invoice records. Revenue follows Xero so payment state stays accountable.
+            Invoices are created and managed in Xero. Connect your account to keep payment state accurate and synced.
           </p>
           <Link href="/dashboard/integrations" className="cta" style={{ display: "inline-block" }}>
             Open integrations
@@ -106,7 +106,7 @@ export default async function InvoicesPage({
           </label>
           <label className="label">
             Internal note
-            <input className="input" name="note" defaultValue="Generated from the operator invoice desk." />
+            <input className="input" name="note" defaultValue="Invoice for services rendered." />
           </label>
           <button className="cta" type="submit">
             Create invoice
@@ -115,10 +115,10 @@ export default async function InvoicesPage({
         <div className="surface">
           <h2 style={{ marginTop: 0 }}>Revenue rules</h2>
           <div className="surface-soft">
-            Invoices are created in Xero first. FlowLab mirrors the Xero invoice number, status, payment URL, and its linked customer/job record.
+            Invoices are created in Xero first. The invoice number, status, payment URL, and linked customer/job are mirrored here automatically.
           </div>
           <div className="surface-soft" style={{ marginTop: 18 }}>
-            If a customer pays or the invoice is updated in Xero, use the invoice sync action to pull the fresh state back into FlowLab.
+            If a customer pays or the invoice changes in Xero, use the sync action above to pull the latest status back.
           </div>
         </div>
       </div>

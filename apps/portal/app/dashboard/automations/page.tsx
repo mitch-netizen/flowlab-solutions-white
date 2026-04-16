@@ -70,8 +70,8 @@ export default async function AutomationsPage({
     <div className="stack">
       <DashboardPageHeader
         eyebrow="Setup"
-        title="Automation controls that stay readable when the day gets busy."
-        description="Built-in automations handle confirmations, reminders, and operator briefs inside FlowLab. Make stays optional for the moments you want extra downstream orchestration."
+        title="Automations"
+        description="Turn individual automations on or off, apply a preset recipe, or connect Make for advanced external workflows."
         section="setup"
       />
 
@@ -99,7 +99,7 @@ export default async function AutomationsPage({
             <div className="setup-summary-label">Built-in automation</div>
             <div className="setup-summary-value">{builtInEnabledCount}</div>
             <p className="setup-summary-copy">
-              of {builtIn.length} everyday automations are active inside FlowLab.
+              of {builtIn.length} built-in automations are currently active.
             </p>
           </div>
           <div className="setup-summary-block">
@@ -123,9 +123,9 @@ export default async function AutomationsPage({
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Built-in automations</div>
-            <h2>Switch the practical automations on or off without digging through plumbing</h2>
+            <h2>Built-in automations</h2>
             <p>
-              These settings control what FlowLab sends or schedules on your behalf. Turning one off stops new queueing for that automation without affecting everything else.
+              Control what gets sent or scheduled on your behalf. Turning one off stops future jobs from being queued for that automation — existing ones are unaffected.
             </p>
           </div>
           <Link className="ghost" href="/dashboard/system-health">Review queue health</Link>
@@ -164,8 +164,8 @@ export default async function AutomationsPage({
       <div className="surface setup-section">
         <div className="setup-section-copy">
           <div className="eyebrow">Automation recipes</div>
-          <h2>Start from an operating style instead of configuring every switch one by one</h2>
-          <p>Recipes are quick presets for common operator habits. Apply one when you want a sensible starting point, then fine-tune the individual switches above.</p>
+          <h2>Automation recipes</h2>
+          <p>Apply a preset to get a sensible starting configuration in one click, then adjust the individual switches above to suit your workflow.</p>
         </div>
 
         <div className="setup-list">
@@ -197,9 +197,9 @@ export default async function AutomationsPage({
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Advanced automation</div>
-            <h2>Keep Make separate from the built-in operating system</h2>
+            <h2>Make.com integration</h2>
             <p>
-              FlowLab still handles CRM, jobs, invoicing, reminders, and comms logging on its own. Turn Make on only when you want to push those events into external tools.
+              Built-in automations handle CRM, jobs, invoicing, and comms. Enable Make only when you want to push those events into external tools or build custom downstream workflows.
             </p>
           </div>
           <div className="setup-row-actions">

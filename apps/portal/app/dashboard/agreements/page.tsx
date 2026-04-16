@@ -22,7 +22,7 @@ export default async function AgreementsPage() {
       <DashboardPageHeader
         eyebrow="Revenue"
         title="Turn accepted quotes into signed agreements."
-        description="Upload your own contract, finish the signer fields in the builder, and mark one template as ready. FlowLab will use the default agreement automatically once a quote is accepted."
+        description="Upload a contract or generate one, set up the signer fields, and mark a template as default. It will be sent automatically when a quote is accepted."
         section="revenue"
       />
       <div className="cards-2">
@@ -30,7 +30,7 @@ export default async function AgreementsPage() {
           <form action="/api/tenant/agreements/templates/upload" method="post" encType="multipart/form-data" className="form-grid">
             <h2 style={{ marginTop: 0 }}>Upload your agreement template</h2>
             <div className="surface-soft">
-              Upload a PDF or DOCX version of your legal contract. FlowLab will send you straight into the builder so you can place the required signature and date fields before the template goes live.
+              Upload a PDF or DOCX of your service contract. You&apos;ll be taken into the builder to place the required signature and date fields before the template goes live.
             </div>
             <label className="label">
               Template name
@@ -54,11 +54,11 @@ export default async function AgreementsPage() {
           <form action="/api/tenant/agreements/templates/generate" method="post" className="form-grid">
             <h2 style={{ marginTop: 0 }}>Generate a smart agreement</h2>
             <div className="surface-soft">
-              Start with a FlowLab-built service agreement that already includes customer, property, quote amount, and signing fields. You can still open the builder afterward to tweak wording or layout.
+              Generate a ready-made service agreement that already includes customer, property, quote amount, and signing fields. You can still open the builder afterward to adjust wording or layout.
             </div>
             <label className="label">
               Smart template name
-              <input className="input" name="templateName" placeholder="FlowLab Smart Service Agreement" />
+              <input className="input" name="templateName" placeholder="Smart Service Agreement" />
             </label>
             <label className="label">
               Smart signer setup
