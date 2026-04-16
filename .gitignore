@@ -11,3 +11,4 @@ output/
 .vercel
 packages/db/prisma/dev.db
 packages/db/prisma/dev.db-journal
+.env.sentry-build-plugin
