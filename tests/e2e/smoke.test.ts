@@ -111,6 +111,33 @@ test.describe("public feedback form", () => {
   });
 });
 
+// ─── Suspended tenant redirect ───────────────────────────────────────────────
+
+test.describe("suspended tenant redirect", () => {
+  test("dashboard with ?error=suspended shows upgrade CTA", async ({ page }) => {
+    await page.goto(`${PORTAL}/dashboard?error=suspended`);
+    // The page should mention upgrading — either via the suspended banner or the upgrade link
+    const body = await page.content();
+    expect(body.toLowerCase()).toContain("upgrade");
+  });
+
+  test("upgrade page renders without error", async ({ page }) => {
+    const response = await page.goto(`${PORTAL}/dashboard/upgrade`);
+    // Should not crash — a redirect to login is acceptable, but not a 500
+    expect(response?.status()).not.toBe(500);
+  });
+});
+
+// ─── Public quote flow ────────────────────────────────────────────────────────
+
+test.describe("public quote flow", () => {
+  test("quote page with invalid token shows graceful error, not a crash", async ({ page }) => {
+    const response = await page.goto(`${PORTAL}/q/invalid-token`);
+    // Either 404 or a user-friendly not-found — must not return 500
+    expect(response?.status()).not.toBe(500);
+  });
+});
+
 // ─── Admin login ──────────────────────────────────────────────────────────────
 
 test.describe("admin login", () => {

@@ -53,6 +53,10 @@ export const integrationServiceSchema = z.enum([
 ]);
 export type IntegrationService = z.infer<typeof integrationServiceSchema>;
 
+// Legacy persisted identifiers kept for DB compatibility until we run a real enum/data migration.
+export const BREVO_SMS_INTEGRATION_SERVICE: IntegrationService = "twilio";
+export const BREVO_EMAIL_INTEGRATION_SERVICE: IntegrationService = "sendgrid";
+
 export const integrationStatusSchema = z.enum([
   "not_configured",
   "connected",
@@ -386,3 +390,5 @@ export const automationRecipeDescriptors: AutomationRecipeDescriptor[] = [
 export const publicRouteTokenSchema = z.object({
   token: z.string().min(12)
 });
+
+export { logger } from "./logger";

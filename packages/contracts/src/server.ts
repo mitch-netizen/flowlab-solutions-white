@@ -55,6 +55,12 @@ export const appEnvRequirements = {
   worker: ["DATABASE_URL", "DIRECT_URL", "JWT_SECRET", "ENCRYPTION_MASTER_KEY", "DEFAULT_ROOT_DOMAIN", "CRON_SECRET"]
 } as const;
 
+export const appOptionalEnvRequirements = {
+  web: ["SENTRY_DSN"],
+  portal: ["SENTRY_DSN"],
+  worker: ["SENTRY_DSN"]
+} as const;
+
 export function ensureAppEnv(app: keyof typeof appEnvRequirements) {
   if (!isProductionRuntime()) {
     return;

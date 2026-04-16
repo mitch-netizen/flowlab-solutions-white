@@ -1,14 +1,28 @@
 import { NextResponse } from "next/server";
 
-import { createSupabaseAdminClient } from "@flowlab/auth";
-import { getTenantById, prisma } from "@flowlab/db";
+import { createSupabaseAdminClient, signImpersonationToken } from "@flowlab/auth";
+import { getTenantById, prisma, consumeRateLimit } from "@flowlab/db";
 import { adminImpersonateSchema, buildTenantUrl } from "@flowlab/contracts/server";
 import { getPlatformSession } from "../../../../lib/session";
+
+// 30-minute TTL for impersonation sessions
+const IMPERSONATION_TTL_MS = 30 * 60 * 1000;
 
 export async function POST(request: Request) {
   const session = await getPlatformSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate-limit: max 10 impersonation attempts per admin per hour
+  const throttle = await consumeRateLimit({
+    scope: "admin_impersonate",
+    key: `admin_impersonate:${session.sub}`,
+    limit: 10,
+    windowMs: 60 * 60 * 1000
+  });
+  if (!throttle.allowed) {
+    return NextResponse.json({ error: "Too many impersonation attempts. Try again later." }, { status: 429 });
   }
 
   const parsed = adminImpersonateSchema.safeParse(await request.json());
@@ -47,10 +61,13 @@ export async function POST(request: Request) {
     },
   });
 
-  // Tag the auth user as impersonated (read back in getTenantSession for the banner)
   const admin = createSupabaseAdminClient();
-  await admin.auth.admin.updateUserById(ownerUser.authUserId, {
-    user_metadata: { impersonatedBy: session.sub },
+  const expiresAt = new Date(Date.now() + IMPERSONATION_TTL_MS).toISOString();
+  const impersonationToken = signImpersonationToken({
+    adminUserId: session.sub,
+    authUserId: ownerUser.authUserId,
+    tenantId: tenant.id,
+    expiresAt
   });
 
   // Generate a magic link for the tenant owner — the exchange endpoint will
@@ -72,7 +89,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not generate impersonation link" }, { status: 500 });
   }
 
-  const exchangePath = `/api/auth/tenant/exchange?token_hash=${data.properties.hashed_token}&type=magiclink`;
+  const exchangePath = `/api/auth/tenant/exchange?token_hash=${data.properties.hashed_token}&type=magiclink&impersonation_token=${encodeURIComponent(impersonationToken)}`;
   const portalUrl = `${basePortalUrl}${exchangePath}`;
 
   return NextResponse.json({ ok: true, portalUrl, tenantSlug: tenant.slug });

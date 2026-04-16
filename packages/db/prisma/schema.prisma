@@ -75,6 +75,7 @@ enum AutomationJobStatus {
   processing
   completed
   failed
+  dead_letter
 }
 
 enum UserRole {

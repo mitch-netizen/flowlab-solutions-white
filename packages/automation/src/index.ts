@@ -1,4 +1,9 @@
 import { signCustomerToken } from "@flowlab/auth";
+import {
+  BREVO_EMAIL_INTEGRATION_SERVICE,
+  BREVO_SMS_INTEGRATION_SERVICE,
+  logger
+} from "@flowlab/contracts";
 import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 import {
   claimPendingAutomationJobs,
@@ -83,7 +88,10 @@ function buildFeedbackLink(input: { tenantSlug: string; tenantId: string; jobId:
   return `https://${input.tenantSlug}.${rootDomain}/feedback/${token}`;
 }
 
-async function getCredentials(tenantId: string, service: "twilio" | "sendgrid" | "make_com") {
+async function getCredentials(
+  tenantId: string,
+  service: typeof BREVO_SMS_INTEGRATION_SERVICE | typeof BREVO_EMAIL_INTEGRATION_SERVICE | "make_com"
+) {
   const record = await getTenantIntegrationRecord(tenantId, service);
   return record?.credentialsJson ? decryptJson(record.credentialsJson) : {};
 }
@@ -180,8 +188,8 @@ async function processJob(job: ClaimedJob) {
       if (customer?.phone) {
         const smsBody = `Hi ${customer.firstName}, thanks for accepting your quote from ${businessName}. Your service agreement will arrive shortly — please check your email.`;
         try {
-          const twilioCredentials = await getCredentials(tenantId, "twilio");
-          await sendSms(twilioCredentials, customer.phone, smsBody);
+          const brevoSmsCredentials = await getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE);
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
           await recordCommunication({
             tenantId,
             customerId: customer.id,
@@ -225,9 +233,9 @@ async function processJob(job: ClaimedJob) {
     }
 
     case "agreement.signed": {
-      const [makeCredentials, sendgridCredentials, tenant, customer] = await Promise.all([
+      const [makeCredentials, brevoEmailCredentials, tenant, customer] = await Promise.all([
         getCredentials(tenantId, "make_com"),
-        getCredentials(tenantId, "sendgrid"),
+        getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE),
         getTenantWithProfile(tenantId),
         getCustomer(payload.customerId)
       ]);
@@ -274,7 +282,7 @@ async function processJob(job: ClaimedJob) {
           });
 
           await sendEmail(
-            sendgridCredentials,
+            brevoEmailCredentials,
             customer.email,
             subject,
             html
@@ -323,10 +331,10 @@ async function processJob(job: ClaimedJob) {
     }
 
     case "invoice.created": {
-      const [makeCredentials, sendgridCredentials, twilioCredentials, tenant, customer, invoice] = await Promise.all([
+      const [makeCredentials, brevoEmailCredentials, brevoSmsCredentials, tenant, customer, invoice] = await Promise.all([
         getCredentials(tenantId, "make_com"),
-        getCredentials(tenantId, "sendgrid"),
-        getCredentials(tenantId, "twilio"),
+        getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE),
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
         getTenantWithProfile(tenantId),
         getCustomer(payload.customerId),
         getInvoice(payload.invoiceId)
@@ -381,7 +389,7 @@ async function processJob(job: ClaimedJob) {
           });
 
           await sendEmail(
-            sendgridCredentials,
+            brevoEmailCredentials,
             customer.email,
             subject,
             html
@@ -434,7 +442,7 @@ async function processJob(job: ClaimedJob) {
           ? `Hi ${customer?.firstName ?? "there"}, your invoice for ${amount} from ${businessName} is ready. Pay here: ${paymentLink}`
           : `Hi ${customer?.firstName ?? "there"}, your invoice ${invoice?.number ?? payload.invoiceNumber} for ${amount} from ${businessName} is ready. Check your email to pay.`;
         try {
-          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
           await recordCommunication({
             tenantId,
             customerId: customer.id,
@@ -481,9 +489,9 @@ async function processJob(job: ClaimedJob) {
     }
 
     case "invoice.paid": {
-      const [makeCredentials, sendgridCredentials, tenant, customer, invoice] = await Promise.all([
+      const [makeCredentials, brevoEmailCredentials, tenant, customer, invoice] = await Promise.all([
         getCredentials(tenantId, "make_com"),
-        getCredentials(tenantId, "sendgrid"),
+        getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE),
         getTenantWithProfile(tenantId),
         getCustomer(payload.customerId),
         getInvoice(payload.invoiceId)
@@ -531,7 +539,7 @@ async function processJob(job: ClaimedJob) {
           });
 
           await sendEmail(
-            sendgridCredentials,
+            brevoEmailCredentials,
             customer.email,
             subject,
             html
@@ -582,8 +590,8 @@ async function processJob(job: ClaimedJob) {
     }
 
     case "billing.payment_reminder": {
-      const [twilioCredentials, tenant, customer, invoice] = await Promise.all([
-        getCredentials(tenantId, "twilio"),
+      const [brevoSmsCredentials, tenant, customer, invoice] = await Promise.all([
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
         getTenantWithProfile(tenantId),
         getCustomer(payload.customerId),
         getInvoice(payload.invoiceId)
@@ -596,7 +604,7 @@ async function processJob(job: ClaimedJob) {
         const linkPart = invoice?.paymentLink ? ` Pay here: ${invoice.paymentLink}` : "";
         const smsBody = `Hi ${customer.firstName}, a friendly reminder that invoice ${invoice?.number ?? payload.invoiceNumber}${amount ? ` for ${amount}` : ""} from ${businessName} is still outstanding.${linkPart}`;
         try {
-          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
           await recordCommunication({
             tenantId,
             customerId: customer.id,
@@ -643,8 +651,8 @@ async function processJob(job: ClaimedJob) {
     }
 
     case "retention.rebook_reminder": {
-      const [twilioCredentials, tenant, customer] = await Promise.all([
-        getCredentials(tenantId, "twilio"),
+      const [brevoSmsCredentials, tenant, customer] = await Promise.all([
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
         getTenantWithProfile(tenantId),
         getCustomer(payload.customerId)
       ]);
@@ -654,7 +662,7 @@ async function processJob(job: ClaimedJob) {
       if (customer?.phone) {
         const smsBody = `Hi ${customer.firstName}! It's ${businessName} — it's been a while since your last service. Would you like to book again? Reply or call us to schedule.`;
         try {
-          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
           await recordCommunication({
             tenantId,
             customerId: customer.id,
@@ -706,8 +714,8 @@ async function processJob(job: ClaimedJob) {
     }
 
     case "retention.feedback_request": {
-      const [twilioCredentials, tenant, customer] = await Promise.all([
-        getCredentials(tenantId, "twilio"),
+      const [brevoSmsCredentials, tenant, customer] = await Promise.all([
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
         getTenantWithProfile(tenantId),
         getCustomer(payload.customerId)
       ]);
@@ -724,7 +732,7 @@ async function processJob(job: ClaimedJob) {
           ? `Hi ${customer.firstName}, how did we do? ${businessName} would love your feedback: ${feedbackLink}`
           : `Hi ${customer.firstName}, how did we do? ${businessName} would love your feedback — reply with a rating from 1-5 ⭐`;
         try {
-          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
           await recordCommunication({
             tenantId,
             customerId: customer.id,
@@ -771,8 +779,8 @@ async function processJob(job: ClaimedJob) {
     }
 
     case "retention.review_request": {
-      const [twilioCredentials, tenant, customer] = await Promise.all([
-        getCredentials(tenantId, "twilio"),
+      const [brevoSmsCredentials, tenant, customer] = await Promise.all([
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
         getTenantWithProfile(tenantId),
         getCustomer(payload.customerId)
       ]);
@@ -782,7 +790,7 @@ async function processJob(job: ClaimedJob) {
       if (customer?.phone) {
         const smsBody = `Hi ${customer.firstName}, we're so glad you had a great experience with ${businessName}! If you have a moment, a Google review would mean the world to us 🌟`;
         try {
-          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
           await recordCommunication({
             tenantId,
             customerId: customer.id,
@@ -829,10 +837,10 @@ async function processJob(job: ClaimedJob) {
     }
 
     case "enquiry.received": {
-      const [makeCredentials, sendgridCredentials, twilioCredentials, tenant, customer] = await Promise.all([
+      const [makeCredentials, brevoEmailCredentials, brevoSmsCredentials, tenant, customer] = await Promise.all([
         getCredentials(tenantId, "make_com"),
-        getCredentials(tenantId, "sendgrid"),
-        getCredentials(tenantId, "twilio"),
+        getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE),
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
         getTenantWithProfile(tenantId),
         getCustomer(payload.customerId)
       ]);
@@ -878,7 +886,7 @@ async function processJob(job: ClaimedJob) {
             footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
           });
 
-          await sendEmail(sendgridCredentials, customer.email, subject, html);
+          await sendEmail(brevoEmailCredentials, customer.email, subject, html);
           await recordCommunication({
             tenantId,
             customerId: customer.id,
@@ -902,7 +910,7 @@ async function processJob(job: ClaimedJob) {
       if (customer?.phone) {
         const smsBody = `Hi ${customer.firstName}, thanks for your enquiry with ${businessName}. We've received it and will get back to you soon.`;
         try {
-          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
           await recordCommunication({
             tenantId,
             customerId: customer.id,
@@ -939,7 +947,7 @@ async function processJob(job: ClaimedJob) {
             footerText: businessName
           });
 
-          await sendEmail(sendgridCredentials, tenant.profile.email, subject, html);
+          await sendEmail(brevoEmailCredentials, tenant.profile.email, subject, html);
           await recordCommunication({
             tenantId,
             customerId: customer?.id ?? null,
@@ -963,10 +971,10 @@ async function processJob(job: ClaimedJob) {
     }
 
     case "job.scheduled": {
-      const [makeCredentials, sendgridCredentials, twilioCredentials, tenant, customer, jobRecord] = await Promise.all([
+      const [makeCredentials, brevoEmailCredentials, brevoSmsCredentials, tenant, customer, jobRecord] = await Promise.all([
         getCredentials(tenantId, "make_com"),
-        getCredentials(tenantId, "sendgrid"),
-        getCredentials(tenantId, "twilio"),
+        getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE),
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
         getTenantWithProfile(tenantId),
         getCustomer(payload.customerId),
         getJob(payload.jobId)
@@ -1016,7 +1024,7 @@ async function processJob(job: ClaimedJob) {
             footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
           });
 
-          await sendEmail(sendgridCredentials, customer.email, subject, html);
+          await sendEmail(brevoEmailCredentials, customer.email, subject, html);
           await recordCommunication({
             tenantId,
             customerId: customer.id,
@@ -1042,7 +1050,7 @@ async function processJob(job: ClaimedJob) {
       if (customer?.phone) {
         const smsBody = `Hi ${customer.firstName}, your job with ${businessName} is booked for ${scheduledText}.`;
         try {
-          await sendSms(twilioCredentials, customer.phone, smsBody);
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
           await recordCommunication({
             tenantId,
             customerId: customer.id,
@@ -1195,7 +1203,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
         await saveRateSuggestions(tenantId, suggestions);
 
         try {
-          const sendgridCredentials = await getCredentials(tenantId, "sendgrid");
+          const brevoEmailCredentials = await getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE);
           const businessName = tenant?.profile?.businessName ?? "Your business";
           const html = buildBrandedEmailHtml({
             businessName,
@@ -1211,7 +1219,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
           });
 
           if (tenant?.profile?.email) {
-            await sendEmail(sendgridCredentials, tenant.profile.email, `AI pricing suggestions ready — ${businessName}`, html);
+            await sendEmail(brevoEmailCredentials, tenant.profile.email, `AI pricing suggestions ready — ${businessName}`, html);
           }
         } catch {
           // Best-effort notification only.
@@ -1233,9 +1241,9 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
     }
 
     case "operator.morning_digest": {
-      const [sendgridCredentials, twilioCredentials, tenant] = await Promise.all([
-        getCredentials(tenantId, "sendgrid"),
-        getCredentials(tenantId, "twilio"),
+      const [brevoEmailCredentials, brevoSmsCredentials, tenant] = await Promise.all([
+        getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE),
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
         getTenantWithProfile(tenantId)
       ]);
 
@@ -1270,7 +1278,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
 
         const smsBody = smsParts.join(" ");
         try {
-          await sendSms(twilioCredentials, operatorPhone, smsBody);
+          await sendSms(brevoSmsCredentials, operatorPhone, smsBody);
           await logPlatformEvent({
             tenantId,
             eventType: "api_call",
@@ -1336,7 +1344,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
         });
 
         try {
-          await sendEmail(sendgridCredentials, operatorEmail, `Daily brief — ${businessName}`, html);
+          await sendEmail(brevoEmailCredentials, operatorEmail, `Daily brief — ${businessName}`, html);
           await logPlatformEvent({
             tenantId,
             eventType: "api_call",
@@ -1385,6 +1393,80 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
       break;
     }
 
+    case "billing.trial_expired": {
+      const tenant = await getTenantWithProfile(tenantId);
+      if (!tenant) break;
+
+      // Idempotency: only act if still in trial status
+      if (tenant.status !== "trial") break;
+
+      await prisma.tenant.update({
+        where: { id: tenantId },
+        data: { status: "suspended" }
+      });
+
+      await logPlatformEvent({
+        tenantId,
+        eventType: "info",
+        service: "worker",
+        direction: "outbound",
+        status: "success",
+        requestSummary: "Trial expired — tenant suspended",
+        responseSummary: `${tenant.profile?.businessName ?? tenant.slug} transitioned to suspended`,
+        triggeredBy: "worker_trial_expiry"
+      });
+
+      // Send billing email to the operator
+      if (tenant.billingEmail) {
+        const businessName = tenant.profile?.businessName ?? tenant.slug;
+        const subject = `Your FlowLab trial has ended — ${businessName}`;
+        const html = buildBrandedEmailHtml({
+          businessName: "FlowLab",
+          bodyHtml: `
+            <p>Hi ${businessName},</p>
+            <p>Your 14-day free trial has ended and your account has been temporarily suspended.</p>
+            <p>To continue using FlowLab and keep all your automations, data, and integrations running,
+            please upgrade to a paid plan.</p>
+            <p>Reply to this email or log in to your dashboard to upgrade.</p>
+            <p>If you have any questions, we're happy to help.</p>
+          `,
+          footerText: "FlowLab Solutions"
+        });
+
+        try {
+          // Pass empty credentials — sendEmail falls back to BREVO_* env vars
+          await sendEmail({}, tenant.billingEmail, subject, html);
+          await recordCommunication({
+            tenantId,
+            channel: "email",
+            subject,
+            body: `Trial expired — account suspended. Upgrade email sent to ${tenant.billingEmail}.`,
+            status: "sent"
+          });
+        } catch (emailError) {
+          await recordCommunication({
+            tenantId,
+            channel: "email",
+            subject,
+            body: `Trial expired — account suspended. Upgrade email failed to send.`,
+            status: "failed"
+          });
+          await logPlatformEvent({
+            tenantId,
+            eventType: "error",
+            service: EMAIL_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "failed",
+            requestSummary: "Trial expiry billing email failed",
+            errorMessage: emailError instanceof Error ? emailError.message : String(emailError),
+            triggeredBy: "worker_trial_expiry"
+          });
+        }
+      }
+
+      break;
+    }
+
     default: {
       await logPlatformEvent({
         tenantId,
@@ -1417,27 +1499,27 @@ export async function processAutomationBatch(limit = 25) {
 
       await logPlatformEvent({
         tenantId: job.tenantId ?? null,
-        eventType: failedJob.status === "failed" ? "error" : "warning",
+        eventType: failedJob.status === "dead_letter" ? "error" : "warning",
         service: "worker",
         direction: "outbound",
-        status: failedJob.status === "failed" ? "failed" : "pending",
-        requestSummary: `Automation ${job.kind} ${failedJob.status === "failed" ? "failed permanently" : "scheduled for retry"}`,
-        responseSummary: failedJob.status === "failed" ? null : `Retry ${failedJob.attempts}/${5} queued`,
+        status: failedJob.status === "dead_letter" ? "failed" : "pending",
+        requestSummary: `Automation ${job.kind} ${failedJob.status === "dead_letter" ? "dead-lettered" : "scheduled for retry"}`,
+        responseSummary: failedJob.status === "dead_letter" ? null : `Retry ${failedJob.attempts}/${5} queued`,
         errorMessage: message,
         triggeredBy: "worker_retry_manager"
       });
 
-      if (failedJob.status === "failed") {
+      if (failedJob.status === "dead_letter") {
         // Structured alert for log-based monitoring (grep: AUTOMATION_TERMINAL_FAILURE)
-        console.error(JSON.stringify({
+        logger.error("Automation reached dead-letter queue", {
           alert: "AUTOMATION_TERMINAL_FAILURE",
           jobId: job.id,
           kind: job.kind,
           tenantId: job.tenantId,
           attempts: failedJob.attempts,
           errorMessage: message,
-          timestamp: new Date().toISOString()
-        }));
+          service: "worker"
+        });
       }
 
       failed += 1;
@@ -1456,7 +1538,10 @@ export async function logWorkerBoot() {
     include: { integrations: true }
   });
 
-  console.log(`FlowLab worker online. Monitoring ${tenants.length} tenant(s).`);
+  logger.info("FlowLab worker online", {
+    service: "worker",
+    tenantCount: tenants.length
+  });
 
   await Promise.all(
     tenants.map((tenant) =>
@@ -1479,12 +1564,36 @@ export async function logWorkerBoot() {
 export async function startAutomationWorker(options?: { pollMs?: number; runOnce?: boolean }) {
   const pollMs = options?.pollMs ?? 5000;
   const runOnce = options?.runOnce ?? false;
+  const heartbeatIntervalMs = 60_000; // 1 minute
+  let lastHeartbeatAt = 0;
 
   await logWorkerBoot();
 
   do {
     const result = await processAutomationBatch(25);
-    console.log(`Processed ${result.claimed} automation job(s). ${result.completed} completed, ${result.failed} failed.`);
+    logger.info("Automation batch processed", {
+      service: "worker",
+      event: "batch_processed",
+      claimed: result.claimed,
+      completed: result.completed,
+      failed: result.failed,
+    });
+
+    // Periodic heartbeat — write a platform event every ~60 s
+    const now = Date.now();
+    if (now - lastHeartbeatAt >= heartbeatIntervalMs) {
+      lastHeartbeatAt = now;
+      await logPlatformEvent({
+        tenantId: null,
+        eventType: "info",
+        service: "worker",
+        direction: "outbound",
+        status: "success",
+        requestSummary: "Worker heartbeat",
+        responseSummary: null,
+        triggeredBy: "worker_heartbeat"
+      });
+    }
 
     if (runOnce) {
       break;

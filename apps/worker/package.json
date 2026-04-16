@@ -13,6 +13,7 @@
     "@flowlab/contracts": "*",
     "@flowlab/db": "*",
     "@flowlab/events": "*",
-    "@flowlab/integrations": "*"
+    "@flowlab/integrations": "*",
+    "@sentry/node": "^10.48.0"
   }
 }

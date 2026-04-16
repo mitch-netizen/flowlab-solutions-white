@@ -20,11 +20,12 @@ export async function middleware(request: NextRequest) {
   const effectiveHost =
     isDev && devTenantSlug ? `${devTenantSlug}.${rootDomain}` : host;
 
-  // Inject x-flowlab-host as a request header so that Server Components and
-  // Route Handlers can read it via headers(). The NextResponse.next() request
+  // Inject x-flowlab-host and x-pathname so that Server Components and
+  // Route Handlers can read them via headers(). The NextResponse.next() request
   // override is the Next.js-documented way to forward custom request headers.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-flowlab-host", effectiveHost);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
 
   // Start with a response that passes the augmented headers through
   let supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });

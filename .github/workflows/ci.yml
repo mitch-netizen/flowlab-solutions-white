@@ -11,6 +11,21 @@ jobs:
     name: Typecheck, test, build
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: flowlab_ci
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     env:
       # Minimal env so config validation passes in CI (non-production values)
       DATABASE_URL: "postgresql://ci:ci@localhost:5432/flowlab_ci"
@@ -34,6 +49,9 @@ jobs:
 
       - name: Generate Prisma client
         run: npm run db:generate
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma
 
       - name: Lint all workspaces
         run: npm run lint
