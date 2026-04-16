@@ -17,9 +17,22 @@ interface Props {
 export default function SignupForm({ action, startedAt }: Props) {
   const [captchaToken, setCaptchaToken] = useState<string>("");
   const [captchaError, setCaptchaError] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(formData: FormData) {
+    setValidationError(null);
+
+    const businessName = formData.get("businessName")?.toString().trim() ?? "";
+    const ownerName = formData.get("ownerName")?.toString().trim() ?? "";
+    const email = formData.get("email")?.toString().trim() ?? "";
+    const password = formData.get("password")?.toString() ?? "";
+
+    if (businessName.length < 2) return setValidationError("Business name must be at least 2 characters.");
+    if (ownerName.length < 2) return setValidationError("Your name must be at least 2 characters.");
+    if (!email.includes("@")) return setValidationError("Please enter a valid email address.");
+    if (password.length < 10) return setValidationError("Password must be at least 10 characters.");
+
     if (!captchaToken) {
       setCaptchaError(true);
       return;
@@ -77,6 +90,12 @@ export default function SignupForm({ action, startedAt }: Props) {
           ))}
         </select>
       </label>
+
+      {validationError && (
+        <p style={{ color: "var(--color-danger, #ef4444)", fontSize: "0.875rem", margin: 0 }}>
+          {validationError}
+        </p>
+      )}
 
       <Turnstile
         siteKey={TURNSTILE_SITE_KEY}
