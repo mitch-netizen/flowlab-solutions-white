@@ -32,7 +32,7 @@ export default async function CustomerRecordPage({
       <DashboardPageHeader
         eyebrow="CRM"
         title={`${customer.firstName} ${customer.lastName}`}
-        description="This record should read like a customer relationship summary: contact details, work history, billing, follow-up, and recent messages in one place."
+        description="Contact details, work history, billing, and messages all in one place."
         section="crm"
         actions={(
           <Link className="ghost" href="/dashboard/crm">
@@ -58,7 +58,7 @@ export default async function CustomerRecordPage({
       ) : null}
       {query.error ? (
         <div className="surface surface-alert is-danger">
-          <p>FlowLab could not complete that action. Check the integrations and try again.</p>
+          <p>Something went wrong. Check your integrations and try again.</p>
         </div>
       ) : null}
 
@@ -86,8 +86,7 @@ export default async function CustomerRecordPage({
         <div className="surface setup-section">
           <div className="setup-section-copy">
             <div className="eyebrow">Contact details</div>
-            <h2 style={{ marginBottom: 8 }}>Core information at a glance</h2>
-            <p>The customer basics should be readable without scrolling through forms first.</p>
+            <h2 style={{ marginBottom: 8 }}>Contact details</h2>
           </div>
 
           <div className="setup-list">
@@ -113,8 +112,8 @@ export default async function CustomerRecordPage({
         <form action={`/api/tenant/crm/customers/${customer.id}/update`} method="post" className="surface form-grid">
           <div className="setup-section-copy">
             <div className="eyebrow">Edit customer</div>
-            <h2 style={{ marginBottom: 8 }}>Keep the record current</h2>
-            <p>Update the customer once here and let the rest of the CRM inherit the change.</p>
+            <h2 style={{ marginBottom: 8 }}>Edit customer</h2>
+            <p>Changes apply across all jobs, invoices, and records linked to this customer.</p>
           </div>
 
           <input type="hidden" name="returnTo" value={`/dashboard/crm/${customer.id}`} />
@@ -159,7 +158,7 @@ export default async function CustomerRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Jobs</div>
             <h2 style={{ marginBottom: 8 }}>Work history</h2>
-            <p>Jobs stay dense, but the summary and timing should still scan quickly.</p>
+            <p>All jobs linked to this customer.</p>
           </div>
 
           <div className="setup-table-wrap">
@@ -233,7 +232,7 @@ export default async function CustomerRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Recent communication</div>
             <h2 style={{ marginBottom: 8 }}>Latest outreach</h2>
-            <p>Messages should read like a timeline, not a pile of floating cards.</p>
+            <p>All messages sent to or from this customer.</p>
           </div>
 
           <div className="setup-list">
@@ -257,7 +256,7 @@ export default async function CustomerRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Enquiries</div>
             <h2>New requests still tied to this customer</h2>
-            <p>Enquiries should stay visible with their next useful link, especially when a quote was already created from the request.</p>
+            <p>Open the linked quote or track the status of each request.</p>
           </div>
         </div>
 
@@ -286,7 +285,7 @@ export default async function CustomerRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Quotes and agreements</div>
             <h2 style={{ marginBottom: 8 }}>Commercial history</h2>
-            <p>Quotes and agreements both belong in the same commercial timeline for the customer.</p>
+            <p>Quotes sent and agreements signed for this customer.</p>
           </div>
 
           <div className="setup-list">
@@ -323,7 +322,7 @@ export default async function CustomerRecordPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Feedback and reminders</div>
             <h2 style={{ marginBottom: 8 }}>Follow-up signals</h2>
-            <p>Recent sentiment and rebooking reminders should stay close together so the next call or message has context.</p>
+            <p>Post-job feedback and upcoming rebook reminders.</p>
           </div>
 
           <div className="setup-list">

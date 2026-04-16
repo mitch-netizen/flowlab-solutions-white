@@ -302,7 +302,7 @@ export default function OnboardingWizard({
           <div>
             <h2>Branding</h2>
             <p className="muted">
-              Your colours are applied to all customer-facing pages. FlowLab is invisible to your customers.
+              Your colours are applied to all customer-facing pages — quotes, invoices, agreements, and the public enquiry form.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 480 }}>
               <label>

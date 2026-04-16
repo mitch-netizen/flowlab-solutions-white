@@ -40,8 +40,8 @@ export default async function SystemHealthPage() {
     <div className="stack">
       <DashboardPageHeader
         eyebrow="Setup"
-        title="Watch the system without wading through noise."
-        description="This page should answer three questions quickly: are automations failing, are integrations expiring, and are live events still flowing through the platform."
+        title="System health"
+        description="Check automation queue status, integration connections, and the live event log — all in one place."
         section="setup"
         actions={(
           <Link className="ghost" href="/dashboard/integrations">
@@ -94,8 +94,8 @@ export default async function SystemHealthPage() {
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Automation jobs</div>
-            <h2>Failed work should surface as a short action list</h2>
-            <p>If something breaks, the operator should see the error, the last attempt, and the retry button in the same row.</p>
+            <h2>Failed automation jobs</h2>
+            <p>Retry failed jobs from here. Each row shows the error and how many times it has been attempted.</p>
           </div>
         </div>
 
@@ -128,8 +128,8 @@ export default async function SystemHealthPage() {
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Connections</div>
-            <h2>Integration health should read like a simple status list</h2>
-            <p>Optional Make setup stays visible, but it should not shout louder than broken or expiring core services.</p>
+            <h2>Integration status</h2>
+            <p>Connection status for all integrations. Go to Integrations to reconnect or update credentials.</p>
           </div>
         </div>
 
@@ -181,8 +181,8 @@ export default async function SystemHealthPage() {
         <div className="setup-section-header">
           <div className="setup-section-copy">
             <div className="eyebrow">Live event log</div>
-            <h2>Recent platform events stay dense, but easier to scan</h2>
-            <p>Keep time, service, status, and the useful summary visible without turning the whole screen into a spreadsheet wall.</p>
+            <h2>Event log</h2>
+            <p>A live feed of automation and integration activity across your account.</p>
           </div>
         </div>
 
