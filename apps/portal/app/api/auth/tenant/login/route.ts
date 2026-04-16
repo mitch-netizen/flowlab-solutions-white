@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import {
   createSupabaseAdminClient,
   createSupabaseServerClient,
+  IMPERSONATION_SESSION_COOKIE,
   verifyPassword,
 } from "@flowlab/auth";
 import {
@@ -147,7 +148,10 @@ export async function POST(request: Request) {
     data: { lastLoginAt: new Date() },
   });
 
-  return contentType.includes("application/json")
+  const response = contentType.includes("application/json")
     ? NextResponse.json({ ok: true })
     : NextResponse.redirect(new URL("/dashboard", request.url), 303);
+
+  response.cookies.delete(IMPERSONATION_SESSION_COOKIE);
+  return response;
 }

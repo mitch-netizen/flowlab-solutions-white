@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getPlanFeatures } from "@flowlab/contracts";
+import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { buildAutomationBlueprintPayloads, decryptJson, encryptJson, verifyDocuSealEventSecret } from "@flowlab/integrations";
 
 describe("platform foundation", () => {
@@ -26,7 +27,7 @@ describe("platform foundation", () => {
 
     expect(payloads).toHaveLength(16);
     expect(payloads[0]?.filename).toBe("new_enquiry.json");
-    expect(payloads[0]?.contents).toContain("lawnorder.flowlabsolutions.au");
+    expect(payloads[0]?.contents).toContain(`lawnorder.${getCanonicalRootDomain()}`);
   });
 
   it("verifies DocuSeal optional webhook secrets", () => {

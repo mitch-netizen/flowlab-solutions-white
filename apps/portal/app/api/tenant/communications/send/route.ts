@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 
+import {
+  BREVO_EMAIL_INTEGRATION_SERVICE,
+  BREVO_SMS_INTEGRATION_SERVICE
+} from "@flowlab/contracts";
 import { getTenantIntegrationRecord, prisma } from "@flowlab/db";
 import { decryptJson, sendEmail, sendSms, buildBrandedEmailHtml } from "@flowlab/integrations";
 import { logPlatformEvent } from "@flowlab/events";
@@ -73,7 +77,7 @@ export async function POST(request: Request) {
       }
 
       const emailCredentials = decryptJson(
-        (await getTenantIntegrationRecord(session.tenantId, "sendgrid"))?.credentialsJson ?? ""
+        (await getTenantIntegrationRecord(session.tenantId, BREVO_EMAIL_INTEGRATION_SERVICE))?.credentialsJson ?? ""
       );
       const businessName = tenant?.profile?.businessName ?? "FlowLab";
       const html = buildBrandedEmailHtml({
@@ -91,7 +95,7 @@ export async function POST(request: Request) {
       }
 
       const smsCredentials = decryptJson(
-        (await getTenantIntegrationRecord(session.tenantId, "twilio"))?.credentialsJson ?? ""
+        (await getTenantIntegrationRecord(session.tenantId, BREVO_SMS_INTEGRATION_SERVICE))?.credentialsJson ?? ""
       );
       await sendSms(smsCredentials, customer.phone, body);
     }

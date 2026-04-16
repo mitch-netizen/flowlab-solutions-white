@@ -1,7 +1,11 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient, TENANT_SESSION_COOKIE } from "@flowlab/auth";
+import {
+  createSupabaseServerClient,
+  IMPERSONATION_SESSION_COOKIE,
+  TENANT_SESSION_COOKIE
+} from "@flowlab/auth";
 
 export async function GET() {
   const supabase = await createSupabaseServerClient();
@@ -10,6 +14,7 @@ export async function GET() {
   // Clean up any legacy cookie from before the Supabase Auth migration
   const store = await cookies();
   store.delete(TENANT_SESSION_COOKIE);
+  store.delete(IMPERSONATION_SESSION_COOKIE);
 
   redirect("/login");
 }

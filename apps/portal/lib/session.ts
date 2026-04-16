@@ -1,7 +1,11 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { createSupabaseServerClient } from "@flowlab/auth";
+import {
+  createSupabaseServerClient,
+  IMPERSONATION_SESSION_COOKIE,
+  verifyImpersonationToken
+} from "@flowlab/auth";
 import { prisma, resolveTenantContext } from "@flowlab/db";
 import type { TenantSession } from "@flowlab/contracts";
 
@@ -27,6 +31,26 @@ export async function getTenantSession(): Promise<TenantSession | null> {
 
   if (!tenantUser) return null;
 
+  const cookieStore = await cookies();
+  const rawImpersonationToken = cookieStore.get(IMPERSONATION_SESSION_COOKIE)?.value;
+  let impersonatedBy: string | undefined;
+
+  if (rawImpersonationToken) {
+    const impersonation = verifyImpersonationToken(rawImpersonationToken);
+    const tokenMatchesSession =
+      impersonation &&
+      impersonation.authUserId === user.id &&
+      impersonation.tenantId === tenantContext.tenantId;
+
+    if (!tokenMatchesSession) {
+      await supabase.auth.signOut();
+      cookieStore.delete(IMPERSONATION_SESSION_COOKIE);
+      return null;
+    }
+
+    impersonatedBy = impersonation.adminUserId;
+  }
+
   return {
     sub: tenantUser.id,
     authUserId: user.id,
@@ -34,8 +58,7 @@ export async function getTenantSession(): Promise<TenantSession | null> {
     scope: "tenant",
     role: tenantUser.role,
     tenantId: tenantUser.tenantId,
-    impersonatedBy:
-      (user.user_metadata?.impersonatedBy as string | undefined) ?? undefined,
+    impersonatedBy: impersonatedBy ?? undefined,
   } satisfies TenantSession;
 }
 

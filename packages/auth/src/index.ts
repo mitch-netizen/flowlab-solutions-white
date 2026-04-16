@@ -10,6 +10,7 @@ import type { CustomerTokenPayload } from "@flowlab/contracts";
 // ---------------------------------------------------------------------------
 export const PLATFORM_SESSION_COOKIE = "flowlab_platform_session";
 export const TENANT_SESSION_COOKIE = "flowlab_tenant_session";
+export const IMPERSONATION_SESSION_COOKIE = "flowlab_impersonation";
 
 // ---------------------------------------------------------------------------
 // Customer resource tokens (quotes, agreements, invoices, feedback)
@@ -22,6 +23,15 @@ const customerTokenSchema = z.object({
   resourceType: z.enum(["quote", "agreement", "invoice", "feedback"]),
   expiresAt: z.string(),
 });
+
+const impersonationTokenSchema = z.object({
+  adminUserId: z.string(),
+  authUserId: z.string(),
+  tenantId: z.string(),
+  expiresAt: z.string(),
+});
+
+export type ImpersonationTokenPayload = z.infer<typeof impersonationTokenSchema>;
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
@@ -40,6 +50,24 @@ export function verifyCustomerToken(token: string): CustomerTokenPayload | null 
   try {
     const decoded = jwt.verify(token, getJwtSecret());
     return customerTokenSchema.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
+export function signImpersonationToken(payload: ImpersonationTokenPayload) {
+  return jwt.sign(payload, getJwtSecret(), {
+    expiresIn: Math.max(
+      1,
+      Math.ceil((new Date(payload.expiresAt).getTime() - Date.now()) / 1000)
+    ),
+  });
+}
+
+export function verifyImpersonationToken(token: string): ImpersonationTokenPayload | null {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret());
+    return impersonationTokenSchema.parse(decoded);
   } catch {
     return null;
   }

@@ -2785,7 +2785,33 @@ export async function enqueueAutomationJob(input: {
   }
 }
 
+export async function enqueueTrialExpiryJobs(now = new Date()) {
+  const expired = await prisma.tenant.findMany({
+    where: { status: "trial", trialEndsAt: { lt: now } },
+    select: { id: true }
+  });
+
+  let enqueued = 0;
+  for (const tenant of expired) {
+    const dedupeKey = `billing.trial_expired:${tenant.id}`;
+    const existing = await prisma.automationJob.findUnique({ where: { dedupeKey } });
+    if (!existing) {
+      await enqueueAutomationJob({
+        tenantId: tenant.id,
+        kind: "billing.trial_expired",
+        dedupeKey,
+        payload: { triggeredAt: now.toISOString() }
+      });
+      enqueued += 1;
+    }
+  }
+
+  return { found: expired.length, enqueued };
+}
+
 export async function enqueueRecurringAutomationJobs(now = new Date()) {
+  const [trialResult] = await Promise.all([enqueueTrialExpiryJobs(now)]);
+
   const tenants = await prisma.tenant.findMany({
     select: {
       id: true,
@@ -2851,7 +2877,7 @@ export async function enqueueRecurringAutomationJobs(now = new Date()) {
     }
   }
 
-  return { tenants: tenants.length, scheduled };
+  return { tenants: tenants.length, scheduled, trialExpiriesEnqueued: trialResult.enqueued };
 }
 
 export async function syncMobileJobActions(input: {
@@ -2957,7 +2983,7 @@ export async function enqueueMorningDigest(tenantId: string) {
     prisma.automationJob.count({
       where: {
         tenantId,
-        status: "failed",
+        status: { in: ["failed", "dead_letter"] },
         updatedAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) }
       }
     })
@@ -3201,7 +3227,7 @@ export async function failAutomationJob(id: string, error: string) {
     where: { id },
     data: terminal
       ? {
-          status: "failed",
+          status: "dead_letter",
           lastError: error,
           processedAt: new Date()
         }
@@ -3214,9 +3240,10 @@ export async function failAutomationJob(id: string, error: string) {
 }
 
 export async function getTenantAutomationHealth(tenantId: string) {
+  const failureStatuses = ["failed", "dead_letter"] as const;
   const [failed, pending, processing, recentFailedJobs] = await Promise.all([
     prisma.automationJob.count({
-      where: { tenantId, status: "failed" }
+      where: { tenantId, status: { in: [...failureStatuses] } }
     }),
     prisma.automationJob.count({
       where: { tenantId, status: "pending" }
@@ -3225,7 +3252,7 @@ export async function getTenantAutomationHealth(tenantId: string) {
       where: { tenantId, status: "processing" }
     }),
     prisma.automationJob.findMany({
-      where: { tenantId, status: "failed" },
+      where: { tenantId, status: { in: [...failureStatuses] } },
       orderBy: { updatedAt: "desc" },
       take: 10,
       select: {
@@ -3369,7 +3396,7 @@ export async function retryAutomationJob(input: { tenantId: string; jobId: strin
     where: {
       id: input.jobId,
       tenantId: input.tenantId,
-      status: "failed"
+      status: { in: ["failed", "dead_letter"] }
     },
     data: {
       status: "pending",
@@ -4150,7 +4177,7 @@ export async function getAdminHealthSummary() {
   const [failedJobsByTenant, expiringIntegrations] = await Promise.all([
     prisma.automationJob.groupBy({
       by: ["tenantId"],
-      where: { status: "failed" },
+      where: { status: { in: ["failed", "dead_letter"] } },
       _count: { id: true }
     }),
     prisma.platformIntegration.findMany({

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { prisma } from "@flowlab/db";
@@ -41,6 +43,17 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const features = getPlanFeatures(plan as Parameters<typeof getPlanFeatures>[0]);
 
   const isSuspended = status === "suspended" || status === "cancelled";
+
+  // Redirect suspended/cancelled tenants to the upgrade page.
+  // Read x-pathname (set by middleware) to avoid an infinite redirect loop
+  // when the user is already on the upgrade page.
+  if (isSuspended) {
+    const headerStore = await headers();
+    const pathname = headerStore.get("x-pathname") ?? "";
+    if (pathname !== "/dashboard/upgrade") {
+      redirect("/dashboard/upgrade");
+    }
+  }
 
   return (
     <>
