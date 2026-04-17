@@ -36,17 +36,17 @@ export default async function InvoiceRecordPage({
         section="revenue"
         actions={(
           <>
-            <CustomerLink customerId={invoice.customerId} className="ghost">Open customer</CustomerLink>
+            <CustomerLink customerId={invoice.customerId} className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open customer</CustomerLink>
             <form action={`/api/tenant/invoices/${invoice.id}/sync`} method="post">
-              <button className="ghost" type="submit">Sync from Xero</button>
+              <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Sync from Xero</button>
             </form>
             {invoice.status !== "paid" && invoice.status !== "voided" ? (
               <form action={`/api/tenant/invoices/${invoice.id}/mark-paid`} method="post">
-                <button className="ghost" type="submit">Mark as paid</button>
+                <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Mark as paid</button>
               </form>
             ) : null}
             {invoice.paymentLink ? (
-              <a className="ghost" href={invoice.paymentLink} target="_blank" rel="noreferrer">
+              <a className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={invoice.paymentLink} target="_blank" rel="noreferrer">
                 {invoice.xeroInvoiceId ? "Open Xero invoice" : "Open online invoice"}
               </a>
             ) : null}
@@ -55,57 +55,57 @@ export default async function InvoiceRecordPage({
       />
 
       {query.message === "sent" ? (
-        <div className="surface surface-alert is-success">
+        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
           <p>Message sent and linked to this invoice.</p>
         </div>
       ) : query.message === "marked_paid" ? (
-        <div className="surface surface-alert is-success">
+        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
           <p>Invoice marked as paid. Payment confirmation automation queued.</p>
         </div>
       ) : query.message === "already_paid" ? (
-        <div className="surface surface-alert is-warning">
+        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-amber-500">
           <p>This invoice is already marked as paid.</p>
         </div>
       ) : null}
       {query.error ? (
-        <div className="surface surface-alert is-danger">
+        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-red-500">
           <p>Something went wrong. Please try again.</p>
         </div>
       ) : null}
 
-      <div className="surface">
-        <div className="setup-summary">
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Status</div>
-            <div className="setup-summary-value" style={{ textTransform: "capitalize" }}>{invoice.status}</div>
-            <p className="setup-summary-copy">Xero status: {invoice.xeroStatus ?? "Unknown"}.</p>
+      <div className="rounded-lg border bg-card p-4">
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Status</div>
+            <div className="text-3xl font-semibold" style={{ textTransform: "capitalize" }}>{invoice.status}</div>
+            <p className="text-sm text-muted-foreground">Xero status: {invoice.xeroStatus ?? "Unknown"}.</p>
           </div>
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Amount</div>
-            <div className="setup-summary-value">${invoice.amount}</div>
-            <p className="setup-summary-copy">Total amount currently due on this invoice.</p>
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Amount</div>
+            <div className="text-3xl font-semibold">${invoice.amount}</div>
+            <p className="text-sm text-muted-foreground">Total amount currently due on this invoice.</p>
           </div>
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Due date</div>
-            <div className="setup-summary-value" style={{ fontSize: "1.5rem", lineHeight: 1.15 }}>
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Due date</div>
+            <div className="text-3xl font-semibold" style={{ fontSize: "1.5rem", lineHeight: 1.15 }}>
               {invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString() : "No due date"}
             </div>
-            <p className="setup-summary-copy">{invoice.paidAt ? `Paid ${new Date(invoice.paidAt).toLocaleString()}` : "Payment not recorded yet."}</p>
+            <p className="text-sm text-muted-foreground">{invoice.paidAt ? `Paid ${new Date(invoice.paidAt).toLocaleString()}` : "Payment not recorded yet."}</p>
           </div>
         </div>
       </div>
 
       <div className="cards-2">
-        <div className="surface setup-section">
-          <div className="setup-section-copy">
+        <div className="rounded-lg border bg-card p-4 space-y-4">
+          <div className="space-y-2">
             <div className="eyebrow">Customer and payment</div>
             <h2 style={{ marginBottom: 8 }}>Customer &amp; payment</h2>
           </div>
 
-          <div className="setup-list">
-            <div className="setup-row">
-              <div className="setup-row-main">
-                <div className="setup-row-meta">
+          <div className="space-y-3">
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className="status-pill is-off">Customer</span>
                 </div>
                 <p>
@@ -115,25 +115,25 @@ export default async function InvoiceRecordPage({
                 </p>
               </div>
             </div>
-            <div className="setup-row">
-              <div className="setup-row-main">
-                <div className="setup-row-meta">
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className="status-pill is-off">Email</span>
                 </div>
                 <p>{invoice.customer.email}</p>
               </div>
             </div>
-            <div className="setup-row">
-              <div className="setup-row-main">
-                <div className="setup-row-meta">
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className="status-pill is-off">Paid at</span>
                 </div>
                 <p>{invoice.paidAt ? new Date(invoice.paidAt).toLocaleString() : "Not paid yet"}</p>
               </div>
             </div>
-            <div className="setup-row">
-              <div className="setup-row-main">
-                <div className="setup-row-meta">
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className="status-pill is-off">Payment link</span>
                 </div>
                 <p>
@@ -148,18 +148,18 @@ export default async function InvoiceRecordPage({
           </div>
         </div>
 
-        <div className="surface setup-section">
-          <div className="setup-section-copy">
+        <div className="rounded-lg border bg-card p-4 space-y-4">
+          <div className="space-y-2">
             <div className="eyebrow">Related jobs</div>
             <h2 style={{ marginBottom: 8 }}>Nearby work history</h2>
             <p>The job this invoice was raised for, plus other recent work for this customer.</p>
           </div>
 
-          <div className="setup-list">
+          <div className="space-y-3">
             {invoice.job ? (
-              <div className="setup-row">
-                <div className="setup-row-main">
-                  <div className="setup-row-meta">
+              <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     <span className="status-pill is-on">Linked job</span>
                     <span>{invoice.job.status}</span>
                   </div>
@@ -173,9 +173,9 @@ export default async function InvoiceRecordPage({
             ) : null}
 
             {otherCustomerJobs.length > 0 ? otherCustomerJobs.map((job) => (
-              <div key={job.id} className="setup-row">
-                <div className="setup-row-main">
-                  <div className="setup-row-meta">
+              <div key={job.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     <span className="status-pill is-off">{job.status}</span>
                     <span>{job.scheduledFor ? new Date(job.scheduledFor).toLocaleString() : "TBD"}</span>
                   </div>
@@ -186,7 +186,7 @@ export default async function InvoiceRecordPage({
                   </h3>
                 </div>
               </div>
-            )) : !invoice.job ? <p className="setup-note">No related jobs found for this customer yet.</p> : null}
+            )) : !invoice.job ? <p className="text-sm text-muted-foreground">No related jobs found for this customer yet.</p> : null}
           </div>
         </div>
       </div>
@@ -199,48 +199,48 @@ export default async function InvoiceRecordPage({
           title="Send invoice follow-up"
         />
 
-        <div className="surface setup-section">
-          <div className="setup-section-copy">
+        <div className="rounded-lg border bg-card p-4 space-y-4">
+          <div className="space-y-2">
             <div className="eyebrow">Invoice communication</div>
             <h2 style={{ marginBottom: 8 }}>Messages linked directly to this invoice</h2>
             <p>Messages sent specifically about this invoice.</p>
           </div>
 
-          <div className="setup-list">
+          <div className="space-y-3">
             {invoiceCommunications.length > 0 ? invoiceCommunications.map((entry) => (
-              <div key={entry.id} className="setup-row">
-                <div className="setup-row-main">
-                  <div className="setup-row-meta">
+              <div key={entry.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     <span className="status-pill is-off">{entry.channel.toUpperCase()}</span>
                     <span>{entry.status}</span>
                   </div>
                   <p>{entry.subject ?? entry.body}</p>
                 </div>
               </div>
-            )) : <p className="setup-note">No invoice-linked communication recorded yet.</p>}
+            )) : <p className="text-sm text-muted-foreground">No invoice-linked communication recorded yet.</p>}
           </div>
         </div>
       </div>
 
-      <div className="surface setup-section">
-        <div className="setup-section-copy">
+      <div className="rounded-lg border bg-card p-4 space-y-4">
+        <div className="space-y-2">
           <div className="eyebrow">Customer communication</div>
           <h2 style={{ marginBottom: 8 }}>Broader customer timeline</h2>
           <p>Other messages sent to this customer, for context.</p>
         </div>
 
-        <div className="setup-list">
+        <div className="space-y-3">
           {customerCommunications.length > 0 ? customerCommunications.map((entry) => (
-            <div key={entry.id} className="setup-row">
-              <div className="setup-row-main">
-                <div className="setup-row-meta">
+            <div key={entry.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className="status-pill is-off">{entry.channel.toUpperCase()}</span>
                   <span>{entry.status}</span>
                 </div>
                 <p>{entry.subject ?? entry.body}</p>
               </div>
             </div>
-          )) : <p className="setup-note">No broader customer communication recorded yet.</p>}
+          )) : <p className="text-sm text-muted-foreground">No broader customer communication recorded yet.</p>}
         </div>
       </div>
     </div>
