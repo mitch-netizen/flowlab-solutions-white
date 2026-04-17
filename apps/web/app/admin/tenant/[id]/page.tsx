@@ -5,7 +5,6 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { getServiceLabel, serviceLabels } from "@flowlab/contracts";
 import AdminPageScaffold, { AdminPageCard } from "../../../../components/admin/page-scaffold";
 import { Badge, formatCurrency, formatDate, formatDateTime, formatLabel, getStatusTone } from "@flowlab/ui";
-import AdminPageScaffold, { AdminPageCard } from "../../../../components/admin/page-scaffold";
 
 interface TenantDetail {
   id: string;

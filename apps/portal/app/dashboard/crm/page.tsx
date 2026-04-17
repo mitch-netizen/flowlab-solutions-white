@@ -5,7 +5,6 @@ import { getCrmSnapshot } from "@flowlab/db";
 import CustomerLink from "../../../components/customer-link";
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { CustomersTable } from "./customers-table";
-import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function CrmPage({
