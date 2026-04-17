@@ -12,7 +12,7 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
 
   return (
     <main>
-      <section className="surface">
+      <section className="rounded-lg border bg-card p-4">
         <div className="eyebrow">{agreement.tenant.profile?.businessName}</div>
         <h1>{agreement.title}</h1>
         <p style={{ color: "#cbd5e1" }}>Please review the agreement below and complete your signature to confirm the job.</p>
@@ -20,16 +20,16 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
           <div className="stack" style={{ marginTop: 24 }}>
             {agreement.signingUrl ? (
               <>
-                <div className="surface-soft">
+                <div className="rounded-lg border bg-card/60 p-4">
                   This agreement is being signed securely through DocuSeal. Open the secure signing session below to review the tenant&apos;s uploaded contract and sign it.
                 </div>
-                <a className="cta" href={agreement.signingUrl} target="_blank" rel="noreferrer">
+                <a className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={agreement.signingUrl} target="_blank" rel="noreferrer">
                   Open secure signing session
                 </a>
               </>
             ) : (
               <form action={`/api/public/sign/${agreement.accessToken}/complete`} method="post">
-                <button className="cta" type="submit">
+                <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
                   Complete signature
                 </button>
               </form>
