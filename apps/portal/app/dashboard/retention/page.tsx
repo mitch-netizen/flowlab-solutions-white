@@ -20,43 +20,43 @@ export default async function RetentionPage() {
         section="crm"
         actions={(
           <form action="/api/tenant/retention/run" method="post">
-            <button className="cta" type="submit">
+            <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
               Queue retention automations
             </button>
           </form>
         )}
       />
       <div className="cards-3">
-        <div className="surface-soft">
+        <div className="rounded-lg border bg-card/60 p-4">
           <strong>Low ratings</strong>
           <div style={{ fontSize: 30, marginTop: 10 }}>{snapshot.stats.lowRatings}</div>
         </div>
-        <div className="surface-soft">
+        <div className="rounded-lg border bg-card/60 p-4">
           <strong>5-star reviews</strong>
           <div style={{ fontSize: 30, marginTop: 10 }}>{snapshot.stats.fiveStars}</div>
         </div>
-        <div className="surface-soft">
+        <div className="rounded-lg border bg-card/60 p-4">
           <strong>Overdue invoices</strong>
           <div style={{ fontSize: 30, marginTop: 10 }}>{snapshot.stats.overdueInvoices}</div>
         </div>
       </div>
       <div className="cards-2">
-        <div className="surface">
+        <div className="rounded-lg border bg-card p-4">
           <h2 style={{ marginTop: 0 }}>Rebook reminders</h2>
           <div className="stack">
             {snapshot.reminders.map((entry) => (
-              <CustomerLink key={entry.id} customerId={entry.customerId} className="surface-soft surface-link">
+              <CustomerLink key={entry.id} customerId={entry.customerId} className="rounded-lg border bg-card/60 p-4 transition hover:-translate-y-0.5 hover:border-border/80">
                 <strong>{entry.status}</strong>
                 <div style={{ color: "#cbd5e1", marginTop: 8 }}>Due {new Date(entry.dueAt).toLocaleDateString()}</div>
               </CustomerLink>
             ))}
           </div>
         </div>
-        <div className="surface">
+        <div className="rounded-lg border bg-card p-4">
           <h2 style={{ marginTop: 0 }}>Recent feedback</h2>
           <div className="stack">
             {snapshot.feedback.map((entry) => (
-              <CustomerLink key={entry.id} customerId={entry.customerId} className="surface-soft surface-link">
+              <CustomerLink key={entry.id} customerId={entry.customerId} className="rounded-lg border bg-card/60 p-4 transition hover:-translate-y-0.5 hover:border-border/80">
                 <strong>{entry.rating} stars</strong>
                 <div style={{ color: "#cbd5e1", marginTop: 8 }}>{entry.comment ?? "No comment supplied."}</div>
               </CustomerLink>
@@ -64,9 +64,9 @@ export default async function RetentionPage() {
           </div>
         </div>
       </div>
-      <div className="surface">
+      <div className="rounded-lg border bg-card p-4">
         <h2>Overdue invoices</h2>
-        <table className="table">
+        <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
           <thead>
             <tr>
               <th>Invoice</th>
