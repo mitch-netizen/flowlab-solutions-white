@@ -22,10 +22,7 @@
     "next": "^15.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "typescript": "^5.0.0",
-    "@tailwindcss/postcss": "^4.2.2",
-    "postcss": "^8.5.10",
-    "tailwindcss": "^4.2.2"
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",

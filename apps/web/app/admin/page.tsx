@@ -70,7 +70,7 @@ export default async function AdminPage() {
                 Services connected to FlowLab itself — separate from each tenant's own business integrations.
               </p>
             </div>
-            <a href="/api/admin/integrations/xero" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            <a href="/api/admin/integrations/xero" className="cta">
               {platformXero?.status === "connected" ? "Reconnect FlowLab's Xero" : "Connect FlowLab's Xero"}
             </a>
           </div>
@@ -109,11 +109,11 @@ export default async function AdminPage() {
                 All tenants, plans, recent activity, and integration health.
               </p>
             </div>
-            <Link href="/signup" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            <Link href="/signup" className="cta">
               Create tenant
             </Link>
           </div>
-          <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+          <table className="table">
             <thead>
               <tr>
                 <th>Business</th>

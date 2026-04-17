@@ -26,20 +26,20 @@ export default async function FeedbackPage(
 
   return (
     <main>
-      <section className="rounded-lg border bg-card p-4">
+      <section className="surface">
         <div className="eyebrow">{tenant.profile?.businessName ?? tenant.slug}</div>
         <h1>How did we do?</h1>
         <p style={{ color: "#cbd5e1" }}>
           Thanks for choosing {tenant.profile?.businessName ?? tenant.slug}, {customer.firstName}. Your feedback helps this team keep improving.
         </p>
-        <div className="rounded-lg border bg-card/60 p-4" style={{ marginTop: 20 }}>
+        <div className="surface-soft" style={{ marginTop: 20 }}>
           <strong>Job completed</strong>
           <div style={{ marginTop: 8, color: "#cbd5e1" }}>{job.summary}</div>
           <div style={{ marginTop: 8, color: "#94a3b8" }}>{job.address ?? customer.address ?? "Service address on file"}</div>
         </div>
 
         {query.error ? (
-          <div className="rounded-lg border bg-card/60 p-4" style={{ marginTop: 24, color: "#fca5a5" }}>
+          <div className="surface-soft" style={{ marginTop: 24, color: "#fca5a5" }}>
             {query.error === "rate_limited"
               ? "Too many feedback attempts were made. Please wait a little and try again."
               : query.error === "rating"
@@ -49,7 +49,7 @@ export default async function FeedbackPage(
         ) : null}
 
         {submitted || alreadySubmitted ? (
-          <div className="rounded-lg border bg-card/60 p-4" style={{ marginTop: 24 }}>
+          <div className="surface-soft" style={{ marginTop: 24 }}>
             <h2 style={{ marginTop: 0 }}>Thanks for the feedback</h2>
             <p style={{ color: "#cbd5e1", marginBottom: 0 }}>
               {(submitted ? submittedRating : feedbackRequest.existingFeedback?.rating ?? 0) === 5
@@ -59,7 +59,7 @@ export default async function FeedbackPage(
           </div>
         ) : (
           <form action={`/api/public/feedback/${token}`} method="post" style={{ marginTop: 24 }} className="stack">
-            <div className="rounded-lg border bg-card/60 p-4">
+            <div className="surface-soft">
               <label htmlFor="rating" style={{ display: "block", fontWeight: 700, marginBottom: 10 }}>
                 Rating
               </label>
@@ -83,7 +83,7 @@ export default async function FeedbackPage(
               </div>
             </div>
 
-            <div className="rounded-lg border bg-card/60 p-4">
+            <div className="surface-soft">
               <label htmlFor="comment" style={{ display: "block", fontWeight: 700, marginBottom: 10 }}>
                 Anything you’d like us to know?
               </label>
@@ -103,7 +103,7 @@ export default async function FeedbackPage(
               />
             </div>
 
-            <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
+            <button className="cta" type="submit">
               Send feedback
             </button>
           </form>

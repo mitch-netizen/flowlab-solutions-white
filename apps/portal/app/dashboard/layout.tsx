@@ -101,7 +101,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <span style={{ fontSize: 14, fontWeight: 500 }}>
             Your 14-day trial has ended. Upgrade to keep all your automations and data running.
           </span>
-          <Link href="/dashboard/upgrade" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ fontSize: 13, padding: "8px 16px", background: "#dc2626", border: "none" }}>
+          <Link href="/dashboard/upgrade" className="cta" style={{ fontSize: 13, padding: "8px 16px", background: "#dc2626", border: "none" }}>
             Upgrade now →
           </Link>
         </div>
@@ -138,20 +138,20 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </div>
       )}
 
-      <main className="grid gap-4 xl:grid-cols-[272px_minmax(0,1fr)]">
-        <aside className="sticky top-4 h-fit space-y-4 rounded-lg border bg-card p-4">
-          <div className="space-y-2">
+      <main className="portal-shell">
+        <aside className="sidebar">
+          <div className="sidebar-brand">
             <div className="eyebrow">Your workspace</div>
             <h2 style={{ margin: "6px 0 4px", lineHeight: 1.08 }}>{tenant.branding.businessName}</h2>
             <div style={{ color: "#cbd5e1", fontSize: 15, fontWeight: 600 }}>
               {tenant.branding.tagline ?? "Your business, automated."}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="sidebar-brand-copy">
               Daily control for enquiries, quoting, jobs, invoices, and follow-up.
             </p>
           </div>
 
-          <div className="rounded-lg border bg-card/70 p-3">
+          <div className="sidebar-status-card">
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
               <span style={{
                 display: "inline-block",
