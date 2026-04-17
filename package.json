@@ -18,6 +18,7 @@
     "db:generate": "npm run prisma:generate -w @flowlab/db",
     "db:push": "npm run prisma:push -w @flowlab/db",
     "db:seed": "npm run seed -w @flowlab/db",
+    "pretypecheck": "npm run db:generate",
     "test": "vitest run",
     "test:e2e": "playwright test tests/e2e/smoke.test.ts",
     "typecheck": "npm run typecheck --workspaces --if-present",
