@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getCustomerCrmRecord } from "@flowlab/db";
 
 import CustomerLink from "../../../../components/customer-link";
-import DashboardPageHeader from "../../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../../components/dashboard/page-scaffold";
 import ManualCommunicationForm from "../../../../components/manual-communication-form";
 import { getInvoiceRecordHref, getJobRecordHref } from "../../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../../lib/session";
@@ -28,8 +28,8 @@ export default async function CustomerRecordPage({
   const { customer, communications, feedback, reminders, enquiries } = record;
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="CRM"
         title={`${customer.firstName} ${customer.lastName}`}
         description="Contact details, work history, billing, and messages all in one place."
@@ -39,7 +39,7 @@ export default async function CustomerRecordPage({
             Back to CRM
           </Link>
         )}
-      />
+      >
 
       {query.updated === "1" ? (
         <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
@@ -116,7 +116,7 @@ export default async function CustomerRecordPage({
             <p>Changes apply across all jobs, invoices, and records linked to this customer.</p>
           </div>
 
-          <input type="hidden" name="returnTo" value={`/dashboard/crm/${customer.id}`} />
+          <input type="hidden" name="returnTo" value={`/dashboard/crm/${customer.id}`}  />
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="flex flex-col gap-2 text-sm text-muted-foreground">
@@ -367,6 +367,6 @@ export default async function CustomerRecordPage({
           </div>
         </div>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }

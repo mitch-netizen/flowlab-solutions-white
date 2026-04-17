@@ -1,3 +1,5 @@
+import AdminPageScaffold, { AdminPageCard } from "../../../components/admin/page-scaffold";
+
 export default async function PlatformLoginPage({
   searchParams
 }: {
@@ -6,11 +8,14 @@ export default async function PlatformLoginPage({
   const query = await searchParams;
 
   return (
-    <main className="shell">
+    <AdminPageScaffold
+      title="Superadmin access"
+      description="Use your FlowLab platform credentials to manage tenants, integrations, and launch readiness."
+    >
       <section className="hero" style={{ gridTemplateColumns: "0.9fr 1.1fr" }}>
-        <div className="panel">
+        <AdminPageCard>
           <div className="pill">Superadmin access</div>
-          <h1>Manage tenants, billing, health, and platform settings.</h1>
+          <h2>Manage tenants, billing, health, and platform settings.</h2>
           <p className="muted">Use your FlowLab platform credentials to manage tenants, integrations, and launch readiness.</p>
           {query.error ? (
             <div className="panel-soft" style={{ marginTop: 16, color: "#fca5a5" }}>
@@ -19,7 +24,7 @@ export default async function PlatformLoginPage({
                 : "Invalid email or password."}
             </div>
           ) : null}
-        </div>
+        </AdminPageCard>
         <form action="/api/auth/platform/login" method="post" className="hero-card space-y-4">
           <label className="flex flex-col gap-2 text-sm text-muted-foreground">
             Email
@@ -34,6 +39,6 @@ export default async function PlatformLoginPage({
           </button>
         </form>
       </section>
-    </main>
+    </AdminPageScaffold>
   );
 }

@@ -13,7 +13,7 @@ import {
 } from "@flowlab/db";
 import { decryptJson } from "@flowlab/integrations";
 
-import DashboardPageHeader from "../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../lib/session";
 
 const dependencyLabels: Record<string, string[]> = {
@@ -67,13 +67,13 @@ export default async function AutomationsPage({
       : "No failed jobs right now";
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Setup"
         title="Automations"
         description="Turn individual automations on or off, apply a preset recipe, or connect Make for advanced external workflows."
         section="setup"
-      />
+      >
 
       {savedDescriptor ? (
         <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #16a34a", color: "#cbd5e1" }}>
@@ -147,7 +147,7 @@ export default async function AutomationsPage({
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <form action="/api/tenant/automations/preferences" method="post">
-                    <input type="hidden" name="key" value={descriptor.key} />
+                    <input type="hidden" name="key" value={descriptor.key}  />
                     <input type="hidden" name="enabled" value={enabled ? "false" : "true"} />
                     <input type="hidden" name="returnTo" value="/dashboard/automations" />
                     <button className={enabled ? "inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" : "inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"} type="submit">
@@ -240,6 +240,6 @@ export default async function AutomationsPage({
           );
         })}
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }
