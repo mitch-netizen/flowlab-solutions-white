@@ -42,31 +42,31 @@ export default function SignupForm({ action, startedAt }: Props) {
   }
 
   return (
-    <form ref={formRef} action={handleSubmit} className="form-grid">
-      <label className="label">
+    <form ref={formRef} action={handleSubmit} className="space-y-4">
+      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
         Business name
-        <input className="input" name="businessName" required />
+        <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="businessName" required />
       </label>
-      <label className="label">
+      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
         Your name
-        <input className="input" name="ownerName" required />
+        <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="ownerName" required />
       </label>
-      <label className="label">
+      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
         Email
-        <input className="input" name="email" type="email" required />
+        <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="email" type="email" required />
       </label>
-      <label className="label">
+      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
         Phone
-        <input className="input" name="phone" />
+        <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="phone" />
       </label>
-      <label className="label">
+      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
         Suburb
-        <input className="input" name="suburb" />
+        <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="suburb" />
       </label>
-      <label className="label">
+      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
         Password
         <input
-          className="input"
+          className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
           name="password"
           type="password"
           required
@@ -74,17 +74,17 @@ export default function SignupForm({ action, startedAt }: Props) {
           autoComplete="new-password"
         />
       </label>
-      <label className="label">
+      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
         Business type
-        <select className="select" name="businessType" defaultValue="lawn_mowing">
+        <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="businessType" defaultValue="lawn_mowing">
           {["lawn_mowing","cleaning","pest_control","gardening","handyman","pool_service","other"].map((v) => (
             <option key={v} value={v}>{v.replaceAll("_", " ")}</option>
           ))}
         </select>
       </label>
-      <label className="label">
+      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
         Plan
-        <select className="select" name="plan" defaultValue="professional">
+        <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="plan" defaultValue="professional">
           {["starter", "professional", "growth"].map((v) => (
             <option key={v} value={v}>{v}</option>
           ))}
@@ -112,7 +112,7 @@ export default function SignupForm({ action, startedAt }: Props) {
         </p>
       )}
 
-      <button className="cta" type="submit" disabled={!captchaToken}>
+      <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit" disabled={!captchaToken}>
         Start free 14-day trial
       </button>
 
