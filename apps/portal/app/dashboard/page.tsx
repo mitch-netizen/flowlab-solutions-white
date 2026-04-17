@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 import { getTenantDashboardSnapshot, prisma } from "@flowlab/db";
+import { Badge, formatDateTime, formatLabel, formatTime, getStatusTone } from "@flowlab/ui";
 
 import CustomerLink from "../../components/customer-link";
 import DashboardPageScaffold from "../../components/dashboard/page-scaffold";
 import { InvoicesTable, JobsTable } from "./dashboard-tables";
-import DashboardPageScaffold from "../../components/dashboard/page-scaffold";
 import { getCustomerRecordHref, getInvoiceRecordHref, getJobPrimaryHref, getJobRecordHref } from "../../lib/dashboard-links";
 import { requireTenantSession } from "../../lib/session";
 
@@ -259,10 +259,10 @@ export default async function DashboardPage({
 
           <div className="space-y-3">
             {tomorrowJobs.length > 0 ? tomorrowJobs.map((job) => (
-              <div key={job.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    <span>{job.scheduledFor ? new Date(job.scheduledFor).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "TBD"}</span>
+              <div key={job.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <span>{job.scheduledFor ? formatTime(job.scheduledFor) : "TBD"}</span>
                     <span>{job.suburb ?? job.customer.suburb ?? "Suburb not set"}</span>
                   </div>
                   <h3>
@@ -291,10 +291,10 @@ export default async function DashboardPage({
 
           <div className="space-y-3">
             {attentionItems.length > 0 ? attentionItems.map((item) => (
-              <div key={item.title} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    <span className="status-pill border-l-amber-500">Attention</span>
+              <div key={item.title} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <Badge tone="warning">Attention</Badge>
                   </div>
                   <h3>{item.title}</h3>
                   <p>{item.detail}</p>
@@ -352,11 +352,11 @@ export default async function DashboardPage({
 
           <div className="space-y-3">
             {automationWins.length > 0 ? automationWins.map((item) => (
-              <div key={item.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    <span className="status-pill is-on">Success</span>
-                    <span>{new Date(item.createdAt).toLocaleString()}</span>
+              <div key={item.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <Badge tone="success">Success</Badge>
+                    <span>{formatDateTime(item.createdAt)}</span>
                   </div>
                   <h3>{item.title}</h3>
                   <p>{item.detail}</p>

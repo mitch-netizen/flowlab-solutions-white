@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { getTenantCustomers, getTenantIntegrationRecord, getTenantInvoices, prisma } from "@flowlab/db";
+import { Badge, formatCurrency, formatLabel, getStatusTone } from "@flowlab/ui";
 
 import CustomerLink from "../../../components/customer-link";
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
@@ -146,9 +147,9 @@ export default async function InvoicesPage({
                     {invoice.customer.firstName} {invoice.customer.lastName}
                   </CustomerLink>
                 </td>
-                <td>{invoice.status}</td>
-                <td>{invoice.xeroStatus ?? "Not synced"}</td>
-                <td>${invoice.amount}</td>
+                <td><Badge tone={getStatusTone(invoice.status)}>{formatLabel(invoice.status)}</Badge></td>
+                <td><Badge tone={getStatusTone(invoice.xeroStatus)}>{invoice.xeroStatus ? formatLabel(invoice.xeroStatus) : "Not synced"}</Badge></td>
+                <td>{formatCurrency(invoice.amount)}</td>
                 <td>
                   <Link href={getInvoiceRecordHref(invoice.id)}>Open record</Link>
                 </td>
