@@ -59,3 +59,26 @@ main { width: min(1200px, calc(100% - 48px)); margin: 0 auto; }
 @media (max-width: 900px) {
   .hero, .metrics { grid-template-columns: 1fr; }
 }
+
+.admin-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-page-header h1 {
+  margin: 0 0 8px;
+}
+
+.admin-page-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-page-scaffold-grid {
+  gap: 20px;
+}

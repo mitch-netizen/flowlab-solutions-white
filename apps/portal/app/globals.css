@@ -142,3 +142,9 @@ main { width: min(1280px, calc(100% - 48px)); margin: 0 auto; padding: 24px 0 56
     grid-template-columns: 1fr;
   }
 }
+
+.dashboard-page-scaffold-content {
+  display: grid;
+  gap: 24px;
+  align-content: start;
+}

@@ -5,6 +5,7 @@ import { buildTenantUrl } from "@flowlab/contracts/server";
 
 export const dynamic = "force-dynamic";
 import { getServiceLabel } from "@flowlab/contracts";
+import AdminPageScaffold from "../../components/admin/page-scaffold";
 import { requirePlatformSession } from "../../lib/session";
 
 export default async function AdminPage() {
@@ -18,13 +19,16 @@ export default async function AdminPage() {
   const xeroDaysLeft = xeroExpiresAt ? Math.floor((new Date(xeroExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
 
   return (
-    <main className="shell">
-      <section className="grid">
-        <div className="hero-card">
-          <div className="pill">Platform overview</div>
-          <h1>FlowLab superadmin dashboard</h1>
-          <p className="muted">Track tenant health, monitor platform-wide events, and spin up new branded operator workspaces.</p>
-        </div>
+    <AdminPageScaffold
+      title="FlowLab superadmin dashboard"
+      description="Track tenant health, monitor platform-wide events, and spin up new branded operator workspaces."
+      meta={<span className="pill">Platform overview</span>}
+      actions={(
+        <Link href="/signup" className="cta">
+          Create tenant
+        </Link>
+      )}
+    >
         <div className="metrics">
           <div className="metric">
             <span className="muted">Active tenants</span>
@@ -109,9 +113,6 @@ export default async function AdminPage() {
                 All tenants, plans, recent activity, and integration health.
               </p>
             </div>
-            <Link href="/signup" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-              Create tenant
-            </Link>
           </div>
           <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
             <thead>
@@ -169,7 +170,6 @@ export default async function AdminPage() {
             ))}
           </div>
         </div>
-      </section>
-    </main>
+    </AdminPageScaffold>
   );
 }

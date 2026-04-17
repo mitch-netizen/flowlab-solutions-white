@@ -5,7 +5,7 @@ import { getTenantCustomers, getTenantQuotes, getTenantSettingsSnapshot } from "
 import { prisma } from "@flowlab/db";
 
 import CustomerLink from "../../../components/customer-link";
-import DashboardPageHeader from "../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
@@ -68,8 +68,8 @@ export default async function QuotesPage({
   const pricingSummary = getPricingSummary(pricingModel, rate);
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Revenue"
         title="Build quotes without turning the page into paperwork."
         description="Pick the customer, describe the work, and let FlowLab turn your pricing setup into a draft that can be reviewed and sent as a branded approval link."
@@ -80,7 +80,7 @@ export default async function QuotesPage({
             <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/jobs">Open job board</Link>
           </>
         )}
-      />
+      >
 
       {query.created === "1" ? (
         <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
@@ -297,6 +297,6 @@ export default async function QuotesPage({
           </table>
         </div>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }

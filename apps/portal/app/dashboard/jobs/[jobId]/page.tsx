@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getTenantJobRecord } from "@flowlab/db";
 
 import CustomerLink from "../../../../components/customer-link";
-import DashboardPageHeader from "../../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../../components/dashboard/page-scaffold";
 import ManualCommunicationForm from "../../../../components/manual-communication-form";
 import { getInvoiceRecordHref } from "../../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../../lib/session";
@@ -29,8 +29,8 @@ export default async function JobRecordPage({
   const linkedInvoice = job.invoice ?? null;
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Jobs"
         title={job.summary}
         description="Who, when, how long, what was billed, and what was communicated — all in one place."
@@ -41,7 +41,7 @@ export default async function JobRecordPage({
             {linkedInvoice ? <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={getInvoiceRecordHref(linkedInvoice.id)}>Open linked invoice</Link> : null}
           </>
         )}
-      />
+      >
 
       {query.scheduled === "1" ? (
         <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
@@ -313,6 +313,6 @@ export default async function JobRecordPage({
           </div>
         </div>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }

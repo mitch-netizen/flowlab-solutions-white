@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getSchedulerRecommendations, getTenantSchedulerSnapshot } from "@flowlab/db";
 
 import CustomerLink from "../../../components/customer-link";
-import DashboardPageHeader from "../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { getJobPrimaryHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
@@ -19,8 +19,8 @@ export default async function SchedulerPage() {
   const totalBlocks = snapshot.commitments.length + snapshot.timeOff.length;
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Jobs"
         title="Scheduler"
         description="See upcoming jobs alongside your availability, personal commitments, and time off — all in one view."
@@ -32,7 +32,7 @@ export default async function SchedulerPage() {
             </button>
           </form>
         )}
-      />
+      >
 
       <div className="rounded-lg border bg-card p-4">
         <div className="grid gap-4 md:grid-cols-3">
@@ -223,6 +223,6 @@ export default async function SchedulerPage() {
           )) : <p className="text-sm text-muted-foreground">No future time off has been recorded.</p>}
         </div>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }
