@@ -2,6 +2,9 @@ import { getPricingModel } from "@flowlab/contracts";
 import { getPendingRateSuggestions, getTenantSettingsSnapshot } from "@flowlab/db";
 
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
 import { requireTenantSession } from "../../../lib/session";
 import CustomDomainSection from "./CustomDomainSection";
 import RateSuggestionsPanel from "./RateSuggestionsPanel";
@@ -63,89 +66,89 @@ export default async function SettingsPage({
         </div>
       </div>
 
-      <div className="cards-2">
-        <form className="rounded-lg border bg-card p-4 space-y-4" action="/api/tenant/settings/profile" method="post">
-          <div className="space-y-2">
+      <div className="cards-2 gap-4">
+        <form className="surface form-grid space-y-4" action="/api/tenant/settings/profile" method="post">
+          <div className="setup-section-copy">
             <div className="eyebrow">Business details</div>
             <h2 style={{ marginBottom: 8 }}>Core contact and service information</h2>
             <p>Your business name, contact details, and service area all in one form.</p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-              Business name
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="businessName" defaultValue={snapshot.profile?.businessName ?? ""} required />
-            </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-              Tagline
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="tagline" defaultValue={snapshot.profile?.tagline ?? ""} />
-            </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-              Phone
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="phone" defaultValue={snapshot.profile?.phone ?? ""} />
-            </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-              Email
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="email" type="email" defaultValue={snapshot.profile?.email ?? ""} />
-            </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground md:col-span-2">
-              Service area suburbs
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="serviceAreaSuburbs" defaultValue={snapshot.profile?.serviceAreaSuburbs.join(", ") ?? ""} />
-            </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground md:col-span-2">
-              Custom domain
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customDomain" defaultValue={snapshot.profile?.customDomain ?? ""} placeholder="service.yourdomain.com" />
-            </label>
+          <div className="setup-field-grid">
+            <div className="space-y-4">
+              <Label htmlFor="businessName">Business name</Label>
+              <Input id="businessName" name="businessName" defaultValue={snapshot.profile?.businessName ?? ""} required />
+            </div>
+            <div className="space-y-4">
+              <Label htmlFor="tagline">Tagline</Label>
+              <Input id="tagline" name="tagline" defaultValue={snapshot.profile?.tagline ?? ""} />
+            </div>
+            <div className="space-y-4">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" name="phone" defaultValue={snapshot.profile?.phone ?? ""} />
+            </div>
+            <div className="space-y-4">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" defaultValue={snapshot.profile?.email ?? ""} />
+            </div>
+            <div className="space-y-4 is-full">
+              <Label htmlFor="serviceAreaSuburbs">Service area suburbs</Label>
+              <Input id="serviceAreaSuburbs" name="serviceAreaSuburbs" defaultValue={snapshot.profile?.serviceAreaSuburbs.join(", ") ?? ""} />
+            </div>
+            <div className="space-y-4 is-full">
+              <Label htmlFor="customDomain">Custom domain</Label>
+              <Input id="customDomain" name="customDomain" defaultValue={snapshot.profile?.customDomain ?? ""} placeholder="service.yourdomain.com" />
+            </div>
           </div>
 
-          <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
+          <Button type="submit">
             Save business details
-          </button>
+          </Button>
         </form>
 
-        <form className="rounded-lg border bg-card p-4 space-y-4" action="/api/tenant/settings/profile" method="post">
-          <div className="space-y-2">
+        <form className="surface form-grid space-y-4" action="/api/tenant/settings/profile" method="post">
+          <div className="setup-section-copy">
             <div className="eyebrow">Branding</div>
             <h2 style={{ marginBottom: 8 }}>Customer-facing colour system</h2>
             <p>Applied to your quote, agreement, invoice, and all other customer-facing pages.</p>
           </div>
 
-          <input type="hidden" name="businessName" value={snapshot.profile?.businessName ?? ""} />
-          <input type="hidden" name="tagline" value={snapshot.profile?.tagline ?? ""} />
-          <input type="hidden" name="phone" value={snapshot.profile?.phone ?? ""} />
-          <input type="hidden" name="email" value={snapshot.profile?.email ?? ""} />
-          <input type="hidden" name="serviceAreaSuburbs" value={snapshot.profile?.serviceAreaSuburbs.join(", ") ?? ""} />
-          <input type="hidden" name="customDomain" value={snapshot.profile?.customDomain ?? ""} />
+          <Input type="hidden" name="businessName" value={snapshot.profile?.businessName ?? ""} />
+          <Input type="hidden" name="tagline" value={snapshot.profile?.tagline ?? ""} />
+          <Input type="hidden" name="phone" value={snapshot.profile?.phone ?? ""} />
+          <Input type="hidden" name="email" value={snapshot.profile?.email ?? ""} />
+          <Input type="hidden" name="serviceAreaSuburbs" value={snapshot.profile?.serviceAreaSuburbs.join(", ") ?? ""} />
+          <Input type="hidden" name="customDomain" value={snapshot.profile?.customDomain ?? ""} />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-              Primary colour
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="primaryColour" type="color" defaultValue={snapshot.profile?.primaryColour ?? "#2D5016"} />
-            </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-              Secondary colour
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="secondaryColour" type="color" defaultValue={snapshot.profile?.secondaryColour ?? "#1F2937"} />
-            </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-              Accent colour
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="accentColour" type="color" defaultValue={snapshot.profile?.accentColour ?? "#84CC16"} />
-            </label>
+          <div className="setup-field-grid">
+            <div className="space-y-4">
+              <Label htmlFor="primaryColour">Primary colour</Label>
+              <Input id="primaryColour" name="primaryColour" type="color" defaultValue={snapshot.profile?.primaryColour ?? "#2D5016"} />
+            </div>
+            <div className="space-y-4">
+              <Label htmlFor="secondaryColour">Secondary colour</Label>
+              <Input id="secondaryColour" name="secondaryColour" type="color" defaultValue={snapshot.profile?.secondaryColour ?? "#1F2937"} />
+            </div>
+            <div className="space-y-4">
+              <Label htmlFor="accentColour">Accent colour</Label>
+              <Input id="accentColour" name="accentColour" type="color" defaultValue={snapshot.profile?.accentColour ?? "#84CC16"} />
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2" style={{ justifyContent: "flex-start" }}>
-            <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
+          <div className="setup-row-actions" style={{ justifyContent: "flex-start" }}>
+            <Button type="submit">
               Save branding
-            </button>
-            <a className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/automations">
+            </Button>
+            <a className="ghost" href="/dashboard/automations">
               Open automation controls
             </a>
           </div>
         </form>
       </div>
 
-      <div className="cards-2">
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="space-y-2">
+      <div className="cards-2 gap-4">
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
             <div className="eyebrow">Pricing rates</div>
             <h2 style={{ marginBottom: 8 }}>Current pricing configuration</h2>
             <p>Your current pricing model and configured rates. Edit them from the onboarding wizard.</p>
@@ -208,29 +211,29 @@ export default async function SettingsPage({
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <form action={`/api/tenant/settings/services?id=${service.id}`} method="post">
-                    <input type="hidden" name="_method" value="DELETE" />
-                    <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit" style={{ fontSize: 12 }}>Remove</button>
+                    <Input type="hidden" name="_method" value="DELETE" />
+                    <Button variant="ghost" type="submit" style={{ fontSize: 12 }}>Remove</Button>
                   </form>
                 </div>
               </div>
             )) : <p className="text-sm text-muted-foreground">No service templates saved yet.</p>}
           </div>
 
-          <form action="/api/tenant/settings/services" method="post" style={{ marginTop: 16 }}>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
-              <label className="flex flex-col gap-2 text-sm text-muted-foreground" style={{ flex: "2 1 160px" }}>
-                Service name
-                <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="name" placeholder="e.g. Lawn mow — standard block" required />
-              </label>
-              <label className="flex flex-col gap-2 text-sm text-muted-foreground" style={{ flex: "1 1 90px" }}>
-                Price ($)
-                <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="defaultPrice" type="number" min="0" step="0.01" placeholder="0.00" />
-              </label>
-              <label className="flex flex-col gap-2 text-sm text-muted-foreground" style={{ flex: "1 1 90px" }}>
-                Duration (mins)
-                <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="defaultDuration" type="number" min="0" step="5" placeholder="60" />
-              </label>
-              <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Add template</button>
+          <form action="/api/tenant/settings/services" method="post" className="space-y-4" style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end" }} className="gap-4">
+              <div className="space-y-4" style={{ flex: "2 1 160px" }}>
+                <Label htmlFor="serviceTemplateName">Service name</Label>
+                <Input id="serviceTemplateName" name="name" placeholder="e.g. Lawn mow — standard block" required />
+              </div>
+              <div className="space-y-4" style={{ flex: "1 1 90px" }}>
+                <Label htmlFor="serviceTemplatePrice">Price ($)</Label>
+                <Input id="serviceTemplatePrice" name="defaultPrice" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+              <div className="space-y-4" style={{ flex: "1 1 90px" }}>
+                <Label htmlFor="serviceTemplateDuration">Duration (mins)</Label>
+                <Input id="serviceTemplateDuration" name="defaultDuration" type="number" min="0" step="5" placeholder="60" />
+              </div>
+              <Button variant="ghost" type="submit">Add template</Button>
             </div>
           </form>
         </div>
