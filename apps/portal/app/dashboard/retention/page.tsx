@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getRetentionSnapshot } from "@flowlab/db";
 
 import CustomerLink from "../../../components/customer-link";
-import DashboardPageHeader from "../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { getInvoiceRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
@@ -12,8 +12,8 @@ export default async function RetentionPage() {
   const snapshot = await getRetentionSnapshot(session.tenantId);
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="CRM"
         title="Retention"
         description="Track rebook reminders, overdue invoices, and recent customer feedback in one place."
@@ -25,7 +25,7 @@ export default async function RetentionPage() {
             </button>
           </form>
         )}
-      />
+      >
       <div className="cards-3">
         <div className="rounded-lg border bg-card/60 p-4">
           <strong>Low ratings</strong>
@@ -91,6 +91,6 @@ export default async function RetentionPage() {
           </tbody>
         </table>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getTenantInvoiceRecord } from "@flowlab/db";
 
 import CustomerLink from "../../../../components/customer-link";
-import DashboardPageHeader from "../../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../../components/dashboard/page-scaffold";
 import ManualCommunicationForm from "../../../../components/manual-communication-form";
 import { getJobRecordHref } from "../../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../../lib/session";
@@ -28,8 +28,8 @@ export default async function InvoiceRecordPage({
   const { invoice, invoiceCommunications, customerCommunications, otherCustomerJobs } = record;
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Revenue"
         title={invoice.number}
         description="Invoice status, payment details, linked job, and customer communication in one place."
@@ -52,7 +52,7 @@ export default async function InvoiceRecordPage({
             ) : null}
           </>
         )}
-      />
+      >
 
       {query.message === "sent" ? (
         <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
@@ -243,6 +243,6 @@ export default async function InvoiceRecordPage({
           )) : <p className="text-sm text-muted-foreground">No broader customer communication recorded yet.</p>}
         </div>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }

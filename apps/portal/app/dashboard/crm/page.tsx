@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getCrmSnapshot } from "@flowlab/db";
 
 import CustomerLink from "../../../components/customer-link";
-import DashboardPageHeader from "../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function CrmPage({
@@ -20,13 +20,13 @@ export default async function CrmPage({
   const activeCustomers = snapshot.customers.filter((customer) => customer.jobs.length > 0 || customer.quotes.length > 0).length;
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="CRM"
         title="Customer context without the noise."
         description="Track who is new, who needs a follow-up, and who already has work, billing, or feedback history attached to their record."
         section="crm"
-      />
+      >
 
       {query.closed === "1" ? (
         <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #22c55e" }}>
@@ -286,6 +286,6 @@ export default async function CrmPage({
           </div>
         </div>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }

@@ -1,6 +1,6 @@
 import { getTenantDashboardSnapshot, getTenantSettingsSnapshot } from "@flowlab/db";
 import { buildTenantUrl } from "@flowlab/contracts/server";
-import DashboardPageHeader from "../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../lib/session";
 import OnboardingWizard from "./OnboardingWizard";
 
@@ -21,13 +21,13 @@ export default async function OnboardingPage() {
       : buildTenantUrl(tenantSlug, "/enquiry");
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Setup"
         title="Finish the setup that makes the portal feel like your business."
         description="Work through branding, pricing, services, and scheduling so the rest of the portal can operate with real defaults instead of placeholder logic."
         section="setup"
-      />
+      >
       <OnboardingWizard
         initialStep={currentStep}
         isCompleted={isCompleted}
@@ -69,6 +69,6 @@ export default async function OnboardingPage() {
           endTime: s.endTime
         }))}
       />
-    </div>
+    </DashboardPageScaffold>
   );
 }

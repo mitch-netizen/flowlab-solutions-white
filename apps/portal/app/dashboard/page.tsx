@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getTenantDashboardSnapshot, prisma } from "@flowlab/db";
 
 import CustomerLink from "../../components/customer-link";
-import DashboardPageHeader from "../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../components/dashboard/page-scaffold";
 import { getCustomerRecordHref, getInvoiceRecordHref, getJobPrimaryHref, getJobRecordHref } from "../../lib/dashboard-links";
 import { requireTenantSession } from "../../lib/session";
 
@@ -193,8 +193,8 @@ export default async function DashboardPage({
     "there";
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Overview"
         title={`Hi ${headingName}, here’s the brief.`}
         description={`This week you've had ${enquiriesThisWeek} new enquir${enquiriesThisWeek === 1 ? "y" : "ies"} and ${bookedJobsThisWeek} job${bookedJobsThisWeek === 1 ? "" : "s"} booked. Tomorrow ${tomorrowJobs.length === 0 ? "is clear so far." : `has ${tomorrowJobs.length} job${tomorrowJobs.length === 1 ? "" : "s"} in the run sheet.`}`}
@@ -208,7 +208,7 @@ export default async function DashboardPage({
             </form>
           </>
         )}
-      />
+      >
 
       {query.digest === "sent" && (
         <div className="rounded-lg border bg-card/60 p-4" style={{ color: "#86efac" }}>
@@ -435,6 +435,6 @@ export default async function DashboardPage({
           </table>
         </div>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getTenantAgreements, getTenantAgreementTemplates, getTenantQuotes } from "@flowlab/db";
 
 import CustomerLink from "../../../components/customer-link";
-import DashboardPageHeader from "../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function AgreementsPage() {
@@ -18,13 +18,13 @@ export default async function AgreementsPage() {
   const defaultTemplate = templates.find((template) => template.isDefault) ?? null;
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Revenue"
         title="Turn accepted quotes into signed agreements."
         description="Upload a contract or generate one, set up the signer fields, and mark a template as default. It will be sent automatically when a quote is accepted."
         section="revenue"
-      />
+      >
       <div className="cards-2">
         <div className="rounded-lg border bg-card p-4 stack">
           <form action="/api/tenant/agreements/templates/upload" method="post" encType="multipart/form-data" className="space-y-4">
@@ -184,6 +184,6 @@ export default async function AgreementsPage() {
           </table>
         </div>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }

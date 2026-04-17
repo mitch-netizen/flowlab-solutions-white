@@ -2,7 +2,7 @@ import { getTenantIntegrationRecord, getTenantIntegrations } from "@flowlab/db";
 import { automationBlueprints, serviceLabels } from "@flowlab/contracts";
 import { decryptJson, integrationFieldDefinitions, integrationHelpText } from "@flowlab/integrations";
 
-import DashboardPageHeader from "../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function IntegrationsPage() {
@@ -23,13 +23,13 @@ export default async function IntegrationsPage() {
   }).length;
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Setup"
         title="Integrations"
         description="Connect and manage the external services your business relies on. Core integrations are listed first — Make.com is in the advanced section below."
         section="setup"
-      />
+      >
 
       <div className="rounded-lg border bg-card p-4">
         <div className="grid gap-4 md:grid-cols-3">
@@ -232,6 +232,6 @@ export default async function IntegrationsPage() {
           </form>
         </div>
       ) : null}
-    </div>
+    </DashboardPageScaffold>
   );
 }

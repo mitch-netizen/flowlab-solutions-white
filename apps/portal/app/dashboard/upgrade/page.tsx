@@ -1,6 +1,6 @@
 import { prisma } from "@flowlab/db";
 
-import DashboardPageHeader from "../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../lib/session";
 
 export const dynamic = "force-dynamic";
@@ -73,8 +73,8 @@ export default async function UpgradePage() {
     : null;
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Setup"
         title="Choose the plan that matches the next stage of the business."
         description={
@@ -85,7 +85,7 @@ export default async function UpgradePage() {
               : `You are currently on ${currentPlan}. Upgrading should be straightforward, with your data, automations, and setup carrying over intact.`
         }
         section="setup"
-      />
+      >
 
       <div className="rounded-lg border bg-card p-4">
         <div className="grid gap-4 md:grid-cols-3">
@@ -172,6 +172,6 @@ export default async function UpgradePage() {
           <p>All plans include a 14-day free trial and the same core workflow you already tested. If you need help choosing, email <a href="mailto:hello@flowlabsolutions.au" className="inline-entity-link">hello@flowlabsolutions.au</a>.</p>
         </div>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }
