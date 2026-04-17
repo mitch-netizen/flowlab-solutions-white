@@ -44,34 +44,34 @@ export default async function SystemHealthPage() {
         description="Check automation queue status, integration connections, and the live event log — all in one place."
         section="setup"
         actions={(
-          <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/integrations">
+          <Link className="ghost" href="/dashboard/integrations">
             Open integrations
           </Link>
         )}
       />
 
-      <div className="rounded-lg border bg-card p-4">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Pending jobs</div>
-            <div className="text-3xl font-semibold">{automationHealth.pending}</div>
-            <p className="text-sm text-muted-foreground">Queued automation work waiting to be picked up.</p>
+      <div className="surface">
+        <div className="setup-summary">
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Pending jobs</div>
+            <div className="setup-summary-value">{automationHealth.pending}</div>
+            <p className="setup-summary-copy">Queued automation work waiting to be picked up.</p>
           </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Processing now</div>
-            <div className="text-3xl font-semibold">{automationHealth.processing}</div>
-            <p className="text-sm text-muted-foreground">Automation jobs currently in flight.</p>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Processing now</div>
+            <div className="setup-summary-value">{automationHealth.processing}</div>
+            <p className="setup-summary-copy">Automation jobs currently in flight.</p>
           </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Alerts</div>
-            <div className="text-3xl font-semibold">{automationHealth.failed + errorIntegrations.length + expiringIntegrations.length}</div>
-            <p className="text-sm text-muted-foreground">Failed jobs, broken integrations, and expiring connections combined.</p>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Alerts</div>
+            <div className="setup-summary-value">{automationHealth.failed + errorIntegrations.length + expiringIntegrations.length}</div>
+            <p className="setup-summary-copy">Failed jobs, broken integrations, and expiring connections combined.</p>
           </div>
         </div>
       </div>
 
       {hasAlerts ? (
-        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-red-500">
+        <div className="surface surface-alert is-danger">
           <h2>Action needed</h2>
           {automationHealth.failed > 0 ? (
             <p>{automationHealth.failed} automation job{automationHealth.failed === 1 ? "" : "s"} failed and should be retried.</p>
@@ -90,50 +90,50 @@ export default async function SystemHealthPage() {
         </div>
       ) : null}
 
-      <div className="rounded-lg border bg-card p-4 space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
+      <div className="surface setup-section">
+        <div className="setup-section-header">
+          <div className="setup-section-copy">
             <div className="eyebrow">Automation jobs</div>
             <h2>Failed automation jobs</h2>
             <p>Retry failed jobs from here. Each row shows the error and how many times it has been attempted.</p>
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="setup-list">
           {automationHealth.recentFailedJobs.length > 0 ? automationHealth.recentFailedJobs.map((job) => (
-            <div key={job.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  <span className="status-pill border-l-amber-500">{job.kind.replace(/_/g, " ")}</span>
+            <div key={job.id} className="setup-row">
+              <div className="setup-row-main">
+                <div className="setup-row-meta">
+                  <span className="status-pill is-warning">{job.kind.replace(/_/g, " ")}</span>
                   <span>{job.attempts} attempt{job.attempts === 1 ? "" : "s"}</span>
                   <span>Last tried {new Date(job.updatedAt).toLocaleString()}</span>
                 </div>
                 <h3>{job.kind.replace(/_/g, " ")}</h3>
                 <p>{job.lastError ?? "Unknown error"}</p>
               </div>
-              <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="setup-row-actions">
                 <form action="/api/tenant/automation/retry" method="post">
                   <input type="hidden" name="jobId" value={job.id} />
-                  <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">
+                  <button className="ghost" type="submit">
                     Retry
                   </button>
                 </form>
               </div>
             </div>
-          )) : <p className="text-sm text-muted-foreground">No failed jobs. Automations are currently healthy.</p>}
+          )) : <p className="setup-note">No failed jobs. Automations are currently healthy.</p>}
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card p-4 space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
+      <div className="surface setup-section">
+        <div className="setup-section-header">
+          <div className="setup-section-copy">
             <div className="eyebrow">Connections</div>
             <h2>Integration status</h2>
             <p>Connection status for all integrations. Go to Integrations to reconnect or update credentials.</p>
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="setup-list">
           {tenantIntegrations.map((integration) => {
             const isOptionalMake = integration.service === "make_com" && integration.status === "not_configured";
             const expiresAt = integration.oauthExpiresAt ? new Date(integration.oauthExpiresAt) : null;
@@ -148,9 +148,9 @@ export default async function SystemHealthPage() {
                 : "is-off";
 
             return (
-              <div key={integration.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <div key={integration.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
                     <span className={`status-pill ${isOptionalMake ? "is-off" : statusClass}`}>
                       {isOptionalMake ? "Optional" : integration.status}
                     </span>
@@ -168,8 +168,8 @@ export default async function SystemHealthPage() {
                       : integration.lastErrorMessage ?? "Connection looks healthy."}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/integrations">Manage</Link>
+                <div className="setup-row-actions">
+                  <Link className="ghost" href="/dashboard/integrations">Manage</Link>
                 </div>
               </div>
             );
@@ -177,17 +177,17 @@ export default async function SystemHealthPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card p-4 space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
+      <div className="surface setup-section">
+        <div className="setup-section-header">
+          <div className="setup-section-copy">
             <div className="eyebrow">Live event log</div>
             <h2>Event log</h2>
             <p>A live feed of automation and integration activity across your account.</p>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+        <div className="setup-table-wrap">
+          <table className="table">
             <thead>
               <tr>
                 <th>Time</th>

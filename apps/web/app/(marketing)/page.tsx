@@ -102,10 +102,10 @@ export default async function MarketingPage() {
               Set up in ten minutes. Cancel any time.
             </p>
             <div className="button-row">
-              <Link href="/signup" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+              <Link href="/signup" className="cta">
                 Start free trial
               </Link>
-              <Link href="/signup" className="inline-flex items-center justify-center rounded-lg border bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground">
+              <Link href="/signup" className="secondary-cta">
                 See how it works
               </Link>
             </div>
@@ -206,7 +206,7 @@ export default async function MarketingPage() {
               </ul>
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                className="cta"
                 style={{
                   display: "block",
                   textAlign: "center",
@@ -243,7 +243,7 @@ export default async function MarketingPage() {
         <p className="muted" style={{ marginBottom: 24 }}>
           Set up your branded workspace in ten minutes. Your CRM, jobs, and Xero — connected and ready before end of day.
         </p>
-        <Link href="/signup" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ fontSize: 18, padding: "14px 36px" }}>
+        <Link href="/signup" className="cta" style={{ fontSize: 18, padding: "14px 36px" }}>
           Start your free trial
         </Link>
         <p className="muted" style={{ marginTop: 16, fontSize: 14 }}>

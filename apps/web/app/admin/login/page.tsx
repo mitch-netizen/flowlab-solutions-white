@@ -20,16 +20,16 @@ export default async function PlatformLoginPage({
             </div>
           ) : null}
         </div>
-        <form action="/api/auth/platform/login" method="post" className="hero-card space-y-4">
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+        <form action="/api/auth/platform/login" method="post" className="hero-card form-grid">
+          <label className="label">
             Email
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="email" type="email" autoComplete="email" required />
+            <input className="input" name="email" type="email" autoComplete="email" required />
           </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <label className="label">
             Password
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="password" type="password" autoComplete="current-password" required />
+            <input className="input" name="password" type="password" autoComplete="current-password" required />
           </label>
-          <button type="submit" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+          <button type="submit" className="cta">
             Open superadmin
           </button>
         </form>

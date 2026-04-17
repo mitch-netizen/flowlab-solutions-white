@@ -35,61 +35,61 @@ export default async function CustomerRecordPage({
         description="Contact details, work history, billing, and messages all in one place."
         section="crm"
         actions={(
-          <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/crm">
+          <Link className="ghost" href="/dashboard/crm">
             Back to CRM
           </Link>
         )}
       />
 
       {query.updated === "1" ? (
-        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
+        <div className="surface surface-alert is-success">
           <p>Customer details updated.</p>
         </div>
       ) : null}
       {query.message === "sent" ? (
-        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
+        <div className="surface surface-alert is-success">
           <p>Message sent and logged on the customer record.</p>
         </div>
       ) : null}
       {(query as Record<string, string>).reminder === "created" ? (
-        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
+        <div className="surface surface-alert is-success">
           <p>Rebook reminder set.</p>
         </div>
       ) : null}
       {query.error ? (
-        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-red-500">
+        <div className="surface surface-alert is-danger">
           <p>Something went wrong. Check your integrations and try again.</p>
         </div>
       ) : null}
 
-      <div className="rounded-lg border bg-card p-4">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Jobs</div>
-            <div className="text-3xl font-semibold">{customer.jobs.length}</div>
-            <p className="text-sm text-muted-foreground">Work records already attached to this customer.</p>
+      <div className="surface">
+        <div className="setup-summary">
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Jobs</div>
+            <div className="setup-summary-value">{customer.jobs.length}</div>
+            <p className="setup-summary-copy">Work records already attached to this customer.</p>
           </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Quotes</div>
-            <div className="text-3xl font-semibold">{customer.quotes.length}</div>
-            <p className="text-sm text-muted-foreground">Drafted or accepted quote history on the account.</p>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Quotes</div>
+            <div className="setup-summary-value">{customer.quotes.length}</div>
+            <p className="setup-summary-copy">Drafted or accepted quote history on the account.</p>
           </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Invoices</div>
-            <div className="text-3xl font-semibold">{customer.invoices.length}</div>
-            <p className="text-sm text-muted-foreground">Billing records tied back to the same customer.</p>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Invoices</div>
+            <div className="setup-summary-value">{customer.invoices.length}</div>
+            <p className="setup-summary-copy">Billing records tied back to the same customer.</p>
           </div>
         </div>
       </div>
 
       <div className="cards-2">
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
             <div className="eyebrow">Contact details</div>
             <h2 style={{ marginBottom: 8 }}>Contact details</h2>
           </div>
 
-          <div className="space-y-3">
+          <div className="setup-list">
             {[
               ["Email", customer.email],
               ["Phone", customer.phone ?? "Not set"],
@@ -97,9 +97,9 @@ export default async function CustomerRecordPage({
               ["Suburb", customer.suburb ?? "Not set"],
               ["Rating", customer.ratingAverage?.toFixed(1) ?? "No ratings yet"]
             ].map(([label, value]) => (
-              <div key={label} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <div key={label} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
                     <span className="status-pill is-off">{label}</span>
                   </div>
                   <p>{value}</p>
@@ -109,8 +109,8 @@ export default async function CustomerRecordPage({
           </div>
         </div>
 
-        <form action={`/api/tenant/crm/customers/${customer.id}/update`} method="post" className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="space-y-2">
+        <form action={`/api/tenant/crm/customers/${customer.id}/update`} method="post" className="surface form-grid">
+          <div className="setup-section-copy">
             <div className="eyebrow">Edit customer</div>
             <h2 style={{ marginBottom: 8 }}>Edit customer</h2>
             <p>Changes apply across all jobs, invoices, and records linked to this customer.</p>
@@ -118,51 +118,51 @@ export default async function CustomerRecordPage({
 
           <input type="hidden" name="returnTo" value={`/dashboard/crm/${customer.id}`} />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <div className="setup-field-grid">
+            <label className="label">
               First name
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="firstName" defaultValue={customer.firstName} required />
+              <input className="input" name="firstName" defaultValue={customer.firstName} required />
             </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <label className="label">
               Last name
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="lastName" defaultValue={customer.lastName} required />
+              <input className="input" name="lastName" defaultValue={customer.lastName} required />
             </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <label className="label">
               Email
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="email" type="email" defaultValue={customer.email} required />
+              <input className="input" name="email" type="email" defaultValue={customer.email} required />
             </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <label className="label">
               Phone
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="phone" defaultValue={customer.phone ?? ""} />
+              <input className="input" name="phone" defaultValue={customer.phone ?? ""} />
             </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <label className="label">
               Address
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="address" defaultValue={customer.address ?? ""} />
+              <input className="input" name="address" defaultValue={customer.address ?? ""} />
             </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <label className="label">
               Suburb
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="suburb" defaultValue={customer.suburb ?? ""} />
+              <input className="input" name="suburb" defaultValue={customer.suburb ?? ""} />
             </label>
-            <label className="flex flex-col gap-2 text-sm text-muted-foreground md:col-span-2">
+            <label className="label is-full">
               Notes
               <textarea className="textarea" name="notes" defaultValue={customer.notes ?? ""} />
             </label>
           </div>
 
-          <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">Save customer</button>
+          <button className="cta" type="submit">Save customer</button>
         </form>
       </div>
 
       <div className="cards-2">
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
             <div className="eyebrow">Jobs</div>
             <h2 style={{ marginBottom: 8 }}>Work history</h2>
             <p>All jobs linked to this customer.</p>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+          <div className="setup-table-wrap">
+            <table className="table">
               <thead>
                 <tr>
                   <th>Job</th>
@@ -187,15 +187,15 @@ export default async function CustomerRecordPage({
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
             <div className="eyebrow">Invoices</div>
             <h2 style={{ marginBottom: 8 }}>Billing history</h2>
             <p>Outstanding or historic invoices remain easy to reopen from the customer record.</p>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+          <div className="setup-table-wrap">
+            <table className="table">
               <thead>
                 <tr>
                   <th>Invoice</th>
@@ -228,71 +228,71 @@ export default async function CustomerRecordPage({
           title="Send manual message"
         />
 
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
             <div className="eyebrow">Recent communication</div>
             <h2 style={{ marginBottom: 8 }}>Latest outreach</h2>
             <p>All messages sent to or from this customer.</p>
           </div>
 
-          <div className="space-y-3">
+          <div className="setup-list">
             {communications.length > 0 ? communications.map((entry) => (
-              <div key={entry.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <div key={entry.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
                     <span className="status-pill is-off">{entry.channel.toUpperCase()}</span>
                     <span>{entry.status}</span>
                   </div>
                   <p>{entry.subject ?? entry.body}</p>
                 </div>
               </div>
-            )) : <p className="text-sm text-muted-foreground">No communication recorded for this customer yet.</p>}
+            )) : <p className="setup-note">No communication recorded for this customer yet.</p>}
           </div>
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card p-4 space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
+      <div className="surface setup-section">
+        <div className="setup-section-header">
+          <div className="setup-section-copy">
             <div className="eyebrow">Enquiries</div>
             <h2>New requests still tied to this customer</h2>
             <p>Open the linked quote or track the status of each request.</p>
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="setup-list">
           {enquiries.length > 0 ? enquiries.map((enquiry) => (
-            <div key={enquiry.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <div key={enquiry.id} className="setup-row">
+              <div className="setup-row-main">
+                <div className="setup-row-meta">
                   <span className={`status-pill ${enquiry.status === "new" ? "is-warning" : "is-off"}`}>{enquiry.status}</span>
                   <span>{new Date(enquiry.createdAt).toLocaleString()}</span>
                 </div>
                 <h3>{enquiry.serviceRequest}</h3>
               </div>
-              <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="setup-row-actions">
                 {enquiry.quote ? (
-                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={`/quote/${enquiry.quote.accessToken}`}>Open linked quote</Link>
+                  <Link className="ghost" href={`/quote/${enquiry.quote.accessToken}`}>Open linked quote</Link>
                 ) : null}
               </div>
             </div>
-          )) : <p className="text-sm text-muted-foreground">No enquiries recorded for this customer yet.</p>}
+          )) : <p className="setup-note">No enquiries recorded for this customer yet.</p>}
         </div>
       </div>
 
       <div className="cards-2">
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
             <div className="eyebrow">Quotes and agreements</div>
             <h2 style={{ marginBottom: 8 }}>Commercial history</h2>
             <p>Quotes sent and agreements signed for this customer.</p>
           </div>
 
-          <div className="space-y-3">
+          <div className="setup-list">
             {customer.quotes.map((quote) => (
-              <div key={quote.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <div key={quote.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
                     <span className="status-pill is-off">Quote</span>
                     <span>{quote.status}</span>
                   </div>
@@ -302,9 +302,9 @@ export default async function CustomerRecordPage({
               </div>
             ))}
             {customer.agreements.map((agreement) => (
-              <div key={agreement.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <div key={agreement.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
                     <span className="status-pill is-off">Agreement</span>
                     <span>{agreement.status}</span>
                   </div>
@@ -313,23 +313,23 @@ export default async function CustomerRecordPage({
               </div>
             ))}
             {customer.quotes.length === 0 && customer.agreements.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No quotes or agreements recorded yet.</p>
+              <p className="setup-note">No quotes or agreements recorded yet.</p>
             ) : null}
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
             <div className="eyebrow">Feedback and reminders</div>
             <h2 style={{ marginBottom: 8 }}>Follow-up signals</h2>
             <p>Post-job feedback and upcoming rebook reminders.</p>
           </div>
 
-          <div className="space-y-3">
+          <div className="setup-list">
             {feedback.map((entry) => (
-              <div key={entry.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <div key={entry.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
                     <span className={`status-pill ${entry.rating >= 5 ? "is-on" : "is-off"}`}>{entry.rating} stars</span>
                   </div>
                   <p>{entry.comment ?? "No comment supplied."}</p>
@@ -337,9 +337,9 @@ export default async function CustomerRecordPage({
               </div>
             ))}
             {reminders.map((reminder) => (
-              <div key={reminder.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <div key={reminder.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
                     <span className={`status-pill ${reminder.status === "pending" ? "is-warning" : "is-off"}`}>Rebook reminder</span>
                   </div>
                   <p>{reminder.status} · due {new Date(reminder.dueAt).toLocaleDateString()}</p>
@@ -347,20 +347,20 @@ export default async function CustomerRecordPage({
               </div>
             ))}
             {feedback.length === 0 && reminders.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="setup-note">
                 No feedback or rebook reminders recorded for <CustomerLink customerId={customer.id} className="inline-entity-link">{customer.firstName}</CustomerLink> yet.
               </p>
             ) : null}
 
-            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]" style={{ paddingTop: 16 }}>
-              <form className="space-y-4" action="/api/tenant/reminders/create" method="post" style={{ width: "100%" }}>
+            <div className="setup-row" style={{ paddingTop: 16 }}>
+              <form className="form-grid" action="/api/tenant/reminders/create" method="post" style={{ width: "100%" }}>
                 <input type="hidden" name="customerId" value={customer.id} />
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
-                  <label className="flex flex-col gap-2 text-sm text-muted-foreground" style={{ flex: 1, minWidth: 180 }}>
+                  <label className="label" style={{ flex: 1, minWidth: 180 }}>
                     Remind me on
-                    <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" type="date" name="dueAt" required />
+                    <input className="input" type="date" name="dueAt" required />
                   </label>
-                  <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit" style={{ marginBottom: 0 }}>Set reminder</button>
+                  <button className="ghost" type="submit" style={{ marginBottom: 0 }}>Set reminder</button>
                 </div>
               </form>
             </div>

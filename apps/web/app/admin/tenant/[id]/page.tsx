@@ -200,7 +200,7 @@ export default function TenantDetailPage() {
             <button
               onClick={handleImpersonate}
               disabled={impersonating}
-              className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+              className="cta"
               style={{ background: "#7c3aed", opacity: impersonating ? 0.6 : 1 }}
             >
               {impersonating ? "Opening..." : "Impersonate →"}
@@ -275,7 +275,7 @@ export default function TenantDetailPage() {
               {tenant.profile && (
                 <div>
                   <h3 style={{ marginBottom: 12 }}>Business details</h3>
-                  <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+                  <table className="table">
                     <tbody>
                       {[
                         ["Type", tenant.profile.businessType.replace(/_/g, " ")],
@@ -393,7 +393,7 @@ export default function TenantDetailPage() {
           {tab === "billing" && (
             <div>
               <h3 style={{ marginBottom: 16 }}>Billing & subscription</h3>
-              <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+              <table className="table">
                 <tbody>
                   {[
                     ["Plan", tenant.plan],
@@ -420,7 +420,7 @@ export default function TenantDetailPage() {
                 <label>
                   <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Business name</div>
                   <input
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    className="input"
                     value={settingsForm.businessName}
                     onChange={(e) => setSettingsForm((f) => ({ ...f, businessName: e.target.value }))}
                   />
@@ -428,7 +428,7 @@ export default function TenantDetailPage() {
                 <label>
                   <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Plan</div>
                   <select
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    className="input"
                     value={settingsForm.plan}
                     onChange={(e) => setSettingsForm((f) => ({ ...f, plan: e.target.value }))}
                   >
@@ -440,7 +440,7 @@ export default function TenantDetailPage() {
                 <label>
                   <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Status</div>
                   <select
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    className="input"
                     value={settingsForm.status}
                     onChange={(e) => setSettingsForm((f) => ({ ...f, status: e.target.value }))}
                   >
@@ -453,7 +453,7 @@ export default function TenantDetailPage() {
                 <label>
                   <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Monthly fee (AUD)</div>
                   <input
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    className="input"
                     type="number"
                     value={settingsForm.monthlyFee}
                     onChange={(e) => setSettingsForm((f) => ({ ...f, monthlyFee: Number(e.target.value) }))}
@@ -462,7 +462,7 @@ export default function TenantDetailPage() {
                 <label>
                   <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Internal notes</div>
                   <textarea
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    className="input"
                     rows={3}
                     value={settingsForm.notes}
                     onChange={(e) => setSettingsForm((f) => ({ ...f, notes: e.target.value }))}
@@ -470,7 +470,7 @@ export default function TenantDetailPage() {
                   />
                 </label>
                 <button
-                  className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                  className="cta"
                   onClick={handleSaveSettings}
                   disabled={saving}
                   style={{ alignSelf: "flex-start", opacity: saving ? 0.6 : 1 }}
@@ -497,7 +497,7 @@ export default function TenantDetailPage() {
                 </p>
               </div>
               <button
-                className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                className="cta"
                 onClick={handleImpersonate}
                 disabled={impersonating || tenant.users.length === 0}
                 style={{ background: "#7c3aed", opacity: impersonating ? 0.6 : 1 }}

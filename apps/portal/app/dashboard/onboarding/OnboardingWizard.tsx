@@ -165,7 +165,7 @@ export default function OnboardingWizard({
   if (completed || step === 7) {
     return (
       <div className="stack">
-        <div className="rounded-lg border bg-card p-4" style={{ textAlign: "center", padding: "48px 32px" }}>
+        <div className="surface" style={{ textAlign: "center", padding: "48px 32px" }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
           <h1>You&apos;re live!</h1>
           <p style={{ color: "#cbd5e1", marginBottom: 24 }}>
@@ -175,15 +175,15 @@ export default function OnboardingWizard({
             <p style={{ margin: 0, fontWeight: 600 }}>Your customer enquiry link</p>
             <code style={{ fontSize: 13, color: "#94a3b8" }}>{enquiryUrl}</code>
             <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-              <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" onClick={handleCopy} style={{ fontSize: 13 }}>
+              <button className="cta" onClick={handleCopy} style={{ fontSize: 13 }}>
                 {copied ? "Copied!" : "Copy link"}
               </button>
-              <a href={enquiryUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ background: "#1e293b", fontSize: 13 }}>
+              <a href={enquiryUrl} target="_blank" rel="noreferrer" className="cta" style={{ background: "#1e293b", fontSize: 13 }}>
                 Open form
               </a>
             </div>
           </div>
-          <a href="/dashboard" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+          <a href="/dashboard" className="cta">
             Go to dashboard →
           </a>
         </div>
@@ -194,7 +194,7 @@ export default function OnboardingWizard({
   return (
     <div className="stack">
       {/* Progress bar */}
-      <div className="rounded-lg border bg-card p-4">
+      <div className="surface">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <div>
             <div className="eyebrow">Onboarding wizard</div>
@@ -222,7 +222,7 @@ export default function OnboardingWizard({
       </div>
 
       {/* Step content */}
-      <div className="rounded-lg border bg-card p-4">
+      <div className="surface">
         {step === 1 && (
           <div>
             <h2>Your business</h2>
@@ -237,7 +237,7 @@ export default function OnboardingWizard({
                 <label key={field}>
                   <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>
                   <input
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    className="input"
                     value={profile[field]}
                     onChange={(e) => setProfile((p) => ({ ...p, [field]: e.target.value }))}
                   />
@@ -246,7 +246,7 @@ export default function OnboardingWizard({
               <label>
                 <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Service area suburbs (comma separated)</div>
                 <input
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  className="input"
                   value={profile.serviceAreaSuburbs.join(", ")}
                   onChange={(e) =>
                     setProfile((p) => ({
@@ -260,7 +260,7 @@ export default function OnboardingWizard({
               <label>
                 <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Business type</div>
                 <select
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  className="input"
                   value={profile.businessType}
                   onChange={(e) => setProfile((p) => ({ ...p, businessType: e.target.value }))}
                 >
@@ -280,7 +280,7 @@ export default function OnboardingWizard({
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
               <button
-                className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                className="cta"
                 disabled={saving}
                 onClick={() =>
                   advanceTo(2, () =>
@@ -315,7 +315,7 @@ export default function OnboardingWizard({
                     style={{ width: 44, height: 36, border: "none", background: "none", cursor: "pointer" }}
                   />
                   <input
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    className="input"
                     value={profile.primaryColour}
                     onChange={(e) => setProfile((p) => ({ ...p, primaryColour: e.target.value }))}
                     style={{ flex: 1 }}
@@ -332,7 +332,7 @@ export default function OnboardingWizard({
                     style={{ width: 44, height: 36, border: "none", background: "none", cursor: "pointer" }}
                   />
                   <input
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    className="input"
                     value={profile.accentColour}
                     onChange={(e) => setProfile((p) => ({ ...p, accentColour: e.target.value }))}
                     style={{ flex: 1 }}
@@ -370,11 +370,11 @@ export default function OnboardingWizard({
               </div>
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-              <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ background: "#1e293b" }} onClick={() => setStep(1)}>
+              <button className="cta" style={{ background: "#1e293b" }} onClick={() => setStep(1)}>
                 ← Back
               </button>
               <button
-                className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                className="cta"
                 disabled={saving}
                 onClick={() =>
                   advanceTo(3, () =>
@@ -413,7 +413,7 @@ export default function OnboardingWizard({
                     <label key={field}>
                       <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>{label}</div>
                       <input
-                        className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                        className="input"
                         type="number"
                         step="0.1"
                         value={pricing[field] ?? ""}
@@ -427,7 +427,7 @@ export default function OnboardingWizard({
                 <label>
                   <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Hourly rate ($/hr)</div>
                   <input
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    className="input"
                     type="number"
                     step="1"
                     value={pricing.hourlyRate ?? ""}
@@ -439,7 +439,7 @@ export default function OnboardingWizard({
                 <label>
                   <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Call-out fee ($)</div>
                   <input
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    className="input"
                     type="number"
                     step="1"
                     value={pricing.calloutFee ?? ""}
@@ -450,7 +450,7 @@ export default function OnboardingWizard({
               <label>
                 <div className="muted" style={{ fontSize: 13, marginBottom: 4 }}>Minimum charge ($)</div>
                 <input
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  className="input"
                   type="number"
                   step="1"
                   value={pricing.minimumCharge}
@@ -472,7 +472,7 @@ export default function OnboardingWizard({
                   <label style={{ flex: 2 }}>
                     <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>Service name</div>
                     <input
-                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                      className="input"
                       value={t.serviceName}
                       onChange={(e) => updateTemplate(i, "serviceName", e.target.value)}
                     />
@@ -480,7 +480,7 @@ export default function OnboardingWizard({
                   <label style={{ flex: 1 }}>
                     <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>Price ($)</div>
                     <input
-                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                      className="input"
                       type="number"
                       value={t.defaultPrice}
                       onChange={(e) => updateTemplate(i, "defaultPrice", parseInt(e.target.value))}
@@ -489,7 +489,7 @@ export default function OnboardingWizard({
                   <label style={{ flex: 1 }}>
                     <div className="muted" style={{ fontSize: 12, marginBottom: 2 }}>Duration (min)</div>
                     <input
-                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                      className="input"
                       type="number"
                       value={t.defaultDuration}
                       onChange={(e) => updateTemplate(i, "defaultDuration", parseInt(e.target.value))}
@@ -503,16 +503,16 @@ export default function OnboardingWizard({
                   </button>
                 </div>
               ))}
-              <button onClick={addTemplate} className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ background: "#1e293b", alignSelf: "flex-start" }}>
+              <button onClick={addTemplate} className="cta" style={{ background: "#1e293b", alignSelf: "flex-start" }}>
                 + Add service
               </button>
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-              <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ background: "#1e293b" }} onClick={() => setStep(2)}>
+              <button className="cta" style={{ background: "#1e293b" }} onClick={() => setStep(2)}>
                 ← Back
               </button>
               <button
-                className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                className="cta"
                 disabled={saving}
                 onClick={() =>
                   advanceTo(4, () =>
@@ -553,7 +553,7 @@ export default function OnboardingWizard({
                     {entry && (
                       <>
                         <input
-                          className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                          className="input"
                           type="time"
                           value={entry.startTime}
                           onChange={(e) => updateDayTime(i, "startTime", e.target.value)}
@@ -561,7 +561,7 @@ export default function OnboardingWizard({
                         />
                         <span className="muted">to</span>
                         <input
-                          className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                          className="input"
                           type="time"
                           value={entry.endTime}
                           onChange={(e) => updateDayTime(i, "endTime", e.target.value)}
@@ -574,11 +574,11 @@ export default function OnboardingWizard({
               })}
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-              <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ background: "#1e293b" }} onClick={() => setStep(3)}>
+              <button className="cta" style={{ background: "#1e293b" }} onClick={() => setStep(3)}>
                 ← Back
               </button>
               <button
-                className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                className="cta"
                 disabled={saving}
                 onClick={() =>
                   advanceTo(5, () =>
@@ -608,13 +608,13 @@ export default function OnboardingWizard({
               </p>
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-              <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ background: "#1e293b" }} onClick={() => setStep(4)}>
+              <button className="cta" style={{ background: "#1e293b" }} onClick={() => setStep(4)}>
                 ← Back
               </button>
-              <a href="/dashboard/integrations" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ background: "#1e293b" }}>
+              <a href="/dashboard/integrations" className="cta" style={{ background: "#1e293b" }}>
                 Open integrations →
               </a>
-              <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" disabled={saving} onClick={() => advanceTo(6)}>
+              <button className="cta" disabled={saving} onClick={() => advanceTo(6)}>
                 {saving ? "Saving..." : "Continue →"}
               </button>
             </div>
@@ -630,10 +630,10 @@ export default function OnboardingWizard({
             <div className="panel-soft" style={{ marginBottom: 20 }}>
               <code style={{ fontSize: 14, color: "#94a3b8", wordBreak: "break-all" }}>{enquiryUrl}</code>
               <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-                <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" onClick={handleCopy} style={{ fontSize: 13 }}>
+                <button className="cta" onClick={handleCopy} style={{ fontSize: 13 }}>
                   {copied ? "Copied!" : "Copy link"}
                 </button>
-                <a href={enquiryUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ background: "#1e293b", fontSize: 13 }}>
+                <a href={enquiryUrl} target="_blank" rel="noreferrer" className="cta" style={{ background: "#1e293b", fontSize: 13 }}>
                   Preview form
                 </a>
               </div>
@@ -642,11 +642,11 @@ export default function OnboardingWizard({
               Want your own domain? Go to <strong>Settings → Custom domain</strong> after completing setup.
             </p>
             <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-              <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ background: "#1e293b" }} onClick={() => setStep(5)}>
+              <button className="cta" style={{ background: "#1e293b" }} onClick={() => setStep(5)}>
                 ← Back
               </button>
               <button
-                className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                className="cta"
                 disabled={saving}
                 onClick={() => advanceTo(7)}
                 style={{ background: "#16a34a" }}
