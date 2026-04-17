@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 import { getServiceLabel } from "@flowlab/contracts";
 import AdminPageScaffold from "../../components/admin/page-scaffold";
 import { requirePlatformSession } from "../../lib/session";
+import { TenantsTable } from "./tenants-table";
 
 export default async function AdminPage() {
   await requirePlatformSession();
@@ -114,44 +115,13 @@ export default async function AdminPage() {
               </p>
             </div>
           </div>
-          <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
-            <thead>
-              <tr>
-                <th>Business</th>
-                <th>Plan</th>
-                <th>Status</th>
-                <th>Customers</th>
-                <th>Jobs</th>
-                <th>Invoices</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {overview.tenants.map((tenant: (typeof overview.tenants)[number]) => (
-                <tr key={tenant.id}>
-                  <td>
-                    <Link href={`/admin/tenant/${tenant.id}`} style={{ fontWeight: 600 }}>
-                      {tenant.profile?.businessName ?? tenant.slug}
-                    </Link>
-                  </td>
-                  <td>{tenant.plan}</td>
-                  <td style={{
-                    color: tenant.status === "active" ? "#16a34a" : tenant.status === "trial" ? "#d97706" : "#dc2626",
-                    fontWeight: 600
-                  }}>
-                    {tenant.status}
-                  </td>
-                  <td>{tenant._count.customers}</td>
-                  <td>{tenant._count.jobs}</td>
-                  <td>{tenant._count.invoices}</td>
-                  <td style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <Link href={`/admin/tenant/${tenant.id}`}>View</Link>
-                    <Link href={process.env.NODE_ENV === "production" ? buildTenantUrl(tenant.slug, "/dashboard") : `http://${tenant.slug}.localhost:3001/dashboard`} target="_blank">Portal</Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <TenantsTable
+            tenants={overview.tenants}
+            portalBaseUrlBySlug={Object.fromEntries(overview.tenants.map((tenant: (typeof overview.tenants)[number]) => [
+              tenant.slug,
+              process.env.NODE_ENV === "production" ? buildTenantUrl(tenant.slug, "/dashboard") : `http://${tenant.slug}.localhost:3001/dashboard`
+            ]))}
+          />
         </div>
         <div className="panel">
           <h2>Platform-wide event log</h2>

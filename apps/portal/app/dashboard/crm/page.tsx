@@ -4,6 +4,8 @@ import { getCrmSnapshot } from "@flowlab/db";
 
 import CustomerLink from "../../../components/customer-link";
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
+import { CustomersTable } from "./customers-table";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../lib/session";
 
 export default async function CrmPage({
@@ -199,48 +201,7 @@ export default async function CrmPage({
           </div>
         </div>
 
-        <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
-          <thead>
-            <tr>
-              <th>Customer</th>
-              <th>Suburb</th>
-              <th>Jobs</th>
-              <th>Quotes</th>
-              <th>Invoices</th>
-              <th>Health</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {snapshot.customers.map((customer) => {
-              const overdueCount = customer.invoices.filter((invoice) => invoice.dueAt && invoice.dueAt < new Date() && invoice.status !== "paid").length;
-              const health = overdueCount > 0 ? "Needs attention" : customer.jobs.length > 2 ? "Active" : "Light touch";
-
-              return (
-                <tr key={customer.id}>
-                  <td>
-                    <CustomerLink customerId={customer.id} className="inline-entity-link">
-                      <strong>
-                        {customer.firstName} {customer.lastName}
-                      </strong>
-                    </CustomerLink>
-                    <div style={{ color: "#cbd5e1", marginTop: 6 }}>{customer.email}</div>
-                  </td>
-                  <td>{customer.suburb ?? "n/a"}</td>
-                  <td>{customer.jobs.length}</td>
-                  <td>{customer.quotes.length}</td>
-                  <td>{customer.invoices.length}</td>
-                  <td>{health}</td>
-                  <td>
-                    <Link href={`/dashboard/quotes?customerId=${customer.id}`}>Quote</Link>
-                    {" · "}
-                    <Link href={`/dashboard/invoices?customerId=${customer.id}`}>Invoice</Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <CustomersTable customers={snapshot.customers} />
       </div>
 
       <div className="cards-2">

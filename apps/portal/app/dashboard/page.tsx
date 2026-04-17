@@ -4,6 +4,8 @@ import { getTenantDashboardSnapshot, prisma } from "@flowlab/db";
 
 import CustomerLink from "../../components/customer-link";
 import DashboardPageScaffold from "../../components/dashboard/page-scaffold";
+import { InvoicesTable, JobsTable } from "./dashboard-tables";
+import DashboardPageScaffold from "../../components/dashboard/page-scaffold";
 import { getCustomerRecordHref, getInvoiceRecordHref, getJobPrimaryHref, getJobRecordHref } from "../../lib/dashboard-links";
 import { requireTenantSession } from "../../lib/session";
 
@@ -378,28 +380,7 @@ export default async function DashboardPage({
             <Link href="/dashboard/scheduler" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open jobs</Link>
           </div>
 
-          <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
-            <thead>
-              <tr>
-                <th>Job</th>
-                <th>Customer</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {snapshot.jobs.map((job) => (
-                <tr key={job.id}>
-                  <td><Link className="inline-entity-link" href={getJobPrimaryHref(job)}>{job.summary}</Link></td>
-                  <td>
-                    <CustomerLink customerId={job.customerId} className="inline-entity-link">
-                      {job.customer.firstName} {job.customer.lastName}
-                    </CustomerLink>
-                  </td>
-                  <td>{job.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <JobsTable jobs={snapshot.jobs} />
         </div>
 
         <div className="rounded-lg border bg-card p-4 space-y-4">
@@ -411,28 +392,7 @@ export default async function DashboardPage({
             <Link href="/dashboard/invoices" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open billing</Link>
           </div>
 
-          <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
-            <thead>
-              <tr>
-                <th>Invoice</th>
-                <th>Customer</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {snapshot.invoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td><Link className="inline-entity-link" href={getInvoiceRecordHref(invoice.id)}>{invoice.number}</Link></td>
-                  <td>
-                    <CustomerLink customerId={invoice.customerId} className="inline-entity-link">
-                      {invoice.customer.firstName} {invoice.customer.lastName}
-                    </CustomerLink>
-                  </td>
-                  <td>{invoice.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <InvoicesTable invoices={snapshot.invoices} />
         </div>
       </div>
     </DashboardPageScaffold>
