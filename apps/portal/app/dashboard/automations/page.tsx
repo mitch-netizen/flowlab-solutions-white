@@ -76,68 +76,68 @@ export default async function AutomationsPage({
       />
 
       {savedDescriptor ? (
-        <div className="surface" style={{ borderLeft: "3px solid #16a34a", color: "#cbd5e1" }}>
+        <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #16a34a", color: "#cbd5e1" }}>
           Saved <strong>{savedDescriptor.title}</strong>.
         </div>
       ) : null}
 
       {savedRecipe ? (
-        <div className="surface" style={{ borderLeft: "3px solid #16a34a", color: "#cbd5e1" }}>
+        <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #16a34a", color: "#cbd5e1" }}>
           Applied recipe <strong>{savedRecipe.title}</strong>.
         </div>
       ) : null}
 
       {error ? (
-        <div className="surface" style={{ borderLeft: "3px solid #dc2626", color: "#fca5a5" }}>
+        <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #dc2626", color: "#fca5a5" }}>
           Couldn&apos;t update that automation setting. Please try again.
         </div>
       ) : null}
 
-      <div className="surface">
-        <div className="setup-summary">
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Built-in automation</div>
-            <div className="setup-summary-value">{builtInEnabledCount}</div>
-            <p className="setup-summary-copy">
+      <div className="rounded-lg border bg-card p-4">
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Built-in automation</div>
+            <div className="text-3xl font-semibold">{builtInEnabledCount}</div>
+            <p className="text-sm text-muted-foreground">
               of {builtIn.length} built-in automations are currently active.
             </p>
           </div>
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Queue health</div>
-            <div className="setup-summary-value">{health.pending + health.processing}</div>
-            <p className="setup-summary-copy">
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Queue health</div>
+            <div className="text-3xl font-semibold">{health.pending + health.processing}</div>
+            <p className="text-sm text-muted-foreground">
               jobs are in flight. {queueSummary}.
             </p>
           </div>
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Advanced Make</div>
-            <div className="setup-summary-value">{makeWebhookCount}</div>
-            <p className="setup-summary-copy">
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Advanced Make</div>
+            <div className="text-3xl font-semibold">{makeWebhookCount}</div>
+            <p className="text-sm text-muted-foreground">
               webhook{makeWebhookCount === 1 ? "" : "s"} configured. {preferences.advanced_make_webhooks ? "External hooks are enabled." : "External hooks stay optional."}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="surface setup-section">
-        <div className="setup-section-header">
-          <div className="setup-section-copy">
+      <div className="rounded-lg border bg-card p-4 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
             <div className="eyebrow">Built-in automations</div>
             <h2>Built-in automations</h2>
             <p>
               Control what gets sent or scheduled on your behalf. Turning one off stops future jobs from being queued for that automation — existing ones are unaffected.
             </p>
           </div>
-          <Link className="ghost" href="/dashboard/system-health">Review queue health</Link>
+          <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/system-health">Review queue health</Link>
         </div>
 
-        <div className="setup-list">
+        <div className="space-y-3">
           {builtIn.map((descriptor) => {
             const enabled = preferences[descriptor.key];
             return (
-              <div key={descriptor.key} className="setup-row">
-                <div className="setup-row-main">
-                  <div className="setup-row-meta">
+              <div key={descriptor.key} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     <span className={`status-pill ${enabled ? "is-on" : "is-off"}`}>{enabled ? "On" : "Off"}</span>
                     <span>{descriptor.channels}</span>
                     <span>Needs: {dependencyLabels[descriptor.key].join(", ")}</span>
@@ -145,12 +145,12 @@ export default async function AutomationsPage({
                   <h3>{descriptor.title}</h3>
                   <p>{descriptor.description}</p>
                 </div>
-                <div className="setup-row-actions">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                   <form action="/api/tenant/automations/preferences" method="post">
                     <input type="hidden" name="key" value={descriptor.key} />
                     <input type="hidden" name="enabled" value={enabled ? "false" : "true"} />
                     <input type="hidden" name="returnTo" value="/dashboard/automations" />
-                    <button className={enabled ? "ghost" : "cta"} type="submit">
+                    <button className={enabled ? "inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" : "inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"} type="submit">
                       {enabled ? "Turn off" : "Turn on"}
                     </button>
                   </form>
@@ -161,31 +161,31 @@ export default async function AutomationsPage({
         </div>
       </div>
 
-      <div className="surface setup-section">
-        <div className="setup-section-copy">
+      <div className="rounded-lg border bg-card p-4 space-y-4">
+        <div className="space-y-2">
           <div className="eyebrow">Automation recipes</div>
           <h2>Automation recipes</h2>
           <p>Apply a preset to get a sensible starting configuration in one click, then adjust the individual switches above to suit your workflow.</p>
         </div>
 
-        <div className="setup-list">
+        <div className="space-y-3">
           {automationRecipeDescriptors.map((recipe) => (
-            <div key={recipe.key} className="setup-row">
-              <div className="setup-row-main">
-                <div className="setup-row-meta">
+            <div key={recipe.key} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className="status-pill is-off">Preset</span>
                 </div>
                 <h3>{recipe.title}</h3>
                 <p>{recipe.description}</p>
-                <div className="setup-note">
+                <div className="text-sm text-muted-foreground">
                   Enables: {recipe.enables.map((key) => automationPreferenceDescriptors.find((descriptor) => descriptor.key === key)?.title ?? key).join(", ")}
                 </div>
               </div>
-              <div className="setup-row-actions">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <form action="/api/tenant/automations/recipes" method="post">
                   <input type="hidden" name="recipeKey" value={recipe.key} />
                   <input type="hidden" name="returnTo" value="/dashboard/automations" />
-                  <button className="ghost" type="submit">Apply recipe</button>
+                  <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Apply recipe</button>
                 </form>
               </div>
             </div>
@@ -193,45 +193,45 @@ export default async function AutomationsPage({
         </div>
       </div>
 
-      <div className="surface setup-section">
-        <div className="setup-section-header">
-          <div className="setup-section-copy">
+      <div className="rounded-lg border bg-card p-4 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
             <div className="eyebrow">Advanced automation</div>
             <h2>Make.com integration</h2>
             <p>
               Built-in automations handle CRM, jobs, invoicing, and comms. Enable Make only when you want to push those events into external tools or build custom downstream workflows.
             </p>
           </div>
-          <div className="setup-row-actions">
-            <Link className="ghost" href="/dashboard/integrations">Open integrations</Link>
-            <a className="ghost" href="/api/tenant/blueprints/download">Download blueprint ZIP</a>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/integrations">Open integrations</Link>
+            <a className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/api/tenant/blueprints/download">Download blueprint ZIP</a>
           </div>
         </div>
 
         {advanced.map((descriptor) => {
           const enabled = preferences[descriptor.key];
           return (
-            <div key={descriptor.key} className="setup-row" style={{ paddingTop: 0, borderTop: 0 }}>
-              <div className="setup-row-main">
-                <div className="setup-row-meta">
+            <div key={descriptor.key} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]" style={{ paddingTop: 0, borderTop: 0 }}>
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className={`status-pill ${enabled ? "is-on" : "is-off"}`}>{enabled ? "Enabled" : "Disabled"}</span>
                   <span>{descriptor.channels}</span>
                   <span>{serviceLabels.make_com}</span>
                 </div>
                 <h3>{descriptor.title}</h3>
                 <p>{descriptor.description}</p>
-                <div className="setup-note">
+                <div className="text-sm text-muted-foreground">
                   {makeWebhookCount > 0
                     ? `${makeWebhookCount} webhook${makeWebhookCount === 1 ? "" : "s"} stored in ${serviceLabels.make_com}.`
                     : `No Make webhook URLs configured yet${makeIntegration ? ` (${makeIntegration.status.replace(/_/g, " ")})` : ""}.`}
                 </div>
               </div>
-              <div className="setup-row-actions">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <form action="/api/tenant/automations/preferences" method="post">
                   <input type="hidden" name="key" value={descriptor.key} />
                   <input type="hidden" name="enabled" value={enabled ? "false" : "true"} />
                   <input type="hidden" name="returnTo" value="/dashboard/automations" />
-                  <button className={enabled ? "ghost" : "cta"} type="submit">
+                  <button className={enabled ? "inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" : "inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"} type="submit">
                     {enabled ? "Disable Make" : "Enable Make"}
                   </button>
                 </form>
