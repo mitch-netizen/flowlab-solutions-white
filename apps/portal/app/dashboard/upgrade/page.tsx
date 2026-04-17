@@ -87,73 +87,73 @@ export default async function UpgradePage() {
         section="setup"
       />
 
-      <div className="surface">
-        <div className="setup-summary">
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Current plan</div>
-            <div className="setup-summary-value">{currentPlan}</div>
-            <p className="setup-summary-copy">The tenant stays on this plan until you switch.</p>
+      <div className="rounded-lg border bg-card p-4">
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Current plan</div>
+            <div className="text-3xl font-semibold">{currentPlan}</div>
+            <p className="text-sm text-muted-foreground">The tenant stays on this plan until you switch.</p>
           </div>
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Account status</div>
-            <div className="setup-summary-value">{status}</div>
-            <p className="setup-summary-copy">{status === "trial" ? "Trial access is still active." : "Billing is active on the current plan."}</p>
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Account status</div>
+            <div className="text-3xl font-semibold">{status}</div>
+            <p className="text-sm text-muted-foreground">{status === "trial" ? "Trial access is still active." : "Billing is active on the current plan."}</p>
           </div>
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Trial timing</div>
-            <div className="setup-summary-value">
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Trial timing</div>
+            <div className="text-3xl font-semibold">
               {trialDaysLeft === null ? "n/a" : trialDaysLeft <= 0 ? "Ended" : `${trialDaysLeft}d`}
             </div>
-            <p className="setup-summary-copy">
+            <p className="text-sm text-muted-foreground">
               {trialDaysLeft === null ? "No trial end is currently set." : trialDaysLeft <= 0 ? "The free trial period has expired." : "Time remaining before a paid plan is needed."}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="surface setup-section">
-        <div className="setup-section-header">
-          <div className="setup-section-copy">
+      <div className="rounded-lg border bg-card p-4 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
             <div className="eyebrow">Plans</div>
             <h2>Keep the comparison simple and legible</h2>
             <p>Plans should compare like product options, not like a stack of oversized pricing cards. Price, fit, and the important inclusions stay in one clean row each.</p>
           </div>
         </div>
 
-        <div className="setup-plan-list">
+        <div className="space-y-3">
           {PLANS.map((plan) => {
             const isCurrent = currentPlan === plan.key && status !== "trial";
 
             return (
-              <div key={plan.key} className="setup-plan-row">
-                <div className="setup-plan-main">
-                  <div className="setup-row-meta">
+              <div key={plan.key} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     {plan.highlight ? <span className="status-pill is-on">Recommended</span> : null}
                     {isCurrent ? <span className="status-pill is-off">Current plan</span> : null}
                   </div>
 
-                  <div className="setup-plan-heading">
+                  <div className="flex flex-wrap items-baseline gap-2">
                     <h3>{plan.name}</h3>
-                    <div className="setup-plan-price">
+                    <div className="text-3xl font-semibold">
                       {plan.price}
-                      <span className="setup-plan-period">{plan.period}</span>
+                      <span className="text-sm text-muted-foreground">{plan.period}</span>
                     </div>
                   </div>
 
-                  <ul className="setup-bullet-list">
+                  <ul className="space-y-1">
                     {plan.features.map((feature) => (
                       <li key={feature}>{feature}</li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="setup-row-actions">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                   {isCurrent ? (
-                    <span className="setup-note">You&apos;re on this plan.</span>
+                    <span className="text-sm text-muted-foreground">You&apos;re on this plan.</span>
                   ) : (
                     <a
                       href={`mailto:hello@flowlabsolutions.au?subject=Upgrade to ${plan.name}&body=Hi, I'd like to upgrade ${tenant?.profile?.businessName ?? "my account"} to the ${plan.name} plan.`}
-                      className={plan.highlight ? "cta" : "ghost"}
+                      className={plan.highlight ? "inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" : "inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold"}
                     >
                       {status === "trial" || currentPlan === "starter" ? `Get ${plan.name}` : `Switch to ${plan.name}`}
                     </a>
@@ -165,8 +165,8 @@ export default async function UpgradePage() {
         </div>
       </div>
 
-      <div className="surface setup-section">
-        <div className="setup-section-copy">
+      <div className="rounded-lg border bg-card p-4 space-y-4">
+        <div className="space-y-2">
           <div className="eyebrow">Support</div>
           <h2 style={{ marginBottom: 8 }}>Questions before switching?</h2>
           <p>All plans include a 14-day free trial and the same core workflow you already tested. If you need help choosing, email <a href="mailto:hello@flowlabsolutions.au" className="inline-entity-link">hello@flowlabsolutions.au</a>.</p>

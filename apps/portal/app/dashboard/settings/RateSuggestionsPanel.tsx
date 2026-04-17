@@ -27,7 +27,7 @@ export default function RateSuggestionsPanel({ suggestions }: Props) {
 
   if (resolved) {
     return (
-      <div className="surface" style={{ borderLeft: "3px solid #16a34a" }}>
+      <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #16a34a" }}>
         <p style={{ margin: 0, color: "#16a34a", fontWeight: 600 }}>
           ✅ Rate suggestions resolved.
         </p>
@@ -36,7 +36,7 @@ export default function RateSuggestionsPanel({ suggestions }: Props) {
   }
 
   return (
-    <div className="surface" style={{ borderLeft: "3px solid #3b82f6" }}>
+    <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #3b82f6" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
         <div>
           <div className="eyebrow">AI Suggestions</div>
@@ -47,7 +47,7 @@ export default function RateSuggestionsPanel({ suggestions }: Props) {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button
-            className="cta"
+            className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
             onClick={() => resolve("apply")}
             disabled={status === "loading"}
             style={{ opacity: status === "loading" ? 0.6 : 1 }}
@@ -55,7 +55,7 @@ export default function RateSuggestionsPanel({ suggestions }: Props) {
             Apply all
           </button>
           <button
-            className="cta"
+            className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
             onClick={() => resolve("dismiss")}
             disabled={status === "loading"}
             style={{ background: "#1e293b", opacity: status === "loading" ? 0.6 : 1 }}

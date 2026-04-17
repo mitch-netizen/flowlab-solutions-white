@@ -15,7 +15,7 @@ export default async function GettingStartedPage({
           <div className="hero-card">
             <h1>Something went wrong</h1>
             <p className="muted">No workspace details found. Please try signing up again.</p>
-            <Link href="/signup" className="cta">Back to signup</Link>
+            <Link href="/signup" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Back to signup</Link>
           </div>
         </section>
       </main>
@@ -49,7 +49,7 @@ export default async function GettingStartedPage({
             </p>
           )}
 
-          <a href={portalUrl} className="cta" style={{ marginTop: "1.5rem", display: "inline-block" }}>
+          <a href={portalUrl} className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ marginTop: "1.5rem", display: "inline-block" }}>
             Go to my portal →
           </a>
           <p className="muted" style={{ fontSize: "0.8rem", marginTop: "0.75rem" }}>

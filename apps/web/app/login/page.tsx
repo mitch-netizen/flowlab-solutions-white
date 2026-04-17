@@ -15,14 +15,14 @@ export default function LoginPage() {
             Your FlowLab dashboard is at your own subdomain — not this page. Type your business address below or check the welcome email you received when you signed up.
           </p>
 
-          <div className="surface" style={{ marginTop: 24, textAlign: "left" }}>
-            <label className="label" htmlFor="slug">
+          <div className="rounded-lg border bg-card p-4" style={{ marginTop: 24, textAlign: "left" }}>
+            <label className="flex flex-col gap-2 text-sm text-muted-foreground" htmlFor="slug">
               Your business subdomain
             </label>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
               <input
                 id="slug"
-                className="input"
+                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                 type="text"
                 placeholder="yourbusiness"
                 style={{ flex: 1, minWidth: 140 }}
@@ -39,12 +39,12 @@ export default function LoginPage() {
           </div>
 
           <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
-            <Link href="/signup" className="cta">
+            <Link href="/signup" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
               Start a free trial
             </Link>
             <a
               href={`mailto:hello@flowlabsolutions.au?subject=Can't find my login`}
-              className="secondary-cta"
+              className="inline-flex items-center justify-center rounded-lg border bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground"
             >
               Can't find your portal?
             </a>

@@ -23,7 +23,7 @@ export default async function AgreementTemplateBuilderPage({ params }: { params:
 
   return (
     <div className="stack">
-      <div className="surface">
+      <div className="rounded-lg border bg-card p-4">
         <div className="eyebrow">Agreement Builder</div>
         <h1>{state.template.name}</h1>
         <p style={{ color: "#cbd5e1" }}>
@@ -32,20 +32,20 @@ export default async function AgreementTemplateBuilderPage({ params }: { params:
       </div>
 
       <div className="cards-2" style={{ alignItems: "start" }}>
-        <div className="surface">
+        <div className="rounded-lg border bg-card p-4">
           <h2 style={{ marginTop: 0 }}>Checklist</h2>
           <div className="stack">
-            <div className="surface-soft">
+            <div className="rounded-lg border bg-card/60 p-4">
               <strong>Required roles</strong>
               <div style={{ color: "#cbd5e1", marginTop: 8 }}>{state.requirements.requiredRoles.join(", ")}</div>
             </div>
-            <div className="surface-soft">
+            <div className="rounded-lg border bg-card/60 p-4">
               <strong>Required fields</strong>
               <div style={{ color: "#cbd5e1", marginTop: 8 }}>
                 {state.requirements.requiredFields.map((field) => `${field.name} (${field.role})`).join(", ")}
               </div>
             </div>
-            <div className="surface-soft">
+            <div className="rounded-lg border bg-card/60 p-4">
               <strong>Current status</strong>
               <div style={{ color: state.template.status === "ready" ? "#86efac" : "#fbbf24", marginTop: 8 }}>
                 {state.template.status === "ready" ? "Ready" : "Draft"}
@@ -54,19 +54,19 @@ export default async function AgreementTemplateBuilderPage({ params }: { params:
                 <div style={{ color: "#fca5a5", marginTop: 8 }}>{state.template.lastErrorMessage}</div>
               ) : null}
             </div>
-            <form action="/api/tenant/agreements/templates/validate" method="post" className="form-grid">
+            <form action="/api/tenant/agreements/templates/validate" method="post" className="space-y-4">
               <input type="hidden" name="templateId" value={state.template.id} />
-              <button className="cta" type="submit">
+              <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
                 Validate template
               </button>
             </form>
-            <Link className="ghost" href="/dashboard/agreements">
+            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/agreements">
               Back to agreements
             </Link>
           </div>
         </div>
 
-        <div className="surface" style={{ overflow: "hidden" }}>
+        <div className="rounded-lg border bg-card p-4" style={{ overflow: "hidden" }}>
           <DocuSealBuilderEmbed
             token={state.builderToken}
             roles={state.requirements.requiredRoles}

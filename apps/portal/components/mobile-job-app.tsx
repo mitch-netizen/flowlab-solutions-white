@@ -120,22 +120,22 @@ export function MobileJobApp({ jobs }: { jobs: JobCard[] }) {
 
   return (
     <div className="stack">
-      <div className="surface">
+      <div className="rounded-lg border bg-card p-4">
         <div className="eyebrow">Offline-ready operator mode</div>
         <h1 style={{ marginBottom: 8 }}>Installable mobile workflow</h1>
         <p style={{ color: "#cbd5e1", marginTop: 0 }}>
           Actions queue locally when offline, then sync back into FlowLab when connectivity returns.
         </p>
         <div className="cards-3">
-          <div className="surface-soft">
+          <div className="rounded-lg border bg-card/60 p-4">
             <strong>Status</strong>
             <div style={{ marginTop: 8, color: online ? "#86efac" : "#fcd34d" }}>{online ? "Online" : "Offline"}</div>
           </div>
-          <div className="surface-soft">
+          <div className="rounded-lg border bg-card/60 p-4">
             <strong>Queued actions</strong>
             <div style={{ marginTop: 8, color: "#cbd5e1" }}>{queue.length}</div>
           </div>
-          <div className="surface-soft">
+          <div className="rounded-lg border bg-card/60 p-4">
             <strong>Active timers</strong>
             <div style={{ marginTop: 8, color: "#cbd5e1" }}>{Object.keys(activeTimers).length}</div>
           </div>
@@ -144,7 +144,7 @@ export function MobileJobApp({ jobs }: { jobs: JobCard[] }) {
       {jobs.map((job) => {
         const isRunning = Boolean(activeTimers[job.id]);
         return (
-          <div key={job.id} className="surface">
+          <div key={job.id} className="rounded-lg border bg-card p-4">
             <div className="eyebrow">
               <Link className="inline-entity-link" href={getCustomerRecordHref(job.customerId)}>{job.customerName}</Link>
             </div>
@@ -156,16 +156,16 @@ export function MobileJobApp({ jobs }: { jobs: JobCard[] }) {
             </p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               {!isRunning ? (
-                <button className="cta" type="button" onClick={() => startTimer(job.id)}>
+                <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="button" onClick={() => startTimer(job.id)}>
                   Start timer
                 </button>
               ) : (
-                <button className="cta" type="button" onClick={() => stopTimer(job.id)}>
+                <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="button" onClick={() => stopTimer(job.id)}>
                   Stop timer
                 </button>
               )}
               <button
-                className="ghost"
+                className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold"
                 type="button"
                 onClick={() =>
                   enqueue({
@@ -179,7 +179,7 @@ export function MobileJobApp({ jobs }: { jobs: JobCard[] }) {
                 Complete checklist
               </button>
               <button
-                className="ghost"
+                className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold"
                 type="button"
                 onClick={() =>
                   enqueue({
@@ -193,7 +193,7 @@ export function MobileJobApp({ jobs }: { jobs: JobCard[] }) {
                 Queue photo note
               </button>
               <button
-                className="ghost"
+                className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold"
                 type="button"
                 onClick={() =>
                   enqueue({
