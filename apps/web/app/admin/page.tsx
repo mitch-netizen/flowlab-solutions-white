@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { getPlatformOverview, getAdminHealthSummary } from "@flowlab/db";
 import { buildTenantUrl } from "@flowlab/contracts/server";
+import { Badge, formatCurrency, formatDateTime, formatLabel, getStatusTone } from "@flowlab/ui";
 
 export const dynamic = "force-dynamic";
 import { getServiceLabel } from "@flowlab/contracts";
@@ -41,7 +42,7 @@ export default async function AdminPage() {
           </div>
           <div className="metric">
             <span className="muted">Platform revenue</span>
-            <strong>${overview.stats.totalRevenue}</strong>
+            <strong>{formatCurrency(overview.stats.totalRevenue)}</strong>
           </div>
           {healthSummary.totalFailedJobs > 0 ? (
             <div className="metric" style={{ borderColor: "#dc2626" }}>
@@ -86,9 +87,7 @@ export default async function AdminPage() {
             </p>
             <div className="muted">
               Status:{" "}
-              <span style={{ color: platformXero?.status === "connected" ? "#16a34a" : platformXero?.status === "error" ? "#dc2626" : "#94a3b8", fontWeight: 600 }}>
-                {platformXero?.status ?? "not_configured"}
-              </span>
+              <Badge tone={getStatusTone(platformXero?.status)}>{formatLabel(platformXero?.status ?? "not_configured")}</Badge>
             </div>
             {xeroDaysLeft !== null && xeroDaysLeft < 7 ? (
               <div style={{ marginTop: 8, color: "#fbbf24", fontWeight: 600 }}>
@@ -97,7 +96,7 @@ export default async function AdminPage() {
             ) : null}
             {platformXero?.lastTestedAt ? (
               <div className="muted" style={{ marginTop: 6 }}>
-                Last connected: {new Date(platformXero.lastTestedAt as unknown as string).toLocaleString()}
+                Last connected: {formatDateTime(platformXero.lastTestedAt as unknown as string)}
               </div>
             ) : null}
             {(platformXero as unknown as { lastErrorMessage?: string | null } | undefined)?.lastErrorMessage ? (
@@ -130,12 +129,10 @@ export default async function AdminPage() {
               <div key={event.id} className="panel-soft">
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
                   <strong>{getServiceLabel(event.service)}</strong>
-                  <span className="muted">{new Date(event.createdAt).toLocaleString()}</span>
+                  <span className="muted">{formatDateTime(event.createdAt)}</span>
                 </div>
                 <p className="muted">{event.requestSummary}</p>
-                <div style={{ color: event.status === "failed" ? "#fca5a5" : event.status === "success" ? "#16a34a" : "#94a3b8" }}>
-                  {event.status}
-                </div>
+                <Badge tone={getStatusTone(event.status)}>{formatLabel(event.status)}</Badge>
               </div>
             ))}
           </div>

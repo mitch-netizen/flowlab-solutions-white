@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { getServiceLabel, serviceLabels } from "@flowlab/contracts";
 import AdminPageScaffold, { AdminPageCard } from "../../../../components/admin/page-scaffold";
+import { Badge, formatCurrency, formatDate, formatDateTime, formatLabel, getStatusTone } from "@flowlab/ui";
+import AdminPageScaffold, { AdminPageCard } from "../../../../components/admin/page-scaffold";
 
 interface TenantDetail {
   id: string;
@@ -62,20 +64,6 @@ interface TenantDetail {
 }
 
 type TabId = "overview" | "integrations" | "events" | "billing" | "settings" | "impersonate";
-
-const STATUS_COLOURS: Record<string, string> = {
-  active: "#16a34a",
-  trial: "#d97706",
-  suspended: "#dc2626",
-  cancelled: "#64748b"
-};
-
-const INTEGRATION_COLOURS: Record<string, string> = {
-  connected: "#16a34a",
-  not_configured: "#64748b",
-  error: "#dc2626",
-  disconnected: "#94a3b8"
-};
 
 export default function TenantDetailPage() {
   const params = useParams();
@@ -180,7 +168,7 @@ export default function TenantDetailPage() {
   return (
     <AdminPageScaffold
       title={tenant.profile?.businessName ?? tenant.slug}
-      description={`${tenant.slug}.flowlabsolutions.au | ${tenant.status.toUpperCase()} | ${tenant.plan} plan`}
+      description={`${tenant.slug}.flowlabsolutions.au | ${formatLabel(tenant.status)} | ${tenant.plan} plan`}
       meta={<a href="/admin" style={{ color: "#64748b", textDecoration: "none", fontSize: 14 }}>← Tenants</a>}
       actions={(
         <button
@@ -235,7 +223,7 @@ export default function TenantDetailPage() {
                 </div>
                 <div className="metric">
                   <span className="muted">Monthly fee</span>
-                  <strong>${tenant.monthlyFee}/mo</strong>
+                  <strong>{formatCurrency(tenant.monthlyFee)}/mo</strong>
                 </div>
               </div>
               <div>
@@ -252,7 +240,7 @@ export default function TenantDetailPage() {
                           ? "✅ Onboarding complete"
                           : `🔄 Onboarding step ${u.onboardingStep}/6`}
                         &nbsp;|&nbsp;
-                        Last login: {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : "Never"}
+                        Last login: {u.lastLoginAt ? formatDate(u.lastLoginAt) : "Never"}
                       </div>
                     </div>
                   </div>
@@ -281,8 +269,8 @@ export default function TenantDetailPage() {
                 </div>
               )}
               <div className="muted" style={{ fontSize: 13 }}>
-                Created: {new Date(tenant.createdAt).toLocaleDateString()}
-                {tenant.trialEndsAt && ` | Trial ends: ${new Date(tenant.trialEndsAt).toLocaleDateString()}`}
+                Created: {formatDate(tenant.createdAt)}
+                {tenant.trialEndsAt && ` | Trial ends: ${formatDate(tenant.trialEndsAt)}`}
               </div>
             </div>
           )}
@@ -300,22 +288,11 @@ export default function TenantDetailPage() {
                       <div>
                         <strong>{serviceLabels[integration.service as keyof typeof serviceLabels] ?? getServiceLabel(integration.service)}</strong>
                       </div>
-                      <span
-                        style={{
-                          background: INTEGRATION_COLOURS[integration.status] ?? "#64748b",
-                          color: "#fff",
-                          padding: "2px 10px",
-                          borderRadius: 99,
-                          fontSize: 12,
-                          fontWeight: 600
-                        }}
-                      >
-                        {integration.status.replace(/_/g, " ").toUpperCase()}
-                      </span>
+                      <Badge tone={getStatusTone(integration.status)}>{formatLabel(integration.status)}</Badge>
                     </div>
                     {integration.lastTestedAt && (
                       <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
-                        Last tested: {new Date(integration.lastTestedAt).toLocaleString()}
+                        Last tested: {formatDateTime(integration.lastTestedAt)}
                         {integration.lastTestResult && ` — ${integration.lastTestResult}`}
                       </p>
                     )}
@@ -345,18 +322,10 @@ export default function TenantDetailPage() {
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <span style={{ fontWeight: 600 }}>{getServiceLabel(event.service)}</span>
                         <span className="muted" style={{ fontSize: 12 }}>{event.eventType}</span>
-                        <span
-                          style={{
-                            color: event.status === "success" ? "#16a34a" : event.status === "failed" ? "#dc2626" : "#d97706",
-                            fontSize: 12,
-                            fontWeight: 600
-                          }}
-                        >
-                          {event.status}
-                        </span>
+                        <Badge tone={getStatusTone(event.status)}>{formatLabel(event.status)}</Badge>
                       </div>
                       <span className="muted" style={{ fontSize: 12 }}>
-                        {new Date(event.createdAt).toLocaleString()}
+                        {formatDateTime(event.createdAt)}
                         {event.durationMs != null && ` · ${event.durationMs}ms`}
                       </span>
                     </div>
@@ -383,11 +352,11 @@ export default function TenantDetailPage() {
                 <tbody>
                   {[
                     ["Plan", tenant.plan],
-                    ["Status", tenant.status],
-                    ["Monthly fee", `$${tenant.monthlyFee}/month`],
+                    ["Status", formatLabel(tenant.status)],
+                    ["Monthly fee", `${formatCurrency(tenant.monthlyFee)}/month`],
                     ["Billing email", tenant.billingEmail ?? "—"],
-                    ["Trial ends", tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toLocaleDateString() : "N/A"],
-                    ["Member since", new Date(tenant.createdAt).toLocaleDateString()]
+                    ["Trial ends", tenant.trialEndsAt ? formatDate(tenant.trialEndsAt) : "N/A"],
+                    ["Member since", formatDate(tenant.createdAt)]
                   ].map(([label, value]) => (
                     <tr key={label}>
                       <td className="muted" style={{ width: "35%" }}>{label}</td>
