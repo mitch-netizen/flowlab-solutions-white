@@ -76,53 +76,53 @@ export default async function QuotesPage({
         section="revenue"
         actions={(
           <>
-            <Link className="ghost" href="/dashboard/crm">Open CRM</Link>
-            <Link className="ghost" href="/dashboard/jobs">Open job board</Link>
+            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/crm">Open CRM</Link>
+            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/jobs">Open job board</Link>
           </>
         )}
       />
 
       {query.created === "1" ? (
-        <div className="surface surface-alert is-success">
+        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
           <p>Draft quote created and linked to the selected customer{prefilledEnquiryId ? " enquiry" : ""}.</p>
         </div>
       ) : null}
 
       {needsPricingSetup ? (
-        <div className="surface surface-alert is-warning">
+        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-amber-500">
           <h2>Set up your pricing first</h2>
           <p>AI quoting uses your pricing rates to calculate the draft amount. Complete pricing in onboarding before generating the first quote.</p>
           <div style={{ marginTop: 16 }}>
-            <Link href="/dashboard/onboarding" className="cta">
+            <Link href="/dashboard/onboarding" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
               Complete setup
             </Link>
           </div>
         </div>
       ) : null}
 
-      <div className="surface">
-        <div className="setup-summary">
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Quotes on file</div>
-            <div className="setup-summary-value">{quotes.length}</div>
-            <p className="setup-summary-copy">Recent quote activity across the tenant.</p>
+      <div className="rounded-lg border bg-card p-4">
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Quotes on file</div>
+            <div className="text-3xl font-semibold">{quotes.length}</div>
+            <p className="text-sm text-muted-foreground">Recent quote activity across the tenant.</p>
           </div>
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Customers ready to quote</div>
-            <div className="setup-summary-value">{customers.length}</div>
-            <p className="setup-summary-copy">Anyone in CRM can be priced from this screen.</p>
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Customers ready to quote</div>
+            <div className="text-3xl font-semibold">{customers.length}</div>
+            <p className="text-sm text-muted-foreground">Anyone in CRM can be priced from this screen.</p>
           </div>
-          <div className="setup-summary-block">
-            <div className="setup-summary-label">Pricing status</div>
-            <div className="setup-summary-value">{pricingConfigured ? "Ready" : "Pending"}</div>
-            <p className="setup-summary-copy">{pricingSummary}</p>
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Pricing status</div>
+            <div className="text-3xl font-semibold">{pricingConfigured ? "Ready" : "Pending"}</div>
+            <p className="text-sm text-muted-foreground">{pricingSummary}</p>
           </div>
         </div>
       </div>
 
       <div className="cards-2">
-        <form className="surface form-grid" action="/api/tenant/quotes/generate" method="post">
-          <div className="setup-section-copy">
+        <form className="rounded-lg border bg-card p-4 space-y-4" action="/api/tenant/quotes/generate" method="post">
+          <div className="space-y-2">
             <div className="eyebrow">Create draft</div>
             <h2 style={{ marginBottom: 8 }}>Start with the job, not the document</h2>
             <p>Drafts should be fast to assemble. The operator only fills in the facts FlowLab cannot infer.</p>
@@ -130,10 +130,10 @@ export default async function QuotesPage({
 
           <input type="hidden" name="enquiryId" value={prefilledEnquiryId} />
 
-          <div className="setup-field-grid">
-            <label className="label">
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="flex flex-col gap-2 text-sm text-muted-foreground">
               Customer
-              <select className="select" name="customerId" required defaultValue={prefilledCustomerId}>
+              <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerId" required defaultValue={prefilledCustomerId}>
                 <option value="" disabled>
                   Select a customer
                 </option>
@@ -146,26 +146,26 @@ export default async function QuotesPage({
             </label>
 
             {pricingModel === "area_based" ? (
-              <label className="label">
+              <label className="flex flex-col gap-2 text-sm text-muted-foreground">
                 Area estimate (m²)
-                <input className="input" name="areaSquareMetres" type="number" min="1" defaultValue="90" />
+                <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="areaSquareMetres" type="number" min="1" defaultValue="90" />
               </label>
             ) : pricingModel === "hourly" ? (
-              <label className="label">
+              <label className="flex flex-col gap-2 text-sm text-muted-foreground">
                 Estimated hours
-                <input className="input" name="estimatedHours" type="number" min="0.5" step="0.5" defaultValue="2" />
+                <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="estimatedHours" type="number" min="0.5" step="0.5" defaultValue="2" />
               </label>
             ) : (
-              <label className="label">
+              <label className="flex flex-col gap-2 text-sm text-muted-foreground">
                 Job type
-                <input className="input" name="jobType" placeholder="One-off service, recurring visit, clean-up" />
+                <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="jobType" placeholder="One-off service, recurring visit, clean-up" />
               </label>
             )}
 
             {pricingModel === "area_based" ? (
-              <label className="label">
+              <label className="flex flex-col gap-2 text-sm text-muted-foreground">
                 Site condition
-                <select className="select" name="siteCondition" defaultValue="standard">
+                <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="siteCondition" defaultValue="standard">
                   <option value="standard">Standard</option>
                   <option value="overgrown">Overgrown</option>
                   <option value="heavily_overgrown">Heavily overgrown</option>
@@ -173,7 +173,7 @@ export default async function QuotesPage({
               </label>
             ) : null}
 
-            <label className="label is-full">
+            <label className="flex flex-col gap-2 text-sm text-muted-foreground md:col-span-2">
               Service request
               <textarea
                 className="textarea"
@@ -185,22 +185,22 @@ export default async function QuotesPage({
             </label>
           </div>
 
-          <button className="cta" type="submit" disabled={needsPricingSetup || undefined}>
+          <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit" disabled={needsPricingSetup || undefined}>
             Generate draft quote
           </button>
         </form>
 
-        <div className="surface setup-section">
-          <div className="setup-section-copy">
+        <div className="rounded-lg border bg-card p-4 space-y-4">
+          <div className="space-y-2">
             <div className="eyebrow">Quote flow</div>
             <h2 style={{ marginBottom: 8 }}>Keep the operator oriented</h2>
             <p>The right side of the screen should answer three questions quickly: how pricing works, whether this is linked to a live enquiry, and what the customer sees next.</p>
           </div>
 
-          <div className="setup-list">
-            <div className="setup-row" style={{ paddingTop: 0, borderTop: 0 }}>
-              <div className="setup-row-main">
-                <div className="setup-row-meta">
+          <div className="space-y-3">
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]" style={{ paddingTop: 0, borderTop: 0 }}>
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className={`status-pill ${pricingConfigured ? "is-on" : "is-warning"}`}>
                     {pricingConfigured ? "Pricing ready" : "Pricing pending"}
                   </span>
@@ -209,15 +209,15 @@ export default async function QuotesPage({
                 <p>{pricingSummary}</p>
               </div>
               {!pricingConfigured ? (
-                <div className="setup-row-actions">
-                  <Link className="ghost" href="/dashboard/onboarding?step=3">Fix pricing</Link>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/onboarding?step=3">Fix pricing</Link>
                 </div>
               ) : null}
             </div>
 
-            <div className="setup-row">
-              <div className="setup-row-main">
-                <div className="setup-row-meta">
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className={`status-pill ${enquiry ? "is-warning" : "is-off"}`}>
                     {enquiry ? "Live enquiry" : "Manual draft"}
                   </span>
@@ -231,9 +231,9 @@ export default async function QuotesPage({
               </div>
             </div>
 
-            <div className="setup-row">
-              <div className="setup-row-main">
-                <div className="setup-row-meta">
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className="status-pill is-off">Customer link</span>
                 </div>
                 <h3>What happens after review</h3>
@@ -244,17 +244,17 @@ export default async function QuotesPage({
         </div>
       </div>
 
-      <div className="surface setup-section">
-        <div className="setup-section-header">
-          <div className="setup-section-copy">
+      <div className="rounded-lg border bg-card p-4 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
             <div className="eyebrow">Recent quotes</div>
             <h2>Past drafts should still be easy to reopen and move forward</h2>
             <p>Keep the list dense enough to scan, but let the customer and next useful link remain the primary actions.</p>
           </div>
         </div>
 
-        <div className="setup-table-wrap">
-          <table className="table">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
             <thead>
               <tr>
                 <th>Customer</th>
