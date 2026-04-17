@@ -1,7 +1,7 @@
 import { getPricingModel } from "@flowlab/contracts";
 import { getPendingRateSuggestions, getTenantSettingsSnapshot } from "@flowlab/db";
 
-import DashboardPageHeader from "../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../lib/session";
 import CustomDomainSection from "./CustomDomainSection";
 import RateSuggestionsPanel from "./RateSuggestionsPanel";
@@ -35,13 +35,13 @@ export default async function SettingsPage({
     : "Default subdomain";
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Setup"
         title="Settings"
         description="Update your business details, branding colours, pricing rates, and service templates."
         section="setup"
-      />
+      >
 
       <div className="rounded-lg border bg-card p-4">
         <div className="grid gap-4 md:grid-cols-3">
@@ -245,6 +245,6 @@ export default async function SettingsPage({
         isVerified={snapshot.profile?.customDomainVerified ?? false}
         tenantSlug={snapshot.tenant?.slug ?? ""}
       />
-    </div>
+    </DashboardPageScaffold>
   );
 }

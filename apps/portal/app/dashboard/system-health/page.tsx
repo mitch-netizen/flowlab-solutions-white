@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getServiceLabel, serviceLabels } from "@flowlab/contracts";
 import { getTenantAutomationHealth, getTenantEvents, getTenantIntegrations } from "@flowlab/db";
 
-import DashboardPageHeader from "../../../components/dashboard-page-header";
+import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { getCustomerRecordHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
@@ -37,8 +37,8 @@ export default async function SystemHealthPage() {
     expiringIntegrations.length > 0;
 
   return (
-    <div className="stack">
-      <DashboardPageHeader
+    
+      <DashboardPageScaffold
         eyebrow="Setup"
         title="System health"
         description="Check automation queue status, integration connections, and the live event log — all in one place."
@@ -48,7 +48,7 @@ export default async function SystemHealthPage() {
             Open integrations
           </Link>
         )}
-      />
+      >
 
       <div className="rounded-lg border bg-card p-4">
         <div className="grid gap-4 md:grid-cols-3">
@@ -234,6 +234,6 @@ export default async function SystemHealthPage() {
           </table>
         </div>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }

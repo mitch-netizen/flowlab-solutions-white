@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getTenantAgreementTemplateBuilderState } from "@flowlab/db";
 
+import DashboardPageScaffold from "../../../../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../../../../lib/session";
 import DocuSealBuilderEmbed from "../DocuSealBuilderEmbed";
 
@@ -22,15 +23,17 @@ export default async function AgreementTemplateBuilderPage({ params }: { params:
   }
 
   return (
-    <div className="stack">
-      <div className="rounded-lg border bg-card p-4">
-        <div className="eyebrow">Agreement Builder</div>
-        <h1>{state.template.name}</h1>
-        <p style={{ color: "#cbd5e1" }}>
-          Place the required signer fields below, then save and validate the template before sending it to customers.
-        </p>
-      </div>
-
+    <DashboardPageScaffold
+      eyebrow="Revenue"
+      title={state.template.name}
+      description="Place the required signer fields below, then save and validate the template before sending it to customers."
+      section="revenue"
+      actions={
+        <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/agreements">
+          Back to agreements
+        </Link>
+      }
+    >
       <div className="cards-2" style={{ alignItems: "start" }}>
         <div className="rounded-lg border bg-card p-4">
           <h2 style={{ marginTop: 0 }}>Checklist</h2>
@@ -60,9 +63,6 @@ export default async function AgreementTemplateBuilderPage({ params }: { params:
                 Validate template
               </button>
             </form>
-            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/agreements">
-              Back to agreements
-            </Link>
           </div>
         </div>
 
@@ -75,6 +75,6 @@ export default async function AgreementTemplateBuilderPage({ params }: { params:
           />
         </div>
       </div>
-    </div>
+    </DashboardPageScaffold>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { getServiceLabel, serviceLabels } from "@flowlab/contracts";
+import AdminPageScaffold, { AdminPageCard } from "../../../../components/admin/page-scaffold";
 
 interface TenantDetail {
   id: string;
@@ -153,17 +154,17 @@ export default function TenantDetailPage() {
 
   if (loading) {
     return (
-      <main className="shell">
-        <div className="panel">Loading tenant...</div>
-      </main>
+      <AdminPageScaffold title="Tenant details" description="Loading tenant record.">
+        <AdminPageCard>Loading tenant...</AdminPageCard>
+      </AdminPageScaffold>
     );
   }
 
   if (!tenant) {
     return (
-      <main className="shell">
-        <div className="panel">Tenant not found.</div>
-      </main>
+      <AdminPageScaffold title="Tenant details" description="Unable to load tenant record.">
+        <AdminPageCard>Tenant not found.</AdminPageCard>
+      </AdminPageScaffold>
     );
   }
 
@@ -177,36 +178,21 @@ export default function TenantDetailPage() {
   ];
 
   return (
-    <main className="shell">
-      <section className="grid">
-        {/* Header */}
-        <div className="hero-card">
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-            <a href="/admin" style={{ color: "#64748b", textDecoration: "none", fontSize: 14 }}>
-              ← Tenants
-            </a>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
-            <div>
-              <h1 style={{ margin: 0 }}>{tenant.profile?.businessName ?? tenant.slug}</h1>
-              <p className="muted" style={{ marginTop: 4 }}>
-                {tenant.slug}.flowlabsolutions.au &nbsp;|&nbsp;
-                <span style={{ color: STATUS_COLOURS[tenant.status] ?? "#64748b", fontWeight: 600 }}>
-                  {tenant.status.toUpperCase()}
-                </span>
-                &nbsp;|&nbsp; {tenant.plan} plan
-              </p>
-            </div>
-            <button
-              onClick={handleImpersonate}
-              disabled={impersonating}
-              className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-              style={{ background: "#7c3aed", opacity: impersonating ? 0.6 : 1 }}
-            >
-              {impersonating ? "Opening..." : "Impersonate →"}
-            </button>
-          </div>
-        </div>
+    <AdminPageScaffold
+      title={tenant.profile?.businessName ?? tenant.slug}
+      description={`${tenant.slug}.flowlabsolutions.au | ${tenant.status.toUpperCase()} | ${tenant.plan} plan`}
+      meta={<a href="/admin" style={{ color: "#64748b", textDecoration: "none", fontSize: 14 }}>← Tenants</a>}
+      actions={(
+        <button
+          onClick={handleImpersonate}
+          disabled={impersonating}
+          className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+          style={{ background: "#7c3aed", opacity: impersonating ? 0.6 : 1 }}
+        >
+          {impersonating ? "Opening..." : "Impersonate →"}
+        </button>
+      )}
+    >
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #1e293b", marginBottom: 0 }}>
@@ -507,7 +493,6 @@ export default function TenantDetailPage() {
             </div>
           )}
         </div>
-      </section>
-    </main>
+    </AdminPageScaffold>
   );
 }
