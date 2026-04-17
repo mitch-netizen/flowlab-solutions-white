@@ -46,42 +46,42 @@ export default async function JobBoardPage() {
         section="jobs"
         actions={
           <>
-            <Link href="/dashboard/scheduler" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open scheduler</Link>
-            <Link href="/dashboard/quotes" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">New quote</Link>
+            <Link href="/dashboard/scheduler" className="ghost">Open scheduler</Link>
+            <Link href="/dashboard/quotes" className="cta">New quote</Link>
           </>
         }
       />
 
-      <div className="rounded-lg border bg-card p-4">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">All jobs</div>
-            <div className="text-3xl font-semibold">{totalJobs}</div>
-            <p className="text-sm text-muted-foreground">All stages — quoted through to paid.</p>
+      <div className="surface">
+        <div className="setup-summary">
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">All jobs</div>
+            <div className="setup-summary-value">{totalJobs}</div>
+            <p className="setup-summary-copy">All stages — quoted through to paid.</p>
           </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Active now</div>
-            <div className="text-3xl font-semibold">{activeJobs}</div>
-            <p className="text-sm text-muted-foreground">Scheduled or currently in progress.</p>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Active now</div>
+            <div className="setup-summary-value">{activeJobs}</div>
+            <p className="setup-summary-copy">Scheduled or currently in progress.</p>
           </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Awaiting invoice</div>
-            <div className="text-3xl font-semibold">{awaitingInvoice}</div>
-            <p className="text-sm text-muted-foreground">{quotedJobs} more quoted job{quotedJobs === 1 ? "" : "s"} are still waiting to be booked.</p>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Awaiting invoice</div>
+            <div className="setup-summary-value">{awaitingInvoice}</div>
+            <p className="setup-summary-copy">{quotedJobs} more quoted job{quotedJobs === 1 ? "" : "s"} are still waiting to be booked.</p>
           </div>
         </div>
       </div>
 
       <div className="cards-2">
-        <form className="rounded-lg border bg-card p-4 space-y-4" action="/api/tenant/jobs/create" method="post">
-          <div className="space-y-2">
+        <form className="surface form-grid" action="/api/tenant/jobs/create" method="post">
+          <div className="setup-section-copy">
             <div className="eyebrow">Create job</div>
             <h2 style={{ marginBottom: 8 }}>Add work straight into the board</h2>
             <p>Add work directly to the board. You can schedule it now or leave it as a quote to confirm later.</p>
           </div>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <label className="label">
             Customer
-            <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerId" required defaultValue="">
+            <select className="select" name="customerId" required defaultValue="">
               <option value="" disabled>Select a customer</option>
               {customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
@@ -90,59 +90,59 @@ export default async function JobBoardPage() {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <label className="label">
             Job summary
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="summary" placeholder="Describe the work to be done." required />
+            <input className="input" name="summary" placeholder="Describe the work to be done." required />
           </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <label className="label">
             Scheduled for
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="scheduledFor" type="datetime-local" />
+            <input className="input" name="scheduledFor" type="datetime-local" />
           </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <label className="label">
             Estimated hours
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="estimatedHours" type="number" min="0.5" step="0.5" />
+            <input className="input" name="estimatedHours" type="number" min="0.5" step="0.5" />
           </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <label className="label">
             Address
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="address" />
+            <input className="input" name="address" />
           </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <label className="label">
             Suburb
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="suburb" />
+            <input className="input" name="suburb" />
           </label>
-          <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">Create job</button>
+          <button className="cta" type="submit">Create job</button>
         </form>
 
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-copy">
             <div className="eyebrow">How the board works</div>
             <h2 style={{ marginBottom: 8 }}>Status guide</h2>
             <p>Each lane represents a stage in the job lifecycle. Move jobs forward as work progresses.</p>
           </div>
 
-          <div className="space-y-3">
-            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]" style={{ paddingTop: 0, borderTop: 0 }}>
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <div className="setup-list">
+            <div className="setup-row" style={{ paddingTop: 0, borderTop: 0 }}>
+              <div className="setup-row-main">
+                <div className="setup-row-meta">
                   <span className="status-pill is-off">Quoted</span>
                 </div>
                 <h3>Quoted — not yet booked</h3>
                 <p>Move to Scheduled once the customer confirms, or leave parked until they do.</p>
               </div>
             </div>
-            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <div className="setup-row">
+              <div className="setup-row-main">
+                <div className="setup-row-meta">
                   <span className="status-pill is-on">Scheduled / in progress</span>
                 </div>
                 <h3>Scheduled &amp; in progress</h3>
                 <p>Open the job to update timing, log hours, or send a customer message.</p>
               </div>
             </div>
-            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  <span className="status-pill border-l-amber-500">Complete</span>
+            <div className="setup-row">
+              <div className="setup-row-main">
+                <div className="setup-row-meta">
+                  <span className="status-pill is-warning">Complete</span>
                 </div>
                 <h3>Completion should naturally lead to billing</h3>
                 <p>Completed jobs with no invoice should be obvious so cashflow doesn’t stall at the handoff.</p>
@@ -152,9 +152,9 @@ export default async function JobBoardPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card p-4 space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
+      <div className="surface setup-section">
+        <div className="setup-section-header">
+          <div className="setup-section-copy">
             <div className="eyebrow">Board view</div>
             <h2>All jobs</h2>
           </div>

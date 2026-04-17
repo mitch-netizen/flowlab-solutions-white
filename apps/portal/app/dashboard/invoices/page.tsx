@@ -45,17 +45,17 @@ export default async function InvoicesPage({
         section="revenue"
         actions={xeroConnected ? (
           <form action="/api/tenant/invoices/sync" method="post">
-            <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Sync open invoices from Xero</button>
+            <button className="ghost" type="submit">Sync open invoices from Xero</button>
           </form>
         ) : undefined}
       />
       {query.error === "xero_sync_failed" ? (
-        <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #ef4444", color: "#fecaca" }}>
+        <div className="surface" style={{ borderLeft: "3px solid #ef4444", color: "#fecaca" }}>
           Could not refresh invoice status from Xero. Check the Xero connection and try again.
         </div>
       ) : null}
       {syncedCount > 0 || failedCount > 0 ? (
-        <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #38bdf8" }}>
+        <div className="surface" style={{ borderLeft: "3px solid #38bdf8" }}>
           <strong>Invoice sync complete.</strong>
           <div style={{ color: "#cbd5e1", marginTop: 8 }}>
             {syncedCount} invoice{syncedCount === 1 ? "" : "s"} refreshed from Xero{failedCount > 0 ? `, ${failedCount} failed.` : "."}
@@ -63,22 +63,22 @@ export default async function InvoicesPage({
         </div>
       ) : null}
       {!xeroConnected ? (
-        <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #f59e0b" }}>
+        <div className="surface" style={{ borderLeft: "3px solid #f59e0b" }}>
           <h2 style={{ marginTop: 0, color: "#fde68a" }}>Connect Xero before invoicing</h2>
           <p style={{ color: "#cbd5e1", marginBottom: 16 }}>
             Invoices are created and managed in Xero. Connect your account to keep payment state accurate and synced.
           </p>
-          <Link href="/dashboard/integrations" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ display: "inline-block" }}>
+          <Link href="/dashboard/integrations" className="cta" style={{ display: "inline-block" }}>
             Open integrations
           </Link>
         </div>
       ) : null}
       <div className="cards-2">
-        <form className="rounded-lg border bg-card p-4 space-y-4" action="/api/tenant/invoices/create" method="post">
+        <form className="surface form-grid" action="/api/tenant/invoices/create" method="post">
           <h2 style={{ marginTop: 0 }}>Create invoice</h2>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <label className="label">
             Customer
-            <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerId" required defaultValue={prefilledCustomerId}>
+            <select className="select" name="customerId" required defaultValue={prefilledCustomerId}>
               <option value="" disabled>
                 Select a customer
               </option>
@@ -89,9 +89,9 @@ export default async function InvoicesPage({
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <label className="label">
             Related job
-            <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="jobId" defaultValue={prefilledJobId}>
+            <select className="select" name="jobId" defaultValue={prefilledJobId}>
               <option value="">No linked job</option>
               {invoiceableJobs.map((job) => (
                 <option key={job.id} value={job.id}>
@@ -100,31 +100,31 @@ export default async function InvoicesPage({
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <label className="label">
             Amount
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="amount" type="number" min="1" step="0.01" defaultValue="95" required />
+            <input className="input" name="amount" type="number" min="1" step="0.01" defaultValue="95" required />
           </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+          <label className="label">
             Internal note
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="note" defaultValue="Invoice for services rendered." />
+            <input className="input" name="note" defaultValue="Invoice for services rendered." />
           </label>
-          <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
+          <button className="cta" type="submit">
             Create invoice
           </button>
         </form>
-        <div className="rounded-lg border bg-card p-4">
+        <div className="surface">
           <h2 style={{ marginTop: 0 }}>Revenue rules</h2>
-          <div className="rounded-lg border bg-card/60 p-4">
+          <div className="surface-soft">
             Invoices are created in Xero first. The invoice number, status, payment URL, and linked customer/job are mirrored here automatically.
           </div>
-          <div className="rounded-lg border bg-card/60 p-4" style={{ marginTop: 18 }}>
+          <div className="surface-soft" style={{ marginTop: 18 }}>
             If a customer pays or the invoice changes in Xero, use the sync action above to pull the latest status back.
           </div>
         </div>
       </div>
-      <div className="rounded-lg border bg-card p-4">
+      <div className="surface">
         <h2>Recent invoices</h2>
-        <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+        <table className="table">
           <thead>
             <tr>
               <th>Invoice</th>
