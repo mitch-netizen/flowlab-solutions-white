@@ -201,43 +201,43 @@ export default async function DashboardPage({
         section="home"
         actions={(
           <>
-            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/scheduler">Open tomorrow&apos;s schedule</Link>
-            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/system-health">Review automations</Link>
+            <Link className="ghost" href="/dashboard/scheduler">Open tomorrow&apos;s schedule</Link>
+            <Link className="ghost" href="/dashboard/system-health">Review automations</Link>
             <form action="/api/tenant/digest" method="post" style={{ display: "inline" }}>
-              <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Send me today&apos;s brief</button>
+              <button className="ghost" type="submit">Send me today&apos;s brief</button>
             </form>
           </>
         )}
       />
 
       {query.digest === "sent" && (
-        <div className="rounded-lg border bg-card/60 p-4" style={{ color: "#86efac" }}>
+        <div className="surface-soft" style={{ color: "#86efac" }}>
           Brief sent — check your SMS and email.
         </div>
       )}
 
       {query.error === "digest_failed" && (
-        <div className="rounded-lg border bg-card/60 p-4" style={{ color: "#fca5a5" }}>
+        <div className="surface-soft" style={{ color: "#fca5a5" }}>
           Brief could not be sent. Check that your SMS and email integrations are connected in Setup.
         </div>
       )}
 
-      <div className="rounded-lg border bg-card p-4">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">New enquiries this week</div>
-            <div className="text-3xl font-semibold">{enquiriesThisWeek}</div>
-            <p className="text-sm text-muted-foreground">Submitted via your public enquiry form.</p>
+      <div className="surface">
+        <div className="setup-summary">
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">New enquiries this week</div>
+            <div className="setup-summary-value">{enquiriesThisWeek}</div>
+            <p className="setup-summary-copy">Submitted via your public enquiry form.</p>
           </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Jobs booked this week</div>
-            <div className="text-3xl font-semibold">{bookedJobsThisWeek}</div>
-            <p className="text-sm text-muted-foreground">In any active or completed stage.</p>
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Jobs booked this week</div>
+            <div className="setup-summary-value">{bookedJobsThisWeek}</div>
+            <p className="setup-summary-copy">In any active or completed stage.</p>
           </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Tomorrow&apos;s run sheet</div>
-            <div className="text-3xl font-semibold">{tomorrowJobs.length}</div>
-            <p className="text-sm text-muted-foreground">
+          <div className="setup-summary-block">
+            <div className="setup-summary-label">Tomorrow&apos;s run sheet</div>
+            <div className="setup-summary-value">{tomorrowJobs.length}</div>
+            <p className="setup-summary-copy">
               {tomorrowJobs.length === 0 ? "No jobs scheduled yet." : "Ready to review before the day starts."}
             </p>
           </div>
@@ -245,21 +245,21 @@ export default async function DashboardPage({
       </div>
 
       <div className="cards-2">
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
               <div className="eyebrow">Tomorrow</div>
               <h2>Run sheet</h2>
               <p>Jobs scheduled for tomorrow, in order.</p>
             </div>
-            <Link href="/dashboard/scheduler" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open scheduler</Link>
+            <Link href="/dashboard/scheduler" className="ghost">Open scheduler</Link>
           </div>
 
-          <div className="space-y-3">
+          <div className="setup-list">
             {tomorrowJobs.length > 0 ? tomorrowJobs.map((job) => (
-              <div key={job.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <div key={job.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
                     <span>{job.scheduledFor ? new Date(job.scheduledFor).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "TBD"}</span>
                     <span>{job.suburb ?? job.customer.suburb ?? "Suburb not set"}</span>
                   </div>
@@ -273,54 +273,54 @@ export default async function DashboardPage({
                   </p>
                 </div>
               </div>
-            )) : <p className="text-sm text-muted-foreground">Tomorrow is still open. Head into the scheduler if you want to build the run sheet now.</p>}
+            )) : <p className="setup-note">Tomorrow is still open. Head into the scheduler if you want to build the run sheet now.</p>}
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
               <div className="eyebrow">Action required</div>
               <h2>Needs attention</h2>
               <p>Overdue invoices, failed automations, and expiring integrations in one place.</p>
             </div>
-            <Link href="/dashboard/system-health" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">View all</Link>
+            <Link href="/dashboard/system-health" className="ghost">View all</Link>
           </div>
 
-          <div className="space-y-3">
+          <div className="setup-list">
             {attentionItems.length > 0 ? attentionItems.map((item) => (
-              <div key={item.title} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    <span className="status-pill border-l-amber-500">Attention</span>
+              <div key={item.title} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <span className="status-pill is-warning">Attention</span>
                   </div>
                   <h3>{item.title}</h3>
                   <p>{item.detail}</p>
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={item.href}>Open</Link>
+                <div className="setup-row-actions">
+                  <Link className="ghost" href={item.href}>Open</Link>
                 </div>
               </div>
-            )) : <p className="text-sm text-muted-foreground">All clear — no overdue invoices, failed automations, or integration alerts right now.</p>}
+            )) : <p className="setup-note">All clear — no overdue invoices, failed automations, or integration alerts right now.</p>}
           </div>
         </div>
       </div>
 
       <div className="cards-2">
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
               <div className="eyebrow">Top customers</div>
               <h2>Most active clients</h2>
               <p>Your highest-volume customers by jobs, invoices, and quotes.</p>
             </div>
-            <Link href="/dashboard/crm" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open CRM</Link>
+            <Link href="/dashboard/crm" className="ghost">Open CRM</Link>
           </div>
 
-          <div className="space-y-3">
+          <div className="setup-list">
             {topCustomerRows.map((customer) => (
-              <div key={customer.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
+              <div key={customer.id} className="setup-row">
+                <div className="setup-row-main">
                   <h3>
                     <CustomerLink customerId={customer.id} className="inline-entity-link">
                       {customer.firstName} {customer.lastName}
@@ -328,7 +328,7 @@ export default async function DashboardPage({
                   </h3>
                   <p>{customer.suburb ?? "Suburb not set"} · Rating {customer.ratingAverage?.toFixed(1) ?? "—"}</p>
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-2" style={{ color: "#94a3b8", fontSize: 13 }}>
+                <div className="setup-row-actions" style={{ color: "#94a3b8", fontSize: 13 }}>
                   <span>{customer._count.jobs} jobs</span>
                   <span>{customer._count.invoices} invoices</span>
                   <span>{customer._count.quotes} quotes</span>
@@ -338,47 +338,47 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
               <div className="eyebrow">Running in the background</div>
               <h2>Recent automations</h2>
               <p>The latest actions your automations have handled on your behalf.</p>
             </div>
-            <Link href="/dashboard/system-health" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open event trail</Link>
+            <Link href="/dashboard/system-health" className="ghost">Open event trail</Link>
           </div>
 
-          <div className="space-y-3">
+          <div className="setup-list">
             {automationWins.length > 0 ? automationWins.map((item) => (
-              <div key={item.id} className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <div key={item.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
                     <span className="status-pill is-on">Success</span>
                     <span>{new Date(item.createdAt).toLocaleString()}</span>
                   </div>
                   <h3>{item.title}</h3>
                   <p>{item.detail}</p>
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={item.href}>Open</Link>
+                <div className="setup-row-actions">
+                  <Link className="ghost" href={item.href}>Open</Link>
                 </div>
               </div>
-            )) : <p className="text-sm text-muted-foreground">Automation activity will appear here once your workflows start firing.</p>}
+            )) : <p className="setup-note">Automation activity will appear here once your workflows start firing.</p>}
           </div>
         </div>
       </div>
 
       <div className="cards-2">
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
               <div className="eyebrow">Recent jobs</div>
               <h2>Latest work created</h2>
             </div>
-            <Link href="/dashboard/scheduler" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open jobs</Link>
+            <Link href="/dashboard/scheduler" className="ghost">Open jobs</Link>
           </div>
 
-          <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+          <table className="table">
             <thead>
               <tr>
                 <th>Job</th>
@@ -402,16 +402,16 @@ export default async function DashboardPage({
           </table>
         </div>
 
-        <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-2">
+        <div className="surface setup-section">
+          <div className="setup-section-header">
+            <div className="setup-section-copy">
               <div className="eyebrow">Recent invoices</div>
               <h2>Latest billing activity</h2>
             </div>
-            <Link href="/dashboard/invoices" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open billing</Link>
+            <Link href="/dashboard/invoices" className="ghost">Open billing</Link>
           </div>
 
-          <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+          <table className="table">
             <thead>
               <tr>
                 <th>Invoice</th>

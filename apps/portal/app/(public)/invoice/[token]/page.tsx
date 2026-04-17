@@ -19,13 +19,13 @@ export default async function InvoicePage({
 
   return (
     <main>
-      <section className="rounded-lg border bg-card p-4">
+      <section className="surface">
         <div className="eyebrow">{invoice.tenant.profile?.businessName}</div>
         <h1>Invoice {invoice.number}</h1>
         <div style={{ fontSize: 40, fontWeight: 700 }}>${invoice.amount}</div>
         <p style={{ color: "#cbd5e1" }}>Due: {invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" }) : "On receipt"}</p>
         {query.error ? (
-          <div className="rounded-lg border bg-card/60 p-4" style={{ marginTop: 24, color: "#fca5a5" }}>
+          <div className="surface-soft" style={{ marginTop: 24, color: "#fca5a5" }}>
             {query.error === "rate_limited"
               ? "Too many payment attempts were made. Please wait a moment and try again."
               : query.error === "unavailable"
@@ -35,7 +35,7 @@ export default async function InvoicePage({
         ) : null}
         {invoice.status !== "paid" ? (
           <form action={`/api/public/invoice/${invoice.accessToken}/pay`} method="post" style={{ marginTop: 24 }}>
-            <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
+            <button className="cta" type="submit">
               Open online invoice
             </button>
           </form>

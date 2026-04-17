@@ -64,7 +64,7 @@ export default function CustomDomainSection({ currentDomain, isVerified: initial
   };
 
   return (
-    <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #7c3aed" }}>
+    <div className="surface" style={{ borderLeft: "3px solid #7c3aed" }}>
       <div style={{ marginBottom: 16 }}>
         <div className="eyebrow">Custom Domain</div>
         <h2 style={{ margin: "4px 0 8px" }}>White-label domain</h2>
@@ -101,17 +101,17 @@ export default function CustomDomainSection({ currentDomain, isVerified: initial
       </div>
 
       <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
-        <label className="flex flex-col gap-2 text-sm text-muted-foreground" style={{ flex: 1, minWidth: 200 }}>
+        <label className="label" style={{ flex: 1, minWidth: 200 }}>
           Custom domain
           <input
-            className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+            className="input"
             value={domain}
             onChange={e => setDomain(e.target.value)}
             placeholder="service.yourdomain.com"
           />
         </label>
         <button
-          className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+          className="cta"
           onClick={handleVerify}
           disabled={!domain || status === "checking"}
           style={{ opacity: status === "checking" ? 0.6 : 1, whiteSpace: "nowrap" }}
