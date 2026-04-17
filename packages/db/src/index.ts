@@ -86,6 +86,10 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function isNonNullable<T>(value: T | null | undefined): value is T {
+  return value != null;
+}
+
 function getLocalDateParts(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
@@ -277,14 +281,15 @@ export async function countPublicTenantTrials() {
 export async function resolveTenantContext(host: string): Promise<TenantContext | null> {
   const normalizedHost = host.split(":")[0].toLowerCase();
   const rootDomain = getCanonicalRootDomain();
+  const whereOr: Prisma.TenantProfileWhereInput[] = [{ customDomain: normalizedHost }];
+
+  if (normalizedHost.endsWith(`.${rootDomain}`)) {
+    whereOr.push({ tenant: { slug: normalizedHost.replace(`.${rootDomain}`, "") } });
+  }
+
   const profile = await prisma.tenantProfile.findFirst({
     where: {
-      OR: [
-        { customDomain: normalizedHost },
-        normalizedHost.endsWith(`.${rootDomain}`)
-          ? { tenant: { slug: normalizedHost.replace(`.${rootDomain}`, "") } }
-          : undefined
-      ].filter(Boolean) as Prisma.TenantProfileWhereInput[]
+      OR: whereOr
     },
     include: { tenant: true }
   });
@@ -690,7 +695,10 @@ export async function getSchedulerRecommendations(tenantId: string) {
           ? `Weather risk: ${weather.forecast.rainProbabilityPct}% rain probability`
           : "Weather risk flagged for this visit"
         : null
-    ].filter(Boolean) as string[];
+    ].filter(isNonNullable);
+
+    const severity: "ok" | "high" | "medium" =
+      reasons.length === 0 ? "ok" : hasWeatherRisk || timeOff ? "high" : "medium";
 
     return {
       jobId: job.id,
@@ -698,7 +706,7 @@ export async function getSchedulerRecommendations(tenantId: string) {
       summary: job.summary,
       customerName: `${job.customer.firstName} ${job.customer.lastName}`,
       scheduledFor: job.scheduledFor,
-      severity: reasons.length === 0 ? ("ok" as const) : hasWeatherRisk || timeOff ? ("high" as const) : ("medium" as const),
+      severity,
       reasons,
       suggestedAction:
         reasons.length === 0
@@ -1444,8 +1452,8 @@ export async function getTenantIntegrations(tenantId: string): Promise<TenantInt
   return records.map((integration) => ({
     id: integration.id,
     tenantId: integration.tenantId,
-    service: integration.service as IntegrationService,
-    status: integration.status as IntegrationStatus,
+    service: integration.service,
+    status: integration.status,
     lastTestedAt: integration.lastTestedAt?.toISOString() ?? null,
     lastTestResult: integration.lastTestResult as "success" | "failed" | null,
     lastErrorMessage: integration.lastErrorMessage,
