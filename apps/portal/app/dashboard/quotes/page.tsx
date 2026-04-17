@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getPricingModel } from "@flowlab/contracts";
 import { getTenantCustomers, getTenantQuotes, getTenantSettingsSnapshot } from "@flowlab/db";
 import { prisma } from "@flowlab/db";
+import { Badge, formatCurrency, formatDateTime, formatLabel, getStatusTone } from "@flowlab/ui";
 
 import CustomerLink from "../../../components/customer-link";
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
@@ -225,7 +226,7 @@ export default async function QuotesPage({
                 <h3>Source of this draft</h3>
                 <p>
                   {enquiry
-                    ? `This quote is linked back to the enquiry received on ${new Date(enquiry.createdAt).toLocaleString()}.`
+                    ? `This quote is linked back to the enquiry received on ${formatDateTime(enquiry.createdAt)}.`
                     : "You can create a quote directly from CRM or from any enquiry waiting in the customer queue."}
                 </p>
               </div>
@@ -273,8 +274,8 @@ export default async function QuotesPage({
                     </CustomerLink>
                   </td>
                   <td>{quote.title}</td>
-                  <td>{quote.status}</td>
-                  <td>${quote.amount}</td>
+                  <td><Badge tone={getStatusTone(quote.status)}>{formatLabel(quote.status)}</Badge></td>
+                  <td>{formatCurrency(quote.amount)}</td>
                   <td>
                     <Link href={`/quote/${quote.accessToken}`}>Open quote</Link>
                     {quote.job ? (
