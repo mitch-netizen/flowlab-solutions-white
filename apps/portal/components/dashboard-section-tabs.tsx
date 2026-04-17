@@ -14,12 +14,12 @@ export default function DashboardSectionTabs({ items }: DashboardSectionTabsProp
   const pathname = usePathname();
 
   return (
-    <nav className="section-tabs" aria-label="Section navigation">
+    <nav className="flex flex-wrap gap-2" aria-label="Section navigation">
       {items.map((item) => (
         <Link
           key={item.href}
           href={item.href}
-          className={`section-tab${isDashboardHrefActive(pathname, item.href) ? " is-active" : ""}`}
+          className={["inline-flex min-h-10 items-center justify-center rounded-full border px-3 py-2 text-xs font-semibold", isDashboardHrefActive(pathname, item.href) ? "bg-accent text-accent-foreground" : "bg-card/40 text-muted-foreground hover:bg-accent/60 hover:text-foreground"].join(" ")}
         >
           {item.label}
         </Link>
