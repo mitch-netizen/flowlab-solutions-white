@@ -1,3 +1,4 @@
+TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 
 import { getPricingModel } from "@flowlab/contracts";
@@ -93,7 +94,7 @@ export default async function QuotesPage({
         <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-amber-500">
           <h2>Set up your pricing first</h2>
           <p>AI quoting uses your pricing rates to calculate the draft amount. Complete pricing in onboarding before generating the first quote.</p>
-          <div style={{ marginTop: 16 }}>
+          <div>
             <Link href="/dashboard/onboarding" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
               Complete setup
             </Link>
@@ -125,7 +126,7 @@ export default async function QuotesPage({
         <form className="rounded-lg border bg-card p-4 space-y-4" action="/api/tenant/quotes/generate" method="post">
           <div className="space-y-2">
             <div className="eyebrow">Create draft</div>
-            <h2 style={{ marginBottom: 8 }}>Start with the job, not the document</h2>
+            <h2>Start with the job, not the document</h2>
             <p>Drafts should be fast to assemble. The operator only fills in the facts FlowLab cannot infer.</p>
           </div>
 
@@ -194,7 +195,7 @@ export default async function QuotesPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Quote flow</div>
-            <h2 style={{ marginBottom: 8 }}>Keep the operator oriented</h2>
+            <h2>Keep the operator oriented</h2>
             <p>The right side of the screen should answer three questions quickly: how pricing works, whether this is linked to a live enquiry, and what the customer sees next.</p>
           </div>
 
@@ -255,28 +256,28 @@ export default async function QuotesPage({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Links</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Customer</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Links</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {quotes.map((quote) => (
-                <tr key={quote.id}>
-                  <td>
+                <TableRow key={quote.id}>
+                  <TableCell>
                     <CustomerLink customerId={quote.customer.id} className="inline-entity-link">
                       {quote.customer.firstName} {quote.customer.lastName}
                     </CustomerLink>
-                  </td>
-                  <td>{quote.title}</td>
-                  <td><Badge tone={getStatusTone(quote.status)}>{formatLabel(quote.status)}</Badge></td>
-                  <td>{formatCurrency(quote.amount)}</td>
-                  <td>
+                  </TableCell>
+                  <TableCell>{quote.title}</TableCell>
+                  <TableCell><Badge tone={getStatusTone(quote.status)}>{formatLabel(quote.status)}</Badge></TableCell>
+                  <TableCell>{formatCurrency(quote.amount)}</TableCell>
+                  <TableCell>
                     <Link href={`/quote/${quote.accessToken}`}>Open quote</Link>
                     {quote.job ? (
                       <>
@@ -284,18 +285,18 @@ export default async function QuotesPage({
                         <Link href={getJobRecordHref(quote.job.id)}>View job</Link>
                       </>
                     ) : null}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {quotes.length === 0 ? (
-                <tr>
-                  <td colSpan={5} style={{ color: "#64748b", textAlign: "center" }}>
+                <TableRow>
+                  <TableCell colSpan={5} style={{ color: "#64748b", textAlign: "center" }}>
                     No quotes yet. {customers.length === 0 ? "Add a customer in CRM first." : "Create your first one above."}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </DashboardPageScaffold>

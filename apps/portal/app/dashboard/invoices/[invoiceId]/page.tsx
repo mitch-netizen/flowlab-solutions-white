@@ -1,3 +1,4 @@
+TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -99,7 +100,7 @@ export default async function InvoiceRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Customer and payment</div>
-            <h2 style={{ marginBottom: 8 }}>Customer &amp; payment</h2>
+            <h2>Customer &amp; payment</h2>
           </div>
 
           <div className="space-y-3">
@@ -151,7 +152,7 @@ export default async function InvoiceRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Related jobs</div>
-            <h2 style={{ marginBottom: 8 }}>Nearby work history</h2>
+            <h2>Nearby work history</h2>
             <p>The job this invoice was raised for, plus other recent work for this customer.</p>
           </div>
 
@@ -202,7 +203,7 @@ export default async function InvoiceRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Invoice communication</div>
-            <h2 style={{ marginBottom: 8 }}>Messages linked directly to this invoice</h2>
+            <h2>Messages linked directly to this invoice</h2>
             <p>Messages sent specifically about this invoice.</p>
           </div>
 
@@ -225,7 +226,7 @@ export default async function InvoiceRecordPage({
       <div className="rounded-lg border bg-card p-4 space-y-4">
         <div className="space-y-2">
           <div className="eyebrow">Customer communication</div>
-          <h2 style={{ marginBottom: 8 }}>Broader customer timeline</h2>
+          <h2>Broader customer timeline</h2>
           <p>Other messages sent to this customer, for context.</p>
         </div>
 

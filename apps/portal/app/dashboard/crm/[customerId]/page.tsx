@@ -1,3 +1,4 @@
+TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -86,7 +87,7 @@ export default async function CustomerRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Contact details</div>
-            <h2 style={{ marginBottom: 8 }}>Contact details</h2>
+            <h2>Contact details</h2>
           </div>
 
           <div className="space-y-3">
@@ -112,7 +113,7 @@ export default async function CustomerRecordPage({
         <form action={`/api/tenant/crm/customers/${customer.id}/update`} method="post" className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Edit customer</div>
-            <h2 style={{ marginBottom: 8 }}>Edit customer</h2>
+            <h2>Edit customer</h2>
             <p>Changes apply across all jobs, invoices, and records linked to this customer.</p>
           </div>
 
@@ -157,66 +158,66 @@ export default async function CustomerRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Jobs</div>
-            <h2 style={{ marginBottom: 8 }}>Work history</h2>
+            <h2>Work history</h2>
             <p>All jobs linked to this customer.</p>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
-              <thead>
-                <tr>
-                  <th>Job</th>
-                  <th>Status</th>
-                  <th>Scheduled</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Job</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Scheduled</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {customer.jobs.length > 0 ? customer.jobs.map((job) => (
-                  <tr key={job.id}>
-                    <td><Link className="inline-entity-link" href={getJobRecordHref(job.id)}>{job.summary}</Link></td>
-                    <td>{job.status}</td>
-                    <td>{job.scheduledFor ? new Date(job.scheduledFor).toLocaleString() : "TBD"}</td>
-                  </tr>
+                  <TableRow key={job.id}>
+                    <TableCell><Link className="inline-entity-link" href={getJobRecordHref(job.id)}>{job.summary}</Link></TableCell>
+                    <TableCell>{job.status}</TableCell>
+                    <TableCell>{job.scheduledFor ? new Date(job.scheduledFor).toLocaleString() : "TBD"}</TableCell>
+                  </TableRow>
                 )) : (
-                  <tr>
-                    <td colSpan={3} style={{ color: "#64748b", textAlign: "center" }}>No jobs recorded yet.</td>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={3} style={{ color: "#64748b", textAlign: "center" }}>No jobs recorded yet.</TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
 
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Invoices</div>
-            <h2 style={{ marginBottom: 8 }}>Billing history</h2>
+            <h2>Billing history</h2>
             <p>Outstanding or historic invoices remain easy to reopen from the customer record.</p>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
-              <thead>
-                <tr>
-                  <th>Invoice</th>
-                  <th>Status</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {customer.invoices.length > 0 ? customer.invoices.map((invoice) => (
-                  <tr key={invoice.id}>
-                    <td><Link className="inline-entity-link" href={getInvoiceRecordHref(invoice.id)}>{invoice.number}</Link></td>
-                    <td>{invoice.status}</td>
-                    <td>${invoice.amount}</td>
-                  </tr>
+                  <TableRow key={invoice.id}>
+                    <TableCell><Link className="inline-entity-link" href={getInvoiceRecordHref(invoice.id)}>{invoice.number}</Link></TableCell>
+                    <TableCell>{invoice.status}</TableCell>
+                    <TableCell>${invoice.amount}</TableCell>
+                  </TableRow>
                 )) : (
-                  <tr>
-                    <td colSpan={3} style={{ color: "#64748b", textAlign: "center" }}>No invoices recorded yet.</td>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={3} style={{ color: "#64748b", textAlign: "center" }}>No invoices recorded yet.</TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       </div>
@@ -231,7 +232,7 @@ export default async function CustomerRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Recent communication</div>
-            <h2 style={{ marginBottom: 8 }}>Latest outreach</h2>
+            <h2>Latest outreach</h2>
             <p>All messages sent to or from this customer.</p>
           </div>
 
@@ -284,7 +285,7 @@ export default async function CustomerRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Quotes and agreements</div>
-            <h2 style={{ marginBottom: 8 }}>Commercial history</h2>
+            <h2>Commercial history</h2>
             <p>Quotes sent and agreements signed for this customer.</p>
           </div>
 
@@ -321,7 +322,7 @@ export default async function CustomerRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Feedback and reminders</div>
-            <h2 style={{ marginBottom: 8 }}>Follow-up signals</h2>
+            <h2>Follow-up signals</h2>
             <p>Post-job feedback and upcoming rebook reminders.</p>
           </div>
 
@@ -352,15 +353,15 @@ export default async function CustomerRecordPage({
               </p>
             ) : null}
 
-            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]" style={{ paddingTop: 16 }}>
-              <form className="space-y-4" action="/api/tenant/reminders/create" method="post" style={{ width: "100%" }}>
+            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
+              <form className="space-y-4" action="/api/tenant/reminders/create" method="post">
                 <input type="hidden" name="customerId" value={customer.id} />
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
                   <label className="flex flex-col gap-2 text-sm text-muted-foreground" style={{ flex: 1, minWidth: 180 }}>
                     Remind me on
                     <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" type="date" name="dueAt" required />
                   </label>
-                  <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit" style={{ marginBottom: 0 }}>Set reminder</button>
+                  <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Set reminder</button>
                 </div>
               </form>
             </div>
