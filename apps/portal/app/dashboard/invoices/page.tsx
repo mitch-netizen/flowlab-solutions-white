@@ -1,3 +1,4 @@
+TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 
 import { getTenantCustomers, getTenantIntegrationRecord, getTenantInvoices, prisma } from "@flowlab/db";
@@ -76,7 +77,7 @@ export default async function InvoicesPage({
       ) : null}
       <div className="cards-2">
         <form className="rounded-lg border bg-card p-4 space-y-4" action="/api/tenant/invoices/create" method="post">
-          <h2 style={{ marginTop: 0 }}>Create invoice</h2>
+          <h2>Create invoice</h2>
           <label className="flex flex-col gap-2 text-sm text-muted-foreground">
             Customer
             <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerId" required defaultValue={prefilledCustomerId}>
@@ -114,7 +115,7 @@ export default async function InvoicesPage({
           </button>
         </form>
         <div className="rounded-lg border bg-card p-4">
-          <h2 style={{ marginTop: 0 }}>Revenue rules</h2>
+          <h2>Revenue rules</h2>
           <div className="rounded-lg border bg-card/60 p-4">
             Invoices are created in Xero first. The invoice number, status, payment URL, and linked customer/job are mirrored here automatically.
           </div>
@@ -125,38 +126,38 @@ export default async function InvoicesPage({
       </div>
       <div className="rounded-lg border bg-card p-4">
         <h2>Recent invoices</h2>
-        <table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
-          <thead>
-            <tr>
-              <th>Invoice</th>
-              <th>Job</th>
-              <th>Customer</th>
-              <th>Status</th>
-              <th>Xero</th>
-              <th>Amount</th>
-              <th>Public link</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Invoice</TableHead>
+              <TableHead>Job</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Xero</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Public link</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {invoices.map((invoice) => (
-              <tr key={invoice.id}>
-                <td><Link className="inline-entity-link" href={getInvoiceRecordHref(invoice.id)}>{invoice.number}</Link></td>
-                <td>{invoice.job ? <Link className="inline-entity-link" href={getJobRecordHref(invoice.job.id)}>{invoice.job.summary}</Link> : "—"}</td>
-                <td>
+              <TableRow key={invoice.id}>
+                <TableCell><Link className="inline-entity-link" href={getInvoiceRecordHref(invoice.id)}>{invoice.number}</Link></TableCell>
+                <TableCell>{invoice.job ? <Link className="inline-entity-link" href={getJobRecordHref(invoice.job.id)}>{invoice.job.summary}</Link> : "—"}</TableCell>
+                <TableCell>
                   <CustomerLink customerId={invoice.customer.id} className="inline-entity-link">
                     {invoice.customer.firstName} {invoice.customer.lastName}
                   </CustomerLink>
-                </td>
-                <td><Badge tone={getStatusTone(invoice.status)}>{formatLabel(invoice.status)}</Badge></td>
-                <td><Badge tone={getStatusTone(invoice.xeroStatus)}>{invoice.xeroStatus ? formatLabel(invoice.xeroStatus) : "Not synced"}</Badge></td>
-                <td>{formatCurrency(invoice.amount)}</td>
-                <td>
+                </TableCell>
+                <TableCell><Badge tone={getStatusTone(invoice.status)}>{formatLabel(invoice.status)}</Badge></TableCell>
+                <TableCell><Badge tone={getStatusTone(invoice.xeroStatus)}>{invoice.xeroStatus ? formatLabel(invoice.xeroStatus) : "Not synced"}</Badge></TableCell>
+                <TableCell>{formatCurrency(invoice.amount)}</TableCell>
+                <TableCell>
                   <Link href={getInvoiceRecordHref(invoice.id)}>Open record</Link>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </DashboardPageScaffold>
   );

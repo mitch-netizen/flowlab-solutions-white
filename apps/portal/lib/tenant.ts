@@ -5,12 +5,28 @@ import { resolveTenantContext } from "@flowlab/db";
 import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 
 export async function getCurrentTenantContext() {
-  const host =
+  const incomingHost =
     (await headers()).get("x-flowlab-host") ??
     (await headers()).get("host") ??
     `tenant.${getCanonicalRootDomain()}`;
+
+  const host = incomingHost.replace(/^https?:\/\//, "").toLowerCase();
+  const isLocal =
+    host === "localhost:3001" ||
+    host === "localhost" ||
+    host.startsWith("127.0.0.1");
+
   const resolved = await resolveTenantContext(host);
-  return resolved ?? null;
+
+  if (resolved) {
+    return resolved;
+  }
+
+  if (isLocal) {
+    return await resolveTenantContext(`tenant.${getCanonicalRootDomain()}`);
+  }
+
+  return null;
 }
 
 export async function getCurrentTheme() {

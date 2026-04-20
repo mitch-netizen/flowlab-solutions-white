@@ -1,3 +1,4 @@
+TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 
 import { getCrmSnapshot } from "@flowlab/db";
@@ -66,7 +67,7 @@ export default async function CrmPage({
         <form className="rounded-lg border bg-card p-4 space-y-4" action="/api/tenant/crm/customers" method="post">
           <div className="space-y-2">
             <div className="eyebrow">New customer</div>
-            <h2 style={{ marginBottom: 8 }}>Add a customer record</h2>
+            <h2>Add a customer record</h2>
             <p>Add a contact once and everything — quotes, jobs, invoices, and messages — links back to the same record.</p>
           </div>
           <label className="flex flex-col gap-2 text-sm text-muted-foreground">
@@ -103,7 +104,7 @@ export default async function CrmPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Priority view</div>
-            <h2 style={{ marginBottom: 8 }}>What needs your attention</h2>
+            <h2>What needs your attention</h2>
             <p>Open enquiries and overdue invoices across all your customers.</p>
           </div>
 
@@ -208,7 +209,7 @@ export default async function CrmPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Recent feedback</div>
-            <h2 style={{ marginBottom: 8 }}>Customer sentiment</h2>
+            <h2>Customer sentiment</h2>
             <p>Post-job ratings and comments from your customers.</p>
           </div>
           <div className="space-y-3">
@@ -229,7 +230,7 @@ export default async function CrmPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Recent communication</div>
-            <h2 style={{ marginBottom: 8 }}>Latest messages and outreach</h2>
+            <h2>Latest messages and outreach</h2>
             <p>Recent outbound messages sent to your customers.</p>
           </div>
           <div className="space-y-3">
