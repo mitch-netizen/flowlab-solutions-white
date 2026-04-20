@@ -1,3 +1,4 @@
+TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -92,7 +93,7 @@ export default async function JobRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Job details</div>
-            <h2 style={{ marginBottom: 8 }}>Operational basics</h2>
+            <h2>Operational basics</h2>
             <p>Customer, location, and any risk flags for this job.</p>
           </div>
 
@@ -139,7 +140,7 @@ export default async function JobRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Timing</div>
-            <h2 style={{ marginBottom: 8 }}>Schedule and actuals</h2>
+            <h2>Schedule and actuals</h2>
             <p>Update the scheduled time or log actual hours once the work is done.</p>
           </div>
 
@@ -249,7 +250,7 @@ export default async function JobRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Job communication</div>
-            <h2 style={{ marginBottom: 8 }}>Messages linked directly to this job</h2>
+            <h2>Messages linked directly to this job</h2>
             <p>Messages sent specifically about this job.</p>
           </div>
 
@@ -273,7 +274,7 @@ export default async function JobRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Customer communication</div>
-            <h2 style={{ marginBottom: 8 }}>Broader customer timeline</h2>
+            <h2>Broader customer timeline</h2>
             <p>Other messages sent to this customer, for context.</p>
           </div>
 
@@ -295,7 +296,7 @@ export default async function JobRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Feedback</div>
-            <h2 style={{ marginBottom: 8 }}>Recent sentiment</h2>
+            <h2>Recent sentiment</h2>
             <p>Post-job rating and comments from this customer.</p>
           </div>
 

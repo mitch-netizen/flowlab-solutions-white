@@ -1,3 +1,4 @@
+TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 
 import { getJobBoard, getTenantCustomers } from "@flowlab/db";
@@ -76,7 +77,7 @@ export default async function JobBoardPage() {
         <form className="rounded-lg border bg-card p-4 space-y-4" action="/api/tenant/jobs/create" method="post">
           <div className="space-y-2">
             <div className="eyebrow">Create job</div>
-            <h2 style={{ marginBottom: 8 }}>Add work straight into the board</h2>
+            <h2>Add work straight into the board</h2>
             <p>Add work directly to the board. You can schedule it now or leave it as a quote to confirm later.</p>
           </div>
           <label className="flex flex-col gap-2 text-sm text-muted-foreground">
@@ -116,7 +117,7 @@ export default async function JobBoardPage() {
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">How the board works</div>
-            <h2 style={{ marginBottom: 8 }}>Status guide</h2>
+            <h2>Status guide</h2>
             <p>Each lane represents a stage in the job lifecycle. Move jobs forward as work progresses.</p>
           </div>
 
