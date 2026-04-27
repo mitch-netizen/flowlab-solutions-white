@@ -1467,6 +1467,387 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
       break;
     }
 
+    case "job.day_before_reminder": {
+      const [brevoEmailCredentials, brevoSmsCredentials, makeCredentials, tenant, customer] = await Promise.all([
+        getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE),
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
+        getCredentials(tenantId, "make_com"),
+        getTenantWithProfile(tenantId),
+        getCustomer(payload.customerId)
+      ]);
+
+      const businessName = tenant?.profile?.businessName ?? "Your service provider";
+      const scheduledText = payload.scheduledFor
+        ? new Date(payload.scheduledFor).toLocaleString("en-AU", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" })
+        : "tomorrow";
+
+      await fireTenantMakeWebhook({
+        tenantId,
+        credentials: makeCredentials,
+        webhookKey: "dayBeforeReminderWebhookUrl",
+        requestSummary: "Make.com day-before reminder webhook",
+        triggeredBy: "worker_day_before_reminder",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: businessName,
+          event_key: "dayBeforeReminder",
+          triggered_at: new Date().toISOString(),
+          job_id: payload.jobId,
+          scheduled_for: payload.scheduledFor,
+          summary: payload.summary,
+          suburb: payload.suburb,
+          customer: {
+            id: customer?.id,
+            name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
+            phone: customer?.phone,
+            email: customer?.email
+          }
+        }
+      });
+
+      if (customer?.phone) {
+        const smsBody = `Hi ${customer.firstName}, just a reminder that your ${payload.summary ? `${payload.summary} ` : ""}job with ${businessName} is booked for ${scheduledText}. See you then!`;
+        try {
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
+          await recordCommunication({ tenantId, customerId: customer.id, jobId: payload.jobId, channel: "sms", subject: `Day-before reminder · ${payload.jobId}`, body: smsBody, status: "sent" });
+          await logPlatformEvent({ tenantId, eventType: "api_call", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "success", requestSummary: `Day-before SMS to ${customer.firstName} ${customer.lastName}`, responseSummary: "Reminder delivered", triggeredBy: "worker_day_before_reminder" });
+        } catch (smsError) {
+          await recordCommunication({ tenantId, customerId: customer.id, jobId: payload.jobId, channel: "sms", subject: `Day-before reminder · ${payload.jobId}`, body: smsBody, status: "failed" });
+          await logPlatformEvent({ tenantId, eventType: "error", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "failed", requestSummary: "Day-before SMS failed", errorMessage: smsError instanceof Error ? smsError.message : String(smsError), triggeredBy: "worker_day_before_reminder" });
+        }
+      }
+
+      if (customer?.email) {
+        const subject = `Reminder: your job with ${businessName} is tomorrow`;
+        try {
+          const html = buildBrandedEmailHtml({
+            businessName,
+            logoUrl: tenant?.profile?.logoUrl,
+            primaryColour: tenant?.profile?.primaryColour,
+            bodyHtml: `
+              <p>Hi ${customer.firstName},</p>
+              <p>Just a friendly reminder that your job with <strong>${businessName}</strong> is coming up.</p>
+              <p><strong>When:</strong> ${scheduledText}</p>
+              <p><strong>Work:</strong> ${payload.summary ?? "Scheduled service"}</p>
+              ${payload.suburb ? `<p><strong>Location:</strong> ${payload.suburb}</p>` : ""}
+              <p>If you need to reschedule, please contact us as soon as possible.</p>
+            `,
+            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+          });
+          await sendEmail(brevoEmailCredentials, customer.email, subject, html);
+          await recordCommunication({ tenantId, customerId: customer.id, jobId: payload.jobId, channel: "email", subject, body: `Reminder for ${scheduledText}`, status: "sent" });
+          await logPlatformEvent({ tenantId, eventType: "api_call", service: EMAIL_PROVIDER_SERVICE, direction: "outbound", status: "success", requestSummary: `Day-before email to ${customer.firstName} ${customer.lastName}`, responseSummary: "Reminder delivered", triggeredBy: "worker_day_before_reminder" });
+        } catch (emailError) {
+          await recordCommunication({ tenantId, customerId: customer.id, jobId: payload.jobId, channel: "email", subject, body: `Reminder for ${scheduledText}`, status: "failed" });
+          await logPlatformEvent({ tenantId, eventType: "error", service: EMAIL_PROVIDER_SERVICE, direction: "outbound", status: "failed", requestSummary: "Day-before email failed", errorMessage: emailError instanceof Error ? emailError.message : String(emailError), triggeredBy: "worker_day_before_reminder" });
+        }
+      }
+      break;
+    }
+
+    case "job.on_my_way": {
+      const [brevoSmsCredentials, tenant, customer] = await Promise.all([
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
+        getTenantWithProfile(tenantId),
+        getCustomer(payload.customerId)
+      ]);
+
+      const businessName = tenant?.profile?.businessName ?? "Your service provider";
+      const etaText = payload.etaMinutes ? ` in about ${payload.etaMinutes} minutes` : " shortly";
+
+      if (customer?.phone) {
+        const smsBody = `Hi ${customer.firstName}, your ${businessName} team member is on their way and will arrive${etaText}. See you soon!`;
+        try {
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
+          await recordCommunication({ tenantId, customerId: customer.id, jobId: payload.jobId ?? null, channel: "sms", subject: `On my way · ${payload.jobId ?? customer.id}`, body: smsBody, status: "sent" });
+          await logPlatformEvent({ tenantId, eventType: "api_call", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "success", requestSummary: `On my way SMS to ${customer.firstName} ${customer.lastName}`, responseSummary: "ETA notification delivered", triggeredBy: "worker_on_my_way" });
+        } catch (smsError) {
+          await recordCommunication({ tenantId, customerId: customer.id, jobId: payload.jobId ?? null, channel: "sms", subject: `On my way · ${payload.jobId ?? customer.id}`, body: smsBody, status: "failed" });
+          await logPlatformEvent({ tenantId, eventType: "error", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "failed", requestSummary: "On my way SMS failed", errorMessage: smsError instanceof Error ? smsError.message : String(smsError), triggeredBy: "worker_on_my_way" });
+        }
+      }
+      break;
+    }
+
+    case "billing.payment_reminder_day3": {
+      const [brevoSmsCredentials, tenant, customer, invoice] = await Promise.all([
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
+        getTenantWithProfile(tenantId),
+        getCustomer(payload.customerId),
+        getInvoice(payload.invoiceId)
+      ]);
+
+      const businessName = tenant?.profile?.businessName ?? "Your service provider";
+
+      if (customer?.phone) {
+        const amount = invoice?.amount ? `$${invoice.amount.toFixed(2)}` : "";
+        const linkPart = invoice?.paymentLink ? ` Pay now: ${invoice.paymentLink}` : "";
+        const smsBody = `Hi ${customer.firstName}, a reminder that invoice ${invoice?.number ?? payload.invoiceNumber}${amount ? ` for ${amount}` : ""} from ${businessName} is overdue.${linkPart}`;
+        try {
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
+          await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "sms", subject: `Payment reminder day 3 · ${invoice?.number ?? payload.invoiceNumber}`, body: smsBody, status: "sent" });
+          await logPlatformEvent({ tenantId, eventType: "api_call", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "success", requestSummary: `Day-3 payment reminder to ${customer.firstName} ${customer.lastName}`, responseSummary: `Invoice ${invoice?.number ?? payload.invoiceNumber} day-3 reminder sent`, triggeredBy: "worker_payment_reminder_day3" });
+        } catch (smsError) {
+          await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "sms", subject: `Payment reminder day 3 · ${invoice?.number ?? payload.invoiceNumber}`, body: smsBody, status: "failed" });
+          await logPlatformEvent({ tenantId, eventType: "error", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "failed", requestSummary: "Day-3 payment reminder SMS failed", errorMessage: smsError instanceof Error ? smsError.message : String(smsError), triggeredBy: "worker_payment_reminder_day3" });
+        }
+      }
+      break;
+    }
+
+    case "billing.payment_reminder_day7": {
+      const [brevoEmailCredentials, brevoSmsCredentials, makeCredentials, tenant, customer, invoice] = await Promise.all([
+        getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE),
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
+        getCredentials(tenantId, "make_com"),
+        getTenantWithProfile(tenantId),
+        getCustomer(payload.customerId),
+        getInvoice(payload.invoiceId)
+      ]);
+
+      const businessName = tenant?.profile?.businessName ?? "Your service provider";
+      const amount = invoice?.amount ? `$${invoice.amount.toFixed(2)}` : "";
+
+      await fireTenantMakeWebhook({
+        tenantId,
+        credentials: makeCredentials,
+        webhookKey: "paymentReminderDay7WebhookUrl",
+        requestSummary: "Make.com day-7 payment reminder webhook",
+        triggeredBy: "worker_payment_reminder_day7",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: businessName,
+          event_key: "paymentReminderDay7",
+          triggered_at: new Date().toISOString(),
+          invoice_id: invoice?.id,
+          invoice_number: invoice?.number ?? payload.invoiceNumber,
+          amount: invoice?.amount,
+          days_overdue: payload.daysOverdue,
+          payment_link: invoice?.paymentLink,
+          customer: { id: customer?.id, name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer", phone: customer?.phone, email: customer?.email }
+        }
+      });
+
+      if (customer?.phone) {
+        const linkPart = invoice?.paymentLink ? ` Pay now: ${invoice.paymentLink}` : "";
+        const smsBody = `Hi ${customer.firstName}, your invoice ${invoice?.number ?? payload.invoiceNumber}${amount ? ` for ${amount}` : ""} from ${businessName} is now 7 days overdue. Please settle this at your earliest convenience.${linkPart}`;
+        try {
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
+          await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "sms", subject: `Payment reminder day 7 · ${invoice?.number ?? payload.invoiceNumber}`, body: smsBody, status: "sent" });
+          await logPlatformEvent({ tenantId, eventType: "api_call", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "success", requestSummary: `Day-7 payment reminder SMS to ${customer.firstName} ${customer.lastName}`, responseSummary: `Invoice ${invoice?.number ?? payload.invoiceNumber} day-7 reminder sent`, triggeredBy: "worker_payment_reminder_day7" });
+        } catch (smsError) {
+          await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "sms", subject: `Payment reminder day 7 · ${invoice?.number ?? payload.invoiceNumber}`, body: smsBody, status: "failed" });
+          await logPlatformEvent({ tenantId, eventType: "error", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "failed", requestSummary: "Day-7 payment reminder SMS failed", errorMessage: smsError instanceof Error ? smsError.message : String(smsError), triggeredBy: "worker_payment_reminder_day7" });
+        }
+      }
+
+      if (customer?.email) {
+        const subject = `Invoice overdue — ${businessName}`;
+        try {
+          const payButton = invoice?.paymentLink
+            ? `<p style="margin-top:24px;"><a href="${invoice.paymentLink}" style="background:${tenant?.profile?.primaryColour ?? "#3B82F6"};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Pay ${amount} Now</a></p>`
+            : "";
+          const html = buildBrandedEmailHtml({
+            businessName,
+            logoUrl: tenant?.profile?.logoUrl,
+            primaryColour: tenant?.profile?.primaryColour,
+            bodyHtml: `
+              <p>Hi ${customer.firstName},</p>
+              <p>Your invoice <strong>${invoice?.number ?? payload.invoiceNumber}</strong>${amount ? ` for <strong>${amount}</strong>` : ""} from <strong>${businessName}</strong> is now <strong>7 days overdue</strong>.</p>
+              <p>Please arrange payment at your earliest convenience to avoid further follow-up.</p>
+              ${payButton}
+            `,
+            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+          });
+          await sendEmail(brevoEmailCredentials, customer.email, subject, html);
+          await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "email", subject, body: `Invoice ${invoice?.number ?? payload.invoiceNumber} overdue 7 days.`, status: "sent" });
+          await logPlatformEvent({ tenantId, eventType: "api_call", service: EMAIL_PROVIDER_SERVICE, direction: "outbound", status: "success", requestSummary: `Day-7 overdue email to ${customer.firstName} ${customer.lastName}`, responseSummary: "Overdue notice delivered", triggeredBy: "worker_payment_reminder_day7" });
+        } catch (emailError) {
+          await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "email", subject, body: `Invoice ${invoice?.number ?? payload.invoiceNumber} overdue 7 days.`, status: "failed" });
+          await logPlatformEvent({ tenantId, eventType: "error", service: EMAIL_PROVIDER_SERVICE, direction: "outbound", status: "failed", requestSummary: "Day-7 overdue email failed", errorMessage: emailError instanceof Error ? emailError.message : String(emailError), triggeredBy: "worker_payment_reminder_day7" });
+        }
+      }
+      break;
+    }
+
+    case "billing.payment_overdue_day14": {
+      const [brevoEmailCredentials, brevoSmsCredentials, makeCredentials, tenant, customer, invoice] = await Promise.all([
+        getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE),
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
+        getCredentials(tenantId, "make_com"),
+        getTenantWithProfile(tenantId),
+        getCustomer(payload.customerId),
+        getInvoice(payload.invoiceId)
+      ]);
+
+      const businessName = tenant?.profile?.businessName ?? "Your service provider";
+      const amount = invoice?.amount ? `$${invoice.amount.toFixed(2)}` : "";
+
+      await fireTenantMakeWebhook({
+        tenantId,
+        credentials: makeCredentials,
+        webhookKey: "paymentOverdueDay14WebhookUrl",
+        requestSummary: "Make.com day-14 payment overdue webhook",
+        triggeredBy: "worker_payment_overdue_day14",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: businessName,
+          event_key: "paymentOverdueDay14",
+          triggered_at: new Date().toISOString(),
+          invoice_id: invoice?.id,
+          invoice_number: invoice?.number ?? payload.invoiceNumber,
+          amount: invoice?.amount,
+          days_overdue: payload.daysOverdue,
+          payment_link: invoice?.paymentLink,
+          customer: { id: customer?.id, name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer", phone: customer?.phone, email: customer?.email }
+        }
+      });
+
+      // Final notice SMS to customer
+      if (customer?.phone) {
+        const linkPart = invoice?.paymentLink ? ` Pay now: ${invoice.paymentLink}` : "";
+        const smsBody = `Hi ${customer.firstName}, invoice ${invoice?.number ?? payload.invoiceNumber}${amount ? ` for ${amount}` : ""} from ${businessName} is now 14 days overdue. Please contact us urgently to arrange payment.${linkPart}`;
+        try {
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
+          await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "sms", subject: `Payment overdue day 14 · ${invoice?.number ?? payload.invoiceNumber}`, body: smsBody, status: "sent" });
+          await logPlatformEvent({ tenantId, eventType: "api_call", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "success", requestSummary: `Day-14 overdue SMS to ${customer.firstName} ${customer.lastName}`, responseSummary: `Invoice ${invoice?.number ?? payload.invoiceNumber} final notice sent`, triggeredBy: "worker_payment_overdue_day14" });
+        } catch (smsError) {
+          await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "sms", subject: `Payment overdue day 14 · ${invoice?.number ?? payload.invoiceNumber}`, body: smsBody, status: "failed" });
+          await logPlatformEvent({ tenantId, eventType: "error", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "failed", requestSummary: "Day-14 overdue SMS failed", errorMessage: smsError instanceof Error ? smsError.message : String(smsError), triggeredBy: "worker_payment_overdue_day14" });
+        }
+      }
+
+      // Escalation email to customer + operator alert
+      if (customer?.email) {
+        const subject = `Final notice: invoice overdue — ${businessName}`;
+        try {
+          const payButton = invoice?.paymentLink
+            ? `<p style="margin-top:24px;"><a href="${invoice.paymentLink}" style="background:#ef4444;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Pay ${amount} Now</a></p>`
+            : "";
+          const html = buildBrandedEmailHtml({
+            businessName,
+            logoUrl: tenant?.profile?.logoUrl,
+            primaryColour: tenant?.profile?.primaryColour,
+            bodyHtml: `
+              <p>Hi ${customer.firstName},</p>
+              <p>Your invoice <strong>${invoice?.number ?? payload.invoiceNumber}</strong>${amount ? ` for <strong>${amount}</strong>` : ""} from <strong>${businessName}</strong> is now <strong>14 days overdue</strong>.</p>
+              <p>This is a final notice. Please arrange payment immediately or contact us to discuss a resolution.</p>
+              ${payButton}
+            `,
+            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+          });
+          await sendEmail(brevoEmailCredentials, customer.email, subject, html);
+          await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "email", subject, body: `Final notice: invoice ${invoice?.number ?? payload.invoiceNumber} 14 days overdue.`, status: "sent" });
+          await logPlatformEvent({ tenantId, eventType: "api_call", service: EMAIL_PROVIDER_SERVICE, direction: "outbound", status: "success", requestSummary: `Day-14 final notice email to ${customer.firstName} ${customer.lastName}`, responseSummary: "Final notice delivered", triggeredBy: "worker_payment_overdue_day14" });
+        } catch (emailError) {
+          await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "email", subject, body: `Final notice: invoice ${invoice?.number ?? payload.invoiceNumber} 14 days overdue.`, status: "failed" });
+          await logPlatformEvent({ tenantId, eventType: "error", service: EMAIL_PROVIDER_SERVICE, direction: "outbound", status: "failed", requestSummary: "Day-14 final notice email failed", errorMessage: emailError instanceof Error ? emailError.message : String(emailError), triggeredBy: "worker_payment_overdue_day14" });
+        }
+      }
+
+      // Operator alert email
+      if (tenant?.profile?.email) {
+        const operatorSubject = `⚠ Invoice ${invoice?.number ?? payload.invoiceNumber} is 14 days overdue`;
+        try {
+          const html = buildBrandedEmailHtml({
+            businessName,
+            logoUrl: tenant.profile.logoUrl,
+            primaryColour: tenant.profile.primaryColour,
+            bodyHtml: `
+              <p>Invoice <strong>${invoice?.number ?? payload.invoiceNumber}</strong>${amount ? ` for <strong>${amount}</strong>` : ""} from customer <strong>${customer ? `${customer.firstName} ${customer.lastName}` : "Unknown"}</strong> is now <strong>14 days overdue</strong>.</p>
+              <p>A final notice has been sent to the customer. You may want to follow up directly.</p>
+            `,
+            footerText: businessName
+          });
+          await sendEmail(brevoEmailCredentials, tenant.profile.email, operatorSubject, html);
+        } catch {
+          // Best-effort operator alert — don't fail the job if this send fails.
+        }
+      }
+      break;
+    }
+
+    case "learning.weather_check": {
+      const [makeCredentials, tenant] = await Promise.all([
+        getCredentials(tenantId, "make_com"),
+        getTenantWithProfile(tenantId)
+      ]);
+
+      const timeZone = tenant?.profile?.timezone ?? "Australia/Brisbane";
+      const now = new Date();
+      const tomorrowJobs = await prisma.job.findMany({
+        where: {
+          tenantId,
+          status: { in: ["scheduled", "in_progress"] },
+          scheduledFor: {
+            gte: now,
+            lt: new Date(now.getTime() + 48 * 60 * 60 * 1000)
+          }
+        },
+        select: {
+          id: true,
+          scheduledFor: true,
+          suburb: true,
+          address: true,
+          summary: true,
+          weatherRisk: true
+        }
+      });
+
+      if (tomorrowJobs.length === 0) {
+        await logPlatformEvent({
+          tenantId,
+          eventType: "info",
+          service: "worker",
+          direction: "outbound",
+          status: "success",
+          requestSummary: "Weather check skipped — no jobs tomorrow",
+          responseSummary: null,
+          triggeredBy: "worker_weather_check"
+        });
+        break;
+      }
+
+      const jobLocations = tomorrowJobs.map((j) => ({
+        job_id: j.id,
+        scheduled_for: j.scheduledFor?.toISOString(),
+        suburb: j.suburb ?? null,
+        address: j.address ?? null,
+        summary: j.summary,
+        weather_risk_flagged: j.weatherRisk
+      }));
+
+      await fireTenantMakeWebhook({
+        tenantId,
+        credentials: makeCredentials,
+        webhookKey: "weatherCheckWebhookUrl",
+        requestSummary: `Weather check webhook — ${tomorrowJobs.length} jobs tomorrow`,
+        triggeredBy: "worker_weather_check",
+        eventType: "info",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: tenant?.profile?.businessName,
+          event_key: "weatherCheck",
+          triggered_at: new Date().toISOString(),
+          time_zone: timeZone,
+          job_count: tomorrowJobs.length,
+          jobs: jobLocations
+        }
+      });
+
+      await logPlatformEvent({
+        tenantId,
+        eventType: "info",
+        service: "worker",
+        direction: "outbound",
+        status: "success",
+        requestSummary: `Weather check queued for ${tomorrowJobs.length} jobs`,
+        responseSummary: jobLocations.map((j) => j.suburb ?? j.address ?? "unknown").join(", ").slice(0, 200),
+        triggeredBy: "worker_weather_check"
+      });
+      break;
+    }
+
     default: {
       await logPlatformEvent({
         tenantId,
