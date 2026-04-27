@@ -1,4 +1,3 @@
-TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -78,7 +77,7 @@ export default async function InvoiceRecordPage({
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Status</div>
-            <div className="text-3xl font-semibold" style={{ textTransform: "capitalize" }}>{invoice.status}</div>
+            <div className="text-3xl font-semibold capitalize">{invoice.status}</div>
             <p className="text-sm text-muted-foreground">Xero status: {invoice.xeroStatus ?? "Unknown"}.</p>
           </div>
           <div className="space-y-2">
@@ -88,7 +87,7 @@ export default async function InvoiceRecordPage({
           </div>
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Due date</div>
-            <div className="text-3xl font-semibold" style={{ fontSize: "1.5rem", lineHeight: 1.15 }}>
+            <div className="text-2xl font-semibold leading-tight">
               {invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString() : "No due date"}
             </div>
             <p className="text-sm text-muted-foreground">{invoice.paidAt ? `Paid ${new Date(invoice.paidAt).toLocaleString()}` : "Payment not recorded yet."}</p>

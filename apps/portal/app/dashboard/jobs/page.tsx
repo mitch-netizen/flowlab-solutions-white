@@ -1,4 +1,3 @@
-TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 
 import { getJobBoard, getTenantCustomers } from "@flowlab/db";
@@ -17,13 +16,13 @@ const statusLabel: Record<string, string> = {
   paid: "Paid"
 };
 
-const statusColor: Record<string, string> = {
-  quoted: "#64748b",
-  scheduled: "#3b82f6",
-  in_progress: "#f59e0b",
-  complete: "#22c55e",
-  invoiced: "#8b5cf6",
-  paid: "#10b981"
+const statusBgClass: Record<string, string> = {
+  quoted: "bg-slate-500",
+  scheduled: "bg-blue-500",
+  in_progress: "bg-amber-500",
+  complete: "bg-green-500",
+  invoiced: "bg-violet-500",
+  paid: "bg-emerald-500"
 };
 
 export default async function JobBoardPage() {
@@ -122,7 +121,7 @@ export default async function JobBoardPage() {
           </div>
 
           <div className="space-y-3">
-            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]" style={{ paddingTop: 0, borderTop: 0 }}>
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className="status-pill is-off">Quoted</span>
@@ -168,8 +167,7 @@ export default async function JobBoardPage() {
               <div key={status} className="job-board-lane">
                 <div className="job-board-lane-header">
                   <span
-                    className="job-board-lane-badge"
-                    style={{ background: statusColor[status] }}
+                    className={`job-board-lane-badge ${statusBgClass[status] ?? "bg-slate-500"}`}
                   />
                   <span className="job-board-lane-title">{statusLabel[status]}</span>
                   <span className="job-board-lane-count">{cols.length}</span>
@@ -206,7 +204,7 @@ export default async function JobBoardPage() {
                           >
                             {job.invoice.xeroInvoiceId ? "Xero · " : ""}{job.invoice.number}
                             {" "}
-                            <span style={{ opacity: 0.6 }}>({job.invoice.status})</span>
+                            <span className="opacity-60">({job.invoice.status})</span>
                           </Link>
                         ) : status === "complete" ? (
                           <Link

@@ -1,4 +1,3 @@
-TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 
 import { getPricingModel } from "@flowlab/contracts";
@@ -200,7 +199,7 @@ export default async function QuotesPage({
           </div>
 
           <div className="space-y-3">
-            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]" style={{ paddingTop: 0, borderTop: 0 }}>
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className={`status-pill ${pricingConfigured ? "is-on" : "is-warning"}`}>
@@ -290,7 +289,7 @@ export default async function QuotesPage({
               ))}
               {quotes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} style={{ color: "#64748b", textAlign: "center" }}>
+                  <TableCell colSpan={5} className="text-slate-500 text-center">
                     No quotes yet. {customers.length === 0 ? "Add a customer in CRM first." : "Create your first one above."}
                   </TableCell>
                 </TableRow>
