@@ -1,4 +1,3 @@
-TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -69,19 +68,19 @@ export default async function JobRecordPage({
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Status</div>
-            <div className="text-3xl font-semibold" style={{ textTransform: "capitalize" }}>{job.status.replace(/_/g, " ")}</div>
+            <div className="text-3xl font-semibold capitalize">{job.status.replace(/_/g, " ")}</div>
             <p className="text-sm text-muted-foreground">Current state of the job in the workflow.</p>
           </div>
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Scheduled</div>
-            <div className="text-3xl font-semibold" style={{ fontSize: "1.5rem", lineHeight: 1.15 }}>
+            <div className="text-2xl font-semibold leading-tight">
               {job.scheduledFor ? new Date(job.scheduledFor).toLocaleDateString() : "TBD"}
             </div>
             <p className="text-sm text-muted-foreground">{job.scheduledFor ? new Date(job.scheduledFor).toLocaleTimeString() : "No date set yet."}</p>
           </div>
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Hours</div>
-            <div className="text-3xl font-semibold" style={{ fontSize: "1.5rem", lineHeight: 1.15 }}>
+            <div className="text-2xl font-semibold leading-tight">
               Est {job.estimatedHours ?? "—"}
             </div>
             <p className="text-sm text-muted-foreground">Actual {job.actualHours ?? "—"} hours recorded so far.</p>
