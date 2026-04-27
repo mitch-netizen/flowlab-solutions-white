@@ -137,12 +137,13 @@ const automationPreferenceDefaults = Object.fromEntries(
 const automationPreferenceKinds: Record<AutomationPreferenceKey, string[]> = {
   enquiry_confirmation: ["enquiry.received"],
   booking_confirmation: ["job.scheduled"],
-  invoice_reminders: ["billing.payment_reminder"],
+  day_before_reminder: ["job.day_before_reminder"],
+  invoice_reminders: ["billing.payment_reminder", "billing.payment_reminder_day3", "billing.payment_reminder_day7", "billing.payment_overdue_day14"],
   feedback_requests: ["retention.feedback_request"],
   review_requests: ["retention.review_request"],
   rebook_reminders: ["retention.rebook_reminder"],
   morning_digest: ["operator.morning_digest"],
-  weekly_analysis: ["learning.weekly_analysis"],
+  weekly_analysis: ["learning.weekly_analysis", "learning.weather_check"],
   advanced_make_webhooks: []
 };
 
@@ -2883,6 +2884,67 @@ export async function enqueueRecurringAutomationJobs(now = new Date()) {
         scheduled += 1;
       }
     }
+
+    // Day-before reminders: enqueue for each job scheduled tomorrow (local time)
+    if (preferences.day_before_reminder && minutes >= 5 * 60 + 30) {
+      const tomorrowLocal = getLocalDateParts(new Date(now.getTime() + 86400000), timeZone);
+      const tomorrowDateKey = tomorrowLocal.dateKey;
+
+      const upcomingJobs = await prisma.job.findMany({
+        where: {
+          tenantId: tenant.id,
+          status: { in: ["scheduled", "in_progress"] },
+          scheduledFor: {
+            gte: now,
+            lt: new Date(now.getTime() + 48 * 60 * 60 * 1000)
+          }
+        }
+      });
+
+      for (const job of upcomingJobs) {
+        if (!job.scheduledFor) continue;
+        const jobLocal = getLocalDateParts(job.scheduledFor, timeZone);
+        if (jobLocal.dateKey !== tomorrowDateKey) continue;
+
+        const dedupeKey = `day-before-reminder:${tenant.id}:${job.id}:${local.dateKey}`;
+        const existing = await prisma.automationJob.findUnique({ where: { dedupeKey } });
+        if (existing) continue;
+
+        await enqueueAutomationJob({
+          tenantId: tenant.id,
+          kind: "job.day_before_reminder",
+          dedupeKey,
+          payload: {
+            jobId: job.id,
+            customerId: job.customerId,
+            scheduledFor: job.scheduledFor.toISOString(),
+            summary: job.summary,
+            suburb: job.suburb ?? ""
+          }
+        });
+        scheduled += 1;
+      }
+    }
+
+    // Weather check: once per day alongside morning digest
+    if (preferences.weekly_analysis && minutes >= 5 * 60 + 30) {
+      const dedupeKey = `weather-check:${tenant.id}:${local.dateKey}`;
+      const existing = await prisma.automationJob.findUnique({ where: { dedupeKey } });
+
+      if (!existing) {
+        await enqueueAutomationJob({
+          tenantId: tenant.id,
+          kind: "learning.weather_check",
+          dedupeKey,
+          payload: {
+            localDate: local.dateKey,
+            timeZone,
+            queuedAt: now.toISOString()
+          }
+        });
+        scheduled += 1;
+      }
+    }
   }
 
   return { tenants: tenants.length, scheduled, trialExpiriesEnqueued: trialResult.enqueued };
@@ -3056,30 +3118,51 @@ export async function enqueueRetentionRun(tenantId: string) {
   const retention = await getRetentionSnapshot(tenantId);
   const jobs = [];
 
-  for (const invoice of preferences.invoice_reminders ? retention.invoices.filter((entry) => entry.dueAt && entry.dueAt < new Date()) : []) {
-    const subject = `Payment reminder · ${invoice.number}`;
-    const alreadySent = await hasRecentOutboundCommunication({
-      tenantId,
-      customerId: invoice.customerId,
-      subject,
-      withinHours: 24
-    });
+  if (preferences.invoice_reminders) {
+    const now = new Date();
+    for (const invoice of retention.invoices.filter((entry) => entry.dueAt && entry.dueAt < now)) {
+      const daysOverdue = Math.floor((now.getTime() - invoice.dueAt!.getTime()) / 86400000);
 
-    if (alreadySent) {
-      continue;
-    }
+      let kind: string;
+      let subject: string;
+      let withinHours: number;
 
-    jobs.push(
-      await enqueueAutomationJob({
+      if (daysOverdue >= 14) {
+        kind = "billing.payment_overdue_day14";
+        subject = `Payment overdue day 14 · ${invoice.number}`;
+        withinHours = 24 * 30;
+      } else if (daysOverdue >= 7) {
+        kind = "billing.payment_reminder_day7";
+        subject = `Payment reminder day 7 · ${invoice.number}`;
+        withinHours = 24 * 14;
+      } else {
+        kind = "billing.payment_reminder_day3";
+        subject = `Payment reminder day 3 · ${invoice.number}`;
+        withinHours = 24 * 7;
+      }
+
+      const alreadySent = await hasRecentOutboundCommunication({
         tenantId,
-        kind: "billing.payment_reminder",
-        payload: {
-          invoiceId: invoice.id,
-          invoiceNumber: invoice.number,
-          customerId: invoice.customerId
-        }
-      })
-    );
+        customerId: invoice.customerId,
+        subject,
+        withinHours
+      });
+
+      if (alreadySent) continue;
+
+      jobs.push(
+        await enqueueAutomationJob({
+          tenantId,
+          kind,
+          payload: {
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.number,
+            customerId: invoice.customerId,
+            daysOverdue: String(daysOverdue)
+          }
+        })
+      );
+    }
   }
 
   for (const reminder of preferences.rebook_reminders ? retention.reminders.filter((entry) => entry.status !== "sent") : []) {

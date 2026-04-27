@@ -180,6 +180,7 @@ export interface AutomationBlueprintDescriptor {
 export const automationPreferenceKeySchema = z.enum([
   "enquiry_confirmation",
   "booking_confirmation",
+  "day_before_reminder",
   "invoice_reminders",
   "feedback_requests",
   "review_requests",
@@ -309,6 +310,14 @@ export const automationPreferenceDescriptors: AutomationPreferenceDescriptor[] =
     channels: "SMS + Email"
   },
   {
+    key: "day_before_reminder",
+    title: "Send day-before job reminder",
+    description: "Remind customers the morning before their scheduled job so there are no surprises on the day.",
+    group: "built_in",
+    defaultEnabled: true,
+    channels: "SMS + Email"
+  },
+  {
     key: "invoice_reminders",
     title: "Send invoice reminders",
     description: "Chase overdue invoices after the normal waiting period without the operator having to remember.",
@@ -371,7 +380,7 @@ export const automationRecipeDescriptors: AutomationRecipeDescriptor[] = [
     key: "operator_essentials",
     title: "Operator essentials",
     description: "Keep the owner informed and customers reassured with confirmations and the daily brief.",
-    enables: ["enquiry_confirmation", "booking_confirmation", "morning_digest"]
+    enables: ["enquiry_confirmation", "booking_confirmation", "day_before_reminder", "morning_digest"]
   },
   {
     key: "cash_flow_booster",
