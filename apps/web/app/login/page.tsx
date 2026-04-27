@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 
+import { SubdomainForm } from "./subdomain-form";
+
 export default function LoginPage() {
   const root = getCanonicalRootDomain();
 
@@ -19,19 +21,7 @@ export default function LoginPage() {
             <label className="flex flex-col gap-2 text-sm text-muted-foreground" htmlFor="slug">
               Your business subdomain
             </label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
-              <input
-                id="slug"
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                type="text"
-                placeholder="yourbusiness"
-                style={{ flex: 1, minWidth: 140 }}
-                onKeyDown={undefined}
-              />
-              <span className="muted" style={{ fontSize: 14, whiteSpace: "nowrap" }}>
-                .{root}/login
-              </span>
-            </div>
+            <SubdomainForm root={root} />
             <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
               For example: if your subdomain is <strong>acme</strong>, visit{" "}
               <code style={{ background: "#1e293b", padding: "2px 6px", borderRadius: 4 }}>acme.{root}/login</code>

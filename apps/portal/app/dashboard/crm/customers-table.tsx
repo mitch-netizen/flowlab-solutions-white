@@ -1,4 +1,3 @@
-TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 "use client";
 
 import Link from "next/link";
@@ -28,7 +27,7 @@ export function CustomersTable({ customers }: { customers: CustomerRow[] }) {
           <CustomerLink customerId={row.original.id} className="inline-entity-link">
             <strong>{row.original.firstName} {row.original.lastName}</strong>
           </CustomerLink>
-          <div style={{ color: "#cbd5e1", marginTop: 6 }}>{row.original.email}</div>
+          <div className="text-slate-400 mt-1.5">{row.original.email}</div>
         </div>
       )
     },

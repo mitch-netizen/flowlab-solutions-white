@@ -1,4 +1,3 @@
-TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 
 import { getCrmSnapshot } from "@flowlab/db";
@@ -31,13 +30,13 @@ export default async function CrmPage({
       >
 
       {query.closed === "1" ? (
-        <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #22c55e" }}>
+        <div className="rounded-lg border bg-card p-4 border-l-4 border-l-green-500">
           Enquiry closed and removed from the active queue.
         </div>
       ) : null}
 
       {query.error ? (
-        <div className="rounded-lg border bg-card p-4" style={{ borderLeft: "3px solid #ef4444" }}>
+        <div className="rounded-lg border bg-card p-4 border-l-4 border-l-red-500">
           Something went wrong. Please try again.
         </div>
       ) : null}
@@ -108,7 +107,7 @@ export default async function CrmPage({
           </div>
 
           <div className="space-y-3">
-            <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]" style={{ paddingTop: 0, borderTop: 0 }}>
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className={`status-pill ${openEnquiries.length > 0 ? "is-warning" : "is-off"}`}>{openEnquiries.length > 0 ? "Open" : "Clear"}</span>

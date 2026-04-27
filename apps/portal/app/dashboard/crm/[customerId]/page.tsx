@@ -1,4 +1,3 @@
-TODO(ui-refactor): complex inline style remains and needs manual Tailwind conversion.
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -180,7 +179,7 @@ export default async function CustomerRecordPage({
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={3} style={{ color: "#64748b", textAlign: "center" }}>No jobs recorded yet.</TableCell>
+                    <TableCell colSpan={3} className="text-slate-500 text-center">No jobs recorded yet.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -213,7 +212,7 @@ export default async function CustomerRecordPage({
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={3} style={{ color: "#64748b", textAlign: "center" }}>No invoices recorded yet.</TableCell>
+                    <TableCell colSpan={3} className="text-slate-500 text-center">No invoices recorded yet.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -356,8 +355,8 @@ export default async function CustomerRecordPage({
             <div className="grid gap-4 border-t pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
               <form className="space-y-4" action="/api/tenant/reminders/create" method="post">
                 <input type="hidden" name="customerId" value={customer.id} />
-                <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
-                  <label className="flex flex-col gap-2 text-sm text-muted-foreground" style={{ flex: 1, minWidth: 180 }}>
+                <div className="flex gap-2.5 items-end flex-wrap">
+                  <label className="flex flex-col gap-2 text-sm text-muted-foreground flex-1 min-w-[180px]">
                     Remind me on
                     <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" type="date" name="dueAt" required />
                   </label>
