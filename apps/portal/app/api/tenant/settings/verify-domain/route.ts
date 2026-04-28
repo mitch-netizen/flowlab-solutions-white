@@ -47,10 +47,11 @@ export async function POST(request: Request) {
     }
   }
 
-  // Persist verification result
+  // Persist both the domain and its verification result so the verify button
+  // is the single step — no need to save the profile form separately first.
   await prisma.tenantProfile.updateMany({
     where: { tenantId: session.tenantId },
-    data: { customDomainVerified: verified }
+    data: { customDomain: domain, customDomainVerified: verified }
   });
 
   return NextResponse.json({
