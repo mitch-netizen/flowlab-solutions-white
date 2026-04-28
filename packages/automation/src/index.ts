@@ -1075,6 +1075,87 @@ async function processJob(job: ClaimedJob) {
       break;
     }
 
+    case "job.on_my_way": {
+      const [makeCredentials, brevoSmsCredentials, tenant, customer, jobRecord] = await Promise.all([
+        getCredentials(tenantId, "make_com"),
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
+        getTenantWithProfile(tenantId),
+        getCustomer(payload.customerId),
+        getJob(payload.jobId)
+      ]);
+
+      const businessName = tenant?.profile?.businessName ?? "Your service provider";
+
+      await fireTenantMakeWebhook({
+        tenantId,
+        credentials: makeCredentials,
+        webhookKey: "onMyWayWebhookUrl",
+        requestSummary: "Make.com on-my-way webhook",
+        triggeredBy: "worker_on_my_way",
+        payload: {
+          tenant_slug: tenant?.slug,
+          business_name: businessName,
+          event_key: "onMyWay",
+          triggered_at: new Date().toISOString(),
+          job_id: payload.jobId,
+          summary: jobRecord?.summary ?? payload.summary,
+          customer: {
+            id: customer?.id,
+            name: customer ? `${customer.firstName} ${customer.lastName}` : "Customer",
+            phone: customer?.phone,
+            email: customer?.email
+          }
+        }
+      });
+
+      if (customer?.phone) {
+        const smsBody = `Hi ${customer.firstName}, ${businessName} is on the way to you now. We'll see you shortly!`;
+        try {
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            jobId: payload.jobId,
+            channel: "sms",
+            subject: "On my way",
+            body: smsBody,
+            status: "sent"
+          });
+          await logPlatformEvent({
+            tenantId,
+            eventType: "api_call",
+            service: SMS_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "success",
+            requestSummary: `On my way SMS to ${customer.firstName} ${customer.lastName}`,
+            responseSummary: "ETA SMS delivered",
+            triggeredBy: "worker_on_my_way"
+          });
+        } catch (smsError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            jobId: payload.jobId,
+            channel: "sms",
+            subject: "On my way",
+            body: smsBody,
+            status: "failed"
+          });
+          await logPlatformEvent({
+            tenantId,
+            eventType: "error",
+            service: SMS_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "failed",
+            requestSummary: "On my way SMS failed",
+            errorMessage: smsError instanceof Error ? smsError.message : String(smsError),
+            triggeredBy: "worker_on_my_way"
+          });
+        }
+      }
+      break;
+    }
+
     case "schedule.recalculate": {
       const [makeCredentials, tenant] = await Promise.all([
         getCredentials(tenantId, "make_com"),
