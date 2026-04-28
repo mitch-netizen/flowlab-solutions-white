@@ -14,7 +14,7 @@ export default async function JobRecordPage({
   searchParams
 }: {
   params: Promise<{ jobId: string }>;
-  searchParams: Promise<{ scheduled?: string; actuals?: string; message?: string; error?: string }>;
+  searchParams: Promise<{ scheduled?: string; actuals?: string; message?: string; error?: string; on_my_way?: string }>;
 }) {
   const session = await requireTenantSession();
   const { jobId } = await params;
@@ -39,6 +39,13 @@ export default async function JobRecordPage({
           <>
             <CustomerLink customerId={job.customerId} className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open customer</CustomerLink>
             {linkedInvoice ? <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={getInvoiceRecordHref(linkedInvoice.id)}>Open linked invoice</Link> : null}
+            {job.status === "in_progress" ? (
+              <form action={`/api/tenant/jobs/${job.id}/on-my-way`} method="post">
+                <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
+                  On my way →
+                </button>
+              </form>
+            ) : null}
           </>
         )}
       >
@@ -51,6 +58,11 @@ export default async function JobRecordPage({
       {query.actuals === "1" ? (
         <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
           <p>Actual hours saved.</p>
+        </div>
+      ) : null}
+      {query.on_my_way === "1" ? (
+        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
+          <p>ETA SMS sent to the customer.</p>
         </div>
       ) : null}
       {query.message === "sent" ? (
