@@ -72,11 +72,12 @@
       "Bash(/usr/local/bin/psql --version)",
       "Read(//opt/homebrew/bin/**)",
       "Read(//usr/local/opt/libpq/bin/**)",
-      "Bash(open -a \"Google Chrome\" \"https://supabase.com/dashboard/project/stvrqepurmwalrecdlec/settings/database\")"
+      "Bash(open -a \"Google Chrome\" \"https://supabase.com/dashboard/project/stvrqepurmwalrecdlec/settings/database\")",
+      "Bash(git add *)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }
