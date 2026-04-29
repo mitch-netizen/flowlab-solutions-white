@@ -5,6 +5,7 @@ import { Badge, formatCurrency, formatLabel, getStatusTone } from "@flowlab/ui";
 
 import CustomerLink from "../../../components/customer-link";
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { getInvoiceRecordHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 

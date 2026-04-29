@@ -9,8 +9,7 @@
     "allowJs": true,
     "incremental": true,
     "isolatedModules": true,
-    "jsx": "preserve",
-    "ignoreDeprecations": "6.0"
+    "jsx": "preserve"
   },
   "include": [
     "**/*.ts",
