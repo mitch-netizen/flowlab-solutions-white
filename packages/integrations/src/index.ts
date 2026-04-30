@@ -1,4 +1,8 @@
 import crypto from "node:crypto";
+import type { LookupOptions } from "node:dns";
+import dns from "node:dns/promises";
+import https from "node:https";
+import net from "node:net";
 
 import {
   AlignmentType,
@@ -24,7 +28,7 @@ import Stripe from "stripe";
 
 import type { AutomationBlueprintDescriptor, IntegrationService, IntegrationTestResult } from "@flowlab/contracts";
 import { automationBlueprints, serviceLabels } from "@flowlab/contracts";
-import { getCanonicalRootDomain, isProductionRuntime } from "@flowlab/contracts/server";
+import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 
 const algorithm = "aes-256-gcm";
 const BREVO_API_BASE = "https://api.brevo.com/v3";
@@ -535,14 +539,24 @@ export async function generateServiceAgreementTemplateDocx(input: {
 function getMasterKey() {
   const source = process.env.ENCRYPTION_MASTER_KEY;
 
-  if (!source && isProductionRuntime()) {
-    throw new Error("ENCRYPTION_MASTER_KEY is required in production");
+  if (source) {
+    return crypto.pbkdf2Sync(
+      source,
+      "flowlab-encryption-v1",
+      100_000,
+      32,
+      "sha256"
+    );
+  }
+
+  if (process.env.NODE_ENV !== "test") {
+    throw new Error("ENCRYPTION_MASTER_KEY is required");
   }
 
   // PBKDF2 with a fixed salt — proper key stretching over the legacy SHA256 hash.
   // Salt is non-secret and deterministic so no per-record storage is needed.
   return crypto.pbkdf2Sync(
-    source ?? "development-master-key",
+    "test-master-key",
     "flowlab-encryption-v1",
     100_000,
     32,
@@ -553,7 +567,13 @@ function getMasterKey() {
 /** Legacy key used before PBKDF2 migration — retained for decrypting old records. */
 function getLegacyMasterKey() {
   const source = process.env.ENCRYPTION_MASTER_KEY;
-  return crypto.createHash("sha256").update(source ?? "development-master-key").digest();
+  if (source) {
+    return crypto.createHash("sha256").update(source).digest();
+  }
+  if (process.env.NODE_ENV === "test") {
+    return crypto.createHash("sha256").update("test-master-key").digest();
+  }
+  throw new Error("ENCRYPTION_MASTER_KEY is required");
 }
 
 function decryptBuffer(buffer: Buffer, key: Buffer): string {
@@ -1559,14 +1579,8 @@ export async function fireMakeWebhook(
   }
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(10_000)
-    });
-    const body = await response.text();
-    return { ok: response.ok, status: response.status, body };
+    const webhookUrl = await validateMakeWebhookUrl(url);
+    return await postMakeWebhook(webhookUrl, payload);
   } catch (error) {
     return {
       ok: false,
@@ -1574,4 +1588,134 @@ export async function fireMakeWebhook(
       body: error instanceof Error ? error.message : "Webhook request failed"
     };
   }
+}
+
+function isAllowedMakeHost(hostname: string) {
+  return (
+    hostname === "make.com" ||
+    hostname.endsWith(".make.com") ||
+    hostname === "integromat.com" ||
+    hostname.endsWith(".integromat.com")
+  );
+}
+
+function safeMakeLookup(
+  hostname: string,
+  options: LookupOptions,
+  callback: (error: NodeJS.ErrnoException | null, address: string, family: number) => void
+) {
+  const normalizedHostname = hostname.toLowerCase();
+  if (
+    normalizedHostname === "localhost" ||
+    normalizedHostname.endsWith(".localhost") ||
+    isBlockedIpAddress(normalizedHostname) ||
+    !isAllowedMakeHost(normalizedHostname)
+  ) {
+    callback(Object.assign(new Error("Make webhook URL host is not allowed"), { code: "EHOSTUNREACH" }), "", 0);
+    return;
+  }
+
+  const family = options.family === "IPv4" ? 4 : options.family === "IPv6" ? 6 : options.family ?? 0;
+  dns.lookup(normalizedHostname, { all: true, family, verbatim: true })
+    .then((addresses) => {
+      if (addresses.length === 0 || addresses.some((entry) => isBlockedIpAddress(entry.address))) {
+        callback(Object.assign(new Error("Make webhook URL resolved to a blocked network address"), { code: "EHOSTUNREACH" }), "", 0);
+        return;
+      }
+
+      callback(null, addresses[0].address, addresses[0].family);
+    })
+    .catch((error) => callback(error, "", 0));
+}
+
+function postMakeWebhook(webhookUrl: string, payload: Record<string, unknown>) {
+  const body = JSON.stringify(payload);
+  const url = new URL(webhookUrl);
+
+  return new Promise<{ ok: boolean; status: number; body: string }>((resolve, reject) => {
+    const request = https.request(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body)
+        },
+        lookup: safeMakeLookup
+      },
+      (response) => {
+        let responseBody = "";
+        response.setEncoding("utf8");
+        response.on("data", (chunk) => {
+          responseBody += chunk;
+        });
+        response.on("end", () => {
+          const status = response.statusCode ?? 0;
+          resolve({ ok: status >= 200 && status < 300, status, body: responseBody });
+        });
+      }
+    );
+
+    request.setTimeout(10_000, () => request.destroy(new Error("Webhook request timed out")));
+    request.on("error", reject);
+    request.write(body);
+    request.end();
+  });
+}
+
+function isBlockedIpAddress(address: string) {
+  if (address === "169.254.169.254") return true;
+
+  if (net.isIPv4(address)) {
+    const [a = 0, b = 0] = address.split(".").map(Number);
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168)
+    );
+  }
+
+  if (net.isIPv6(address)) {
+    const normalised = address.toLowerCase();
+    if (normalised.startsWith("::ffff:")) {
+      const mapped = normalised.slice("::ffff:".length);
+      if (net.isIPv4(mapped)) return isBlockedIpAddress(mapped);
+    }
+    return (
+      normalised === "::1" ||
+      normalised.startsWith("fe80:") ||
+      normalised.startsWith("fc") ||
+      normalised.startsWith("fd")
+    );
+  }
+
+  return false;
+}
+
+export async function validateMakeWebhookUrl(input: string) {
+  const url = new URL(input);
+  const hostname = url.hostname.toLowerCase();
+
+  if (url.protocol !== "https:") {
+    throw new Error("Make webhook URL must use https");
+  }
+
+  if (hostname === "localhost" || hostname.endsWith(".localhost") || isBlockedIpAddress(hostname)) {
+    throw new Error("Make webhook URL host is not allowed");
+  }
+
+  if (!isAllowedMakeHost(hostname)) {
+    throw new Error("Make webhook URL must use a Make.com or Integromat domain");
+  }
+
+  const addresses = await dns.lookup(hostname, { all: true, verbatim: true });
+  if (addresses.some((entry) => isBlockedIpAddress(entry.address))) {
+    throw new Error("Make webhook URL resolved to a blocked network address");
+  }
+
+  return url.toString();
 }

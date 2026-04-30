@@ -2,7 +2,7 @@ import { requireTenantSession } from "../../../../../../lib/session";
 
 import { NextResponse } from "next/server";
 
-import type { IntegrationService } from "@flowlab/contracts";
+import { integrationServiceSchema } from "@flowlab/contracts";
 import { getTenantIntegrationRecord, saveTenantIntegrationCredentials } from "@flowlab/db";
 import { logPlatformEvent } from "@flowlab/events";
 import { decryptJson, encryptJson } from "@flowlab/integrations";
@@ -11,7 +11,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ ser
   const session = await requireTenantSession();
 
   const { service: serviceParam } = await params;
-  const service = serviceParam as IntegrationService;
+  const parsedService = integrationServiceSchema.safeParse(serviceParam);
+  if (!parsedService.success) {
+    return NextResponse.redirect(new URL("/dashboard/integrations?error=invalid_service", request.url), 303);
+  }
+  const service = parsedService.data;
   const formData = await request.formData();
   const incomingCredentials = Object.fromEntries(
     Array.from(formData.entries())

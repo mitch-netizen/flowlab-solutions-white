@@ -9,6 +9,9 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.role !== "superadmin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const tenants = await listTenants();
   return NextResponse.json({ tenants });
@@ -18,6 +21,9 @@ export async function POST(request: Request) {
   const session = await getPlatformSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.role !== "superadmin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();
