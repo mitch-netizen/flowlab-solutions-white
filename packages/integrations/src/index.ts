@@ -1687,7 +1687,7 @@ function isBlockedIpAddress(address: string) {
     }
     return (
       normalised === "::1" ||
-      normalised.startsWith("fe80:") ||
+      /^fe[89ab][0-9a-f]:/.test(normalised) ||
       normalised.startsWith("fc") ||
       normalised.startsWith("fd")
     );
