@@ -1,8 +1,9 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@flowlab/auth";
-import { prisma } from "@flowlab/db";
-import type { PlatformSession } from "@flowlab/contracts";
+import { prisma, resolveTenantContext } from "@flowlab/db";
+import type { PlatformSession, TenantSession } from "@flowlab/contracts";
 
 export async function getPlatformSession(): Promise<PlatformSession | null> {
   const supabase = await createSupabaseServerClient();
@@ -30,4 +31,31 @@ export async function requirePlatformSession() {
   const session = await getPlatformSession();
   if (!session) redirect("/admin/login");
   return session;
+}
+
+export async function requireTenantSession() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error || !user) redirect("/login");
+
+  const headerStore = await headers();
+  const host = headerStore.get("x-flowlab-host") ?? headerStore.get("host") ?? "";
+  const tenantContext = await resolveTenantContext(host);
+  if (!tenantContext) redirect("/login");
+
+  const tenantUser = await prisma.tenantUser.findFirst({
+    where: { authUserId: user.id, tenantId: tenantContext.tenantId },
+  });
+
+  if (!tenantUser) redirect("/login");
+
+  return {
+    sub: tenantUser.id,
+    authUserId: user.id,
+    email: tenantUser.email,
+    scope: "tenant",
+    role: tenantUser.role,
+    tenantId: tenantUser.tenantId,
+  } satisfies TenantSession;
 }

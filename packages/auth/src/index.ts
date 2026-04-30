@@ -11,6 +11,9 @@ import type { CustomerTokenPayload } from "@flowlab/contracts";
 export const PLATFORM_SESSION_COOKIE = "flowlab_platform_session";
 export const TENANT_SESSION_COOKIE = "flowlab_tenant_session";
 export const IMPERSONATION_SESSION_COOKIE = "flowlab_impersonation";
+export const IMPERSONATION_NONCE_COOKIE = "flowlab_impersonation_nonce";
+export const IMPERSONATION_TOKEN_HASH_COOKIE = "flowlab_impersonation_token_hash";
+export const IMPERSONATION_OTP_TYPE_COOKIE = "flowlab_impersonation_otp_type";
 
 // ---------------------------------------------------------------------------
 // Customer resource tokens (quotes, agreements, invoices, feedback)

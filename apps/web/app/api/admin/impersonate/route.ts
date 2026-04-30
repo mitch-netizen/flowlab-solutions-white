@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 
-import { createSupabaseAdminClient, signImpersonationToken } from "@flowlab/auth";
+import {
+  createSupabaseAdminClient,
+  IMPERSONATION_NONCE_COOKIE,
+  IMPERSONATION_OTP_TYPE_COOKIE,
+  IMPERSONATION_TOKEN_HASH_COOKIE,
+  signImpersonationToken
+} from "@flowlab/auth";
 import { createImpersonationNonce, getTenantById, prisma, consumeRateLimit } from "@flowlab/db";
-import { adminImpersonateSchema, buildTenantUrl } from "@flowlab/contracts/server";
+import { adminImpersonateSchema, buildTenantUrl, getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { getPlatformSession } from "../../../../lib/session";
 
 // 30-minute TTL for impersonation sessions
@@ -103,8 +109,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not generate impersonation link" }, { status: 500 });
   }
 
-  const exchangePath = `/api/auth/tenant/exchange?token_hash=${data.properties.hashed_token}&type=magiclink&impersonation_nonce=${encodeURIComponent(nonce)}`;
+  const exchangePath = "/api/auth/tenant/exchange";
   const portalUrl = `${basePortalUrl}${exchangePath}`;
 
-  return NextResponse.json({ ok: true, portalUrl, tenantSlug: tenant.slug });
+  const response = NextResponse.json({ ok: true, portalUrl, tenantSlug: tenant.slug });
+  const cookieDomain = process.env.NODE_ENV === "production" ? `.${getCanonicalRootDomain()}` : "localhost";
+  const cookieOptions = {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: exchangePath,
+    maxAge: Math.ceil(IMPERSONATION_TTL_MS / 1000),
+    domain: cookieDomain
+  };
+  response.cookies.set(IMPERSONATION_TOKEN_HASH_COOKIE, data.properties.hashed_token, cookieOptions);
+  response.cookies.set(IMPERSONATION_OTP_TYPE_COOKIE, "magiclink", cookieOptions);
+  response.cookies.set(IMPERSONATION_NONCE_COOKIE, nonce, cookieOptions);
+  return response;
 }

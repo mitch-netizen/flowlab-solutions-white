@@ -7,6 +7,7 @@ import { getPlatformIntegrationRecord, getTenantIntegrationRecord, prisma } from
 import { buildTenantUrl, getCanonicalRootDomain } from "@flowlab/contracts/server";
 import { logPlatformEvent } from "@flowlab/events";
 import { decryptJson, encryptJson } from "@flowlab/integrations";
+import { requireTenantSession } from "../../../../../lib/session";
 
 const xeroStateSchema = z.object({
   scope: z.enum(["tenant", "platform"]).optional().default("tenant"),
@@ -48,6 +49,14 @@ export async function GET(request: Request) {
   } catch {
     return NextResponse.redirect(new URL("/admin?xero_error=invalid_state", request.url));
   }
+
+  if (scope === "tenant") {
+    const session = await requireTenantSession();
+    if (!tenantId || session.tenantId !== tenantId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
   const [tenantIntegration, platformIntegration, tenant] = await Promise.all([
     tenantId ? getTenantIntegrationRecord(tenantId, "xero") : Promise.resolve(null),
     getPlatformIntegrationRecord("xero"),

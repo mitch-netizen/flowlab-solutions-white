@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { processAutomationBatch } from "@flowlab/automation";
 import { consumeRateLimit, submitFeedbackByToken } from "@flowlab/db";
 import { feedbackSubmissionSchema, getClientIpFromRequest, publicRouteTokenSchema } from "@flowlab/contracts/server";
 
@@ -32,11 +31,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   }
 
   try {
-    const result = await submitFeedbackByToken(token, parsed.data);
-
-    if (result.reviewRequestQueued) {
-      await processAutomationBatch(5);
-    }
+    await submitFeedbackByToken(token, parsed.data);
 
     return NextResponse.redirect(new URL(`/feedback/${token}?submitted=1&rating=${parsed.data.rating}`, request.url), 303);
   } catch {

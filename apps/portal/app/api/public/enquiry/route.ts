@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { processAutomationBatch } from "@flowlab/automation";
 import { consumeRateLimit, createEnquiry } from "@flowlab/db";
 import { getClientIpFromRequest, publicEnquiryInputSchema, validateBotGuard } from "@flowlab/contracts/server";
 
@@ -41,7 +40,6 @@ export async function POST(request: Request) {
       suburb: parsed.data.suburb,
       serviceRequest: parsed.data.serviceRequest
     });
-    await processAutomationBatch(5);
   } catch (error) {
     return NextResponse.redirect(
       new URL(`/enquiry?error=${encodeURIComponent(error instanceof Error ? "limit" : "invalid")}`, request.url),

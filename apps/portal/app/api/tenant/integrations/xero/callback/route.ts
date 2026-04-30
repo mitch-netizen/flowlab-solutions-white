@@ -22,6 +22,7 @@ const xeroStateSchema = z.object({
  * Exchanges authorization code for access/refresh tokens and saves them.
  */
 export async function GET(request: Request) {
+  const session = await requireTenantSession();
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const stateParam = searchParams.get("state");
@@ -44,6 +45,9 @@ export async function GET(request: Request) {
     const parsed = xeroStateSchema.safeParse(raw);
     if (!parsed.success) {
       return NextResponse.redirect(new URL("/dashboard/integrations?xero_error=invalid_state", request.url));
+    }
+    if (session.tenantId !== parsed.data.tenantId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const cookieStore = await cookies();
     const expectedCsrf = cookieStore.get("xero_oauth_csrf")?.value;

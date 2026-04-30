@@ -4,22 +4,46 @@
  * This route verifies it and sets the session cookie, then redirects to /dashboard.
  */
 import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import {
   createSupabaseServerClient,
+  IMPERSONATION_NONCE_COOKIE,
+  IMPERSONATION_OTP_TYPE_COOKIE,
   IMPERSONATION_SESSION_COOKIE,
+  IMPERSONATION_TOKEN_HASH_COOKIE,
   verifyImpersonationToken
 } from "@flowlab/auth";
-import { consumeImpersonationNonce } from "@flowlab/db";
+import { consumeImpersonationNonce, resolveTenantContext } from "@flowlab/db";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const tokenHash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as "magiclink" | "recovery" | null;
-  const impersonationNonce = searchParams.get("impersonation_nonce");
+  const store = await cookies();
+  const tokenHash = store.get(IMPERSONATION_TOKEN_HASH_COOKIE)?.value;
+  const type = store.get(IMPERSONATION_OTP_TYPE_COOKIE)?.value as "magiclink" | "recovery" | null;
+  const impersonationNonce = store.get(IMPERSONATION_NONCE_COOKIE)?.value;
+  store.delete(IMPERSONATION_TOKEN_HASH_COOKIE);
+  store.delete(IMPERSONATION_OTP_TYPE_COOKIE);
+  store.delete(IMPERSONATION_NONCE_COOKIE);
 
-  if (!tokenHash || !type) {
+  if (!tokenHash || !type || !impersonationNonce) {
     return NextResponse.redirect(new URL("/login?error=invalid_token", request.url), 303);
+  }
+
+  const impersonationToken = await consumeImpersonationNonce(impersonationNonce);
+  if (!impersonationToken) {
+    return NextResponse.redirect(new URL("/login?error=invalid_token", request.url), 303);
+  }
+
+  const parsed = verifyImpersonationToken(impersonationToken);
+  if (!parsed) {
+    return NextResponse.redirect(new URL("/login?error=invalid_token", request.url), 303);
+  }
+
+  const headerStore = await headers();
+  const host = headerStore.get("x-flowlab-host") ?? headerStore.get("host") ?? "";
+  const tenantContext = host ? await resolveTenantContext(host) : null;
+  if (!tenantContext || tenantContext.tenantId !== parsed.tenantId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const supabase = await createSupabaseServerClient();
@@ -29,32 +53,16 @@ export async function GET(request: Request) {
   });
 
   if (error) {
+    await supabase.auth.signOut();
     return NextResponse.redirect(new URL("/login?error=invalid_token", request.url), 303);
   }
 
-  if (impersonationNonce) {
-    const impersonationToken = await consumeImpersonationNonce(impersonationNonce);
-    if (!impersonationToken) {
-      await supabase.auth.signOut();
-      return NextResponse.redirect(new URL("/login?error=invalid_token", request.url), 303);
-    }
-
-    const parsed = verifyImpersonationToken(impersonationToken);
-    if (!parsed) {
-      await supabase.auth.signOut();
-      return NextResponse.redirect(new URL("/login?error=invalid_token", request.url), 303);
-    }
-
-    const store = await cookies();
-    store.set(IMPERSONATION_SESSION_COOKIE, impersonationToken, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/"
-    });
-  } else {
-    (await cookies()).delete(IMPERSONATION_SESSION_COOKIE);
-  }
+  store.set(IMPERSONATION_SESSION_COOKIE, impersonationToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/"
+  });
 
   return NextResponse.redirect(new URL("/dashboard", request.url), 303);
 }

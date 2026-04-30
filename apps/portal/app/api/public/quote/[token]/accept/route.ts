@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { processAutomationBatch } from "@flowlab/automation";
 import { acceptQuoteByToken, consumeRateLimit } from "@flowlab/db";
 import { getClientIpFromRequest, publicRouteTokenSchema } from "@flowlab/contracts/server";
 
@@ -26,7 +25,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
 
   try {
     await acceptQuoteByToken(token);
-    await processAutomationBatch(5);
     return NextResponse.redirect(new URL(`/quote/${token}?accepted=1`, request.url), 303);
   } catch {
     return NextResponse.redirect(new URL(`/quote/${token}?error=expired`, request.url), 303);
