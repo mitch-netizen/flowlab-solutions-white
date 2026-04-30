@@ -10,12 +10,13 @@ import {
   IMPERSONATION_SESSION_COOKIE,
   verifyImpersonationToken
 } from "@flowlab/auth";
+import { consumeImpersonationNonce } from "@flowlab/db";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as "magiclink" | "recovery" | null;
-  const impersonationToken = searchParams.get("impersonation_token");
+  const impersonationNonce = searchParams.get("impersonation_nonce");
 
   if (!tokenHash || !type) {
     return NextResponse.redirect(new URL("/login?error=invalid_token", request.url), 303);
@@ -31,7 +32,13 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/login?error=invalid_token", request.url), 303);
   }
 
-  if (impersonationToken) {
+  if (impersonationNonce) {
+    const impersonationToken = await consumeImpersonationNonce(impersonationNonce);
+    if (!impersonationToken) {
+      await supabase.auth.signOut();
+      return NextResponse.redirect(new URL("/login?error=invalid_token", request.url), 303);
+    }
+
     const parsed = verifyImpersonationToken(impersonationToken);
     if (!parsed) {
       await supabase.auth.signOut();

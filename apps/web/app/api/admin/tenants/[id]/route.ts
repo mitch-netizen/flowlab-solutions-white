@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 
+import { adminTenantUpdateSchema } from "@flowlab/contracts/server";
 import { prisma } from "@flowlab/db";
 import { getPlatformSession } from "../../../../../lib/session";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getPlatformSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== "superadmin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
 
@@ -86,15 +88,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getPlatformSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== "superadmin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
-  const body = (await request.json()) as {
-    businessName?: string;
-    plan?: string;
-    status?: string;
-    monthlyFee?: number;
-    notes?: string;
-  };
+  const parsed = adminTenantUpdateSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input", issues: parsed.error.issues }, { status: 400 });
+  }
+  const body = parsed.data;
 
   const updates: Record<string, unknown> = {};
   if (body.plan) updates.plan = body.plan;

@@ -10,14 +10,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { signCustomerToken, verifyCustomerToken } from "@flowlab/auth";
 import {
   authLoginInputSchema,
+  adminTenantUpdateSchema,
   buildTenantUrl,
   ensureAppEnv,
   feedbackSubmissionSchema,
   getCanonicalRootDomain,
   getExpectedTenantCname,
-  publicRouteTokenSchema,
   signupInputSchema
 } from "@flowlab/contracts/server";
+import { integrationServiceSchema, publicRouteTokenSchema } from "@flowlab/contracts";
+import { encryptJson, validateMakeWebhookUrl } from "@flowlab/integrations";
 
 // ─── Config enforcement ───────────────────────────────────────────────────────
 
@@ -39,6 +41,43 @@ describe("config enforcement", () => {
     } finally {
       vi.unstubAllEnvs();
       if (savedDb !== undefined) process.env.DATABASE_URL = savedDb;
+    }
+  });
+
+  it("JWT signing throws outside test when JWT_SECRET is missing", () => {
+    const savedNodeEnv = process.env.NODE_ENV;
+    const savedSecret = process.env.JWT_SECRET;
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("JWT_SECRET", "");
+
+    try {
+      expect(() =>
+        signCustomerToken({
+          tenantId: "t-1",
+          resourceId: "r-1",
+          resourceType: "feedback",
+          expiresAt: new Date(Date.now() + 1000).toISOString()
+        })
+      ).toThrow(/JWT_SECRET/);
+    } finally {
+      vi.unstubAllEnvs();
+      if (savedNodeEnv !== undefined) process.env.NODE_ENV = savedNodeEnv;
+      if (savedSecret !== undefined) process.env.JWT_SECRET = savedSecret;
+    }
+  });
+
+  it("encryption throws outside test when ENCRYPTION_MASTER_KEY is missing", () => {
+    const savedNodeEnv = process.env.NODE_ENV;
+    const savedKey = process.env.ENCRYPTION_MASTER_KEY;
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("ENCRYPTION_MASTER_KEY", "");
+
+    try {
+      expect(() => encryptJson({ secret: "value" })).toThrow(/ENCRYPTION_MASTER_KEY/);
+    } finally {
+      vi.unstubAllEnvs();
+      if (savedNodeEnv !== undefined) process.env.NODE_ENV = savedNodeEnv;
+      if (savedKey !== undefined) process.env.ENCRYPTION_MASTER_KEY = savedKey;
     }
   });
 });
@@ -205,5 +244,27 @@ describe("input validation schemas", () => {
 
   it("publicRouteTokenSchema accepts non-empty tokens", () => {
     expect(publicRouteTokenSchema.safeParse({ token: "abc-123-token" }).success).toBe(true);
+  });
+
+  it("adminTenantUpdateSchema rejects invalid admin tenant updates", () => {
+    const result = adminTenantUpdateSchema.safeParse({
+      plan: "enterprise",
+      status: "paused",
+      monthlyFee: -1
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("integrationServiceSchema rejects unknown service route params", () => {
+    expect(integrationServiceSchema.safeParse("xero").success).toBe(true);
+    expect(integrationServiceSchema.safeParse("unknown_service").success).toBe(false);
+  });
+
+  it("validateMakeWebhookUrl rejects non-Make webhook destinations", async () => {
+    await expect(validateMakeWebhookUrl("http://hook.make.com/abc")).rejects.toThrow(/https/);
+    await expect(validateMakeWebhookUrl("https://localhost/hook")).rejects.toThrow(/not allowed/);
+    await expect(validateMakeWebhookUrl("https://169.254.169.254/latest")).rejects.toThrow(/not allowed/);
+    await expect(validateMakeWebhookUrl("https://example.com/hook")).rejects.toThrow(/Make.com|Integromat/);
   });
 });

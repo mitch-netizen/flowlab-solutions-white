@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createSupabaseAdminClient, signImpersonationToken } from "@flowlab/auth";
-import { getTenantById, prisma, consumeRateLimit } from "@flowlab/db";
+import { createImpersonationNonce, getTenantById, prisma, consumeRateLimit } from "@flowlab/db";
 import { adminImpersonateSchema, buildTenantUrl } from "@flowlab/contracts/server";
 import { getPlatformSession } from "../../../../lib/session";
 
@@ -12,6 +12,9 @@ export async function POST(request: Request) {
   const session = await getPlatformSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.role !== "superadmin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Rate-limit: max 10 impersonation attempts per admin per hour
@@ -25,7 +28,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Too many impersonation attempts. Try again later." }, { status: 429 });
   }
 
-  const parsed = adminImpersonateSchema.safeParse(await request.json());
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const parsed = adminImpersonateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "tenantId required" }, { status: 400 });
   }
@@ -69,6 +79,10 @@ export async function POST(request: Request) {
     tenantId: tenant.id,
     expiresAt
   });
+  const nonce = await createImpersonationNonce({
+    token: impersonationToken,
+    expiresAt
+  });
 
   // Generate a magic link for the tenant owner — the exchange endpoint will
   // verify the OTP and set the session cookie, then redirect to /dashboard
@@ -89,7 +103,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not generate impersonation link" }, { status: 500 });
   }
 
-  const exchangePath = `/api/auth/tenant/exchange?token_hash=${data.properties.hashed_token}&type=magiclink&impersonation_token=${encodeURIComponent(impersonationToken)}`;
+  const exchangePath = `/api/auth/tenant/exchange?token_hash=${data.properties.hashed_token}&type=magiclink&impersonation_nonce=${encodeURIComponent(nonce)}`;
   const portalUrl = `${basePortalUrl}${exchangePath}`;
 
   return NextResponse.json({ ok: true, portalUrl, tenantSlug: tenant.slug });

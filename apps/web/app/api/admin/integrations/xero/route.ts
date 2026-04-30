@@ -2,10 +2,17 @@ import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { requirePlatformSession } from "../../../../../lib/session";
+import { getPlatformSession } from "../../../../../lib/session";
 
 export async function GET() {
-  const session = await requirePlatformSession();
+  const session = await getPlatformSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (session.role !== "superadmin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const isLocal = process.env.NODE_ENV !== "production";
   const redirectUri = isLocal
     ? "http://localhost:3000/api/integrations/xero/callback"

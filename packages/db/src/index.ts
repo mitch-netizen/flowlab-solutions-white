@@ -1,6 +1,9 @@
+import crypto from "node:crypto";
+
 import {
   PrismaClient,
   Prisma,
+  type Agreement,
   type BusinessType,
   type TenantPlan,
   IntegrationService as PrismaIntegrationService,
@@ -48,6 +51,7 @@ import { optimiseJobRoute, resolveGoogleMapsApiKey } from "@flowlab/integrations
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 const AUTOMATION_MAX_ATTEMPTS = 5;
+const IMPERSONATION_NONCE_PREFIX = "impersonation_nonce:";
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
@@ -88,6 +92,10 @@ function normalizeEmail(email: string) {
 
 function isNonNullable<T>(value: T | null | undefined): value is T {
   return value != null;
+}
+
+function hashImpersonationNonce(nonce: string) {
+  return crypto.createHash("sha256").update(nonce).digest("hex");
 }
 
 function getLocalDateParts(date: Date, timeZone: string) {
@@ -1602,6 +1610,60 @@ export async function consumeRateLimit(input: {
   };
 }
 
+export async function createImpersonationNonce(input: { token: string; expiresAt: string }) {
+  const nonce = crypto.randomBytes(32).toString("base64url");
+  const nonceHash = hashImpersonationNonce(nonce);
+
+  await prisma.platformEventLog.create({
+    data: {
+      eventType: "info",
+      service: "auth",
+      direction: "inbound",
+      status: "pending",
+      requestSummary: `${IMPERSONATION_NONCE_PREFIX}${nonceHash}`,
+      responseSummary: encryptJson({ token: input.token, expiresAt: input.expiresAt }),
+      triggeredBy: "superadmin_impersonate_nonce"
+    }
+  });
+
+  return nonce;
+}
+
+export async function consumeImpersonationNonce(nonce: string) {
+  const nonceHash = hashImpersonationNonce(nonce);
+  const record = await prisma.platformEventLog.findFirst({
+    where: {
+      service: "auth",
+      status: "pending",
+      requestSummary: `${IMPERSONATION_NONCE_PREFIX}${nonceHash}`
+    },
+    select: {
+      id: true,
+      responseSummary: true
+    }
+  });
+
+  if (!record?.responseSummary) {
+    return null;
+  }
+
+  const payload = decryptJson(record.responseSummary);
+  if (!payload.token || !payload.expiresAt || new Date(payload.expiresAt) <= new Date()) {
+    await prisma.platformEventLog.update({
+      where: { id: record.id },
+      data: { status: "failed", responseSummary: null, errorMessage: "Impersonation nonce expired" }
+    });
+    return null;
+  }
+
+  const consumed = await prisma.platformEventLog.updateMany({
+    where: { id: record.id, status: "pending" },
+    data: { status: "success", responseSummary: null }
+  });
+
+  return consumed.count === 1 ? payload.token : null;
+}
+
 export async function createEnquiry(input: {
   tenantId: string;
   firstName: string;
@@ -2409,24 +2471,41 @@ export async function acceptQuoteByToken(token: string) {
       }
     }
   });
+  const dedupeKey = `quote.accepted:${quote.id}`;
+  const existingAutomationJob = await prisma.automationJob.findUnique({
+    where: { dedupeKey }
+  });
+  const existingAgreement = await prisma.agreement.findFirst({
+    where: {
+      tenantId: quote.tenantId,
+      quoteId: quote.id
+    }
+  });
 
-  if (quote.status === "accepted" && existingJob) {
+  if (quote.status === "accepted" && existingJob && existingAgreement && existingAutomationJob) {
     return quote;
   }
 
-  const updated = quote.status === "accepted"
-    ? quote
-    : await prisma.quote.update({
-        where: { accessToken: token },
-        data: {
-          status: "accepted",
-          acceptedAt: new Date()
-        },
-        include: {
-          customer: true
-        }
-      });
+  let quoteTransitioned = false;
+  if (quote.status !== "accepted") {
+    const accepted = await prisma.quote.updateMany({
+      where: { accessToken: token, status: { not: "accepted" } },
+      data: {
+        status: "accepted",
+        acceptedAt: new Date()
+      }
+    });
+    quoteTransitioned = accepted.count > 0;
+  }
 
+  const updated = await prisma.quote.findUniqueOrThrow({
+    where: { accessToken: token },
+    include: {
+      customer: true
+    }
+  });
+
+  let createdJob = false;
   const job = existingJob ?? await prisma.job.create({
     data: {
       tenantId: quote.tenantId,
@@ -2437,35 +2516,45 @@ export async function acceptQuoteByToken(token: string) {
       suburb: quote.customer.suburb,
       summary: quote.title
     }
-  });
-
-  const existingAgreement = await prisma.agreement.findFirst({
-    where: {
-      tenantId: quote.tenantId,
-      quoteId: quote.id
+  }).then((record) => {
+    createdJob = true;
+    return record;
+  }).catch(async (error) => {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const record = await prisma.job.findUnique({ where: { quoteId: quote.id } });
+      if (record) return record;
     }
+    throw error;
   });
 
-  const agreement = existingAgreement ?? await createAgreementForQuote(quote.id);
+  let createdAgreement = false;
+  const agreementResult = existingAgreement
+    ? { agreement: existingAgreement, created: false }
+    : await createAgreementForQuoteClaim(quote.id);
+  createdAgreement = agreementResult.created;
+  const agreement = agreementResult.agreement;
 
-  await prisma.platformEventLog.create({
-    data: {
-      tenantId: quote.tenantId,
-      eventType: "webhook_received",
-      service: "internal",
-      direction: "inbound",
-      status: "success",
-      requestSummary: `Quote ${quote.title} accepted`,
-      responseSummary: existingAgreement ? "Job and agreement already linked" : "Job created and agreement prepared",
-      triggeredBy: "public_quote_acceptance",
-      customerId: quote.customerId,
-      jobId: job.id
-    }
-  });
+  if (quoteTransitioned || createdJob || createdAgreement) {
+    await prisma.platformEventLog.create({
+      data: {
+        tenantId: quote.tenantId,
+        eventType: "webhook_received",
+        service: "internal",
+        direction: "inbound",
+        status: "success",
+        requestSummary: `Quote ${quote.title} accepted`,
+        responseSummary: existingAgreement ? "Job and agreement already linked" : "Job created and agreement prepared",
+        triggeredBy: "public_quote_acceptance",
+        customerId: quote.customerId,
+        jobId: job.id
+      }
+    });
+  }
 
   await enqueueAutomationJob({
     tenantId: quote.tenantId,
     kind: "quote.accepted",
+    dedupeKey,
     payload: {
       quoteId: quote.id,
       agreementId: agreement.id,
@@ -2493,6 +2582,11 @@ export async function getInvoicePaymentContextByToken(token: string) {
 }
 
 export async function createAgreementForQuote(quoteId: string) {
+  const result = await createAgreementForQuoteClaim(quoteId);
+  return result.agreement;
+}
+
+async function createAgreementForQuoteClaim(quoteId: string): Promise<{ agreement: Agreement; created: boolean }> {
   const quote = await prisma.quote.findUnique({
     where: { id: quoteId },
     include: {
@@ -2532,6 +2626,31 @@ export async function createAgreementForQuote(quoteId: string) {
     quote,
     tenant: quote.tenant
   });
+  let agreement: Agreement;
+
+  try {
+    agreement = await prisma.agreement.create({
+      data: {
+        tenantId: quote.tenantId,
+        customerId: quote.customerId,
+        quoteId: quote.id,
+        title: `${quote.title} agreement`,
+        status: "sent_for_signature",
+        accessToken,
+        externalId: externalRequestId,
+        signingUrl,
+        contractTemplateId: defaultTemplate?.id ?? null
+      }
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const existing = await prisma.agreement.findUnique({ where: { accessToken } });
+      if (existing) {
+        return { agreement: existing, created: false };
+      }
+    }
+    throw error;
+  }
 
   if (docuSealConfig.apiKey) {
     const callbackUrl = buildTenantUrl(quote.tenant.slug, "/api/webhooks/docuseal");
@@ -2621,23 +2740,12 @@ export async function createAgreementForQuote(quoteId: string) {
     }
   }
 
-  const agreement = await prisma.agreement.upsert({
+  agreement = await prisma.agreement.update({
     where: { accessToken },
-    update: {
+    data: {
       status: "sent_for_signature",
       externalId: externalRequestId,
       title: `${quote.title} agreement`,
-      signingUrl,
-      contractTemplateId: defaultTemplate?.id ?? null
-    },
-    create: {
-      tenantId: quote.tenantId,
-      customerId: quote.customerId,
-      quoteId: quote.id,
-      title: `${quote.title} agreement`,
-      status: "sent_for_signature",
-      accessToken,
-      externalId: externalRequestId,
       signingUrl,
       contractTemplateId: defaultTemplate?.id ?? null
     }
@@ -2657,7 +2765,7 @@ export async function createAgreementForQuote(quoteId: string) {
     }
   });
 
-  return agreement;
+  return { agreement, created: true };
 }
 
 export async function markAgreementSignedByToken(token: string) {
@@ -2669,31 +2777,51 @@ export async function markAgreementSignedByToken(token: string) {
     throw new Error("Agreement not found");
   }
 
-  const updated = await prisma.agreement.update({
-    where: { accessToken: token },
-    data: {
-      status: "signed",
-      signedAt: new Date()
-    }
+  const dedupeKey = `agreement.signed:${agreement.id}`;
+  const existingAutomationJob = await prisma.automationJob.findUnique({
+    where: { dedupeKey }
   });
 
-  await prisma.platformEventLog.create({
-    data: {
-      tenantId: agreement.tenantId,
-      eventType: "webhook_received",
-      service: "docuseal",
-      direction: "inbound",
-      status: "success",
-      requestSummary: `Agreement ${agreement.title} signed`,
-      responseSummary: "Signature completion recorded",
-      triggeredBy: "public_signature_completion",
-      customerId: agreement.customerId
-    }
+  if (agreement.status === "signed" && existingAutomationJob) {
+    return agreement;
+  }
+
+  let agreementTransitioned = false;
+  if (agreement.status !== "signed") {
+    const signed = await prisma.agreement.updateMany({
+      where: { accessToken: token, status: { not: "signed" } },
+      data: {
+        status: "signed",
+        signedAt: new Date()
+      }
+    });
+    agreementTransitioned = signed.count > 0;
+  }
+
+  const updated = await prisma.agreement.findUniqueOrThrow({
+    where: { accessToken: token }
   });
+
+  if (agreementTransitioned) {
+    await prisma.platformEventLog.create({
+      data: {
+        tenantId: agreement.tenantId,
+        eventType: "webhook_received",
+        service: "docuseal",
+        direction: "inbound",
+        status: "success",
+        requestSummary: `Agreement ${agreement.title} signed`,
+        responseSummary: "Signature completion recorded",
+        triggeredBy: "public_signature_completion",
+        customerId: agreement.customerId
+      }
+    });
+  }
 
   await enqueueAutomationJob({
     tenantId: agreement.tenantId,
     kind: "agreement.signed",
+    dedupeKey,
     payload: {
       agreementId: agreement.id,
       quoteId: agreement.quoteId,

@@ -35,11 +35,9 @@ export type ImpersonationTokenPayload = z.infer<typeof impersonationTokenSchema>
 
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
-  const isProd =
-    process.env.NODE_ENV === "production" &&
-    process.env.NEXT_RUNTIME !== undefined;
-  if (!secret && isProd) throw new Error("JWT_SECRET is required in production");
-  return secret ?? "development-only-secret";
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "test") return "test-only-jwt-secret";
+  throw new Error("JWT_SECRET is required");
 }
 
 export function signCustomerToken(payload: CustomerTokenPayload) {
