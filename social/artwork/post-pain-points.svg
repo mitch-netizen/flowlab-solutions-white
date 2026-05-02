@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <defs>
+    <radialGradient id="g1" cx="0" cy="0" r="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="g2" cx="1080" cy="1080" r="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="#020617"/>
+  <rect width="1080" height="1080" fill="url(#g1)"/>
+  <rect width="1080" height="1080" fill="url(#g2)"/>
+
+  <!-- Header -->
+  <text x="540" y="168" fill="#f8fafc" font-size="58" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800" text-anchor="middle" letter-spacing="-1">Still managing your</text>
+  <text x="540" y="240" fill="#f87171" font-size="58" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800" text-anchor="middle" letter-spacing="-1">business like this?</text>
+
+  <!-- Pain box 1: Quoting in WhatsApp (col1 row1) x=80, y=314 w=444 h=220 -->
+  <rect x="80" y="314" width="444" height="220" rx="14" fill="rgba(15,23,42,0.72)" stroke="rgba(248,113,113,0.22)" stroke-width="1"/>
+  <rect x="80" y="314" width="4" height="220" rx="2" fill="#f87171"/>
+  <circle cx="116" cy="372" r="18" fill="rgba(248,113,113,0.14)" stroke="#f87171" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="116" y="379" fill="#f87171" font-size="18" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700" text-anchor="middle">✕</text>
+  <text x="148" y="369" fill="#f8fafc" font-size="19" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700">Quoting in WhatsApp</text>
+  <text x="104" y="414" fill="#94a3b8" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif">No record. No signed agreement.</text>
+  <text x="104" y="436" fill="#94a3b8" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif">No follow-up if they go quiet.</text>
+  <text x="104" y="478" fill="#64748b" font-size="13" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-style="italic">Sound familiar?</text>
+
+  <!-- Pain box 2: Spreadsheet (col2 row1) x=556, y=314 w=444 h=220 -->
+  <rect x="556" y="314" width="444" height="220" rx="14" fill="rgba(15,23,42,0.72)" stroke="rgba(248,113,113,0.22)" stroke-width="1"/>
+  <rect x="556" y="314" width="4" height="220" rx="2" fill="#f87171"/>
+  <circle cx="592" cy="372" r="18" fill="rgba(248,113,113,0.14)" stroke="#f87171" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="592" y="379" fill="#f87171" font-size="18" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700" text-anchor="middle">✕</text>
+  <text x="624" y="369" fill="#f8fafc" font-size="19" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700">Jobs in a spreadsheet</text>
+  <text x="580" y="414" fill="#94a3b8" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif">Two tools. Zero connection.</text>
+  <text x="580" y="436" fill="#94a3b8" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif">Reconciling them costs time.</text>
+  <text x="580" y="478" fill="#64748b" font-size="13" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-style="italic">Every week.</text>
+
+  <!-- Pain box 3: Follow-up (col1 row2) x=80, y=558 w=444 h=220 -->
+  <rect x="80" y="558" width="444" height="220" rx="14" fill="rgba(15,23,42,0.72)" stroke="rgba(248,113,113,0.22)" stroke-width="1"/>
+  <rect x="80" y="558" width="4" height="220" rx="2" fill="#f87171"/>
+  <circle cx="116" cy="616" r="18" fill="rgba(248,113,113,0.14)" stroke="#f87171" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="116" y="623" fill="#f87171" font-size="18" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700" text-anchor="middle">✕</text>
+  <text x="148" y="613" fill="#f8fafc" font-size="19" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700">Follow-up that never happens</text>
+  <text x="104" y="658" fill="#94a3b8" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif">Rebook reminders, review asks,</text>
+  <text x="104" y="680" fill="#94a3b8" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif">feedback requests — all skipped.</text>
+  <text x="104" y="722" fill="#64748b" font-size="13" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-style="italic">Recurring customers lost quietly.</text>
+
+  <!-- Pain box 4: Overdue (col2 row2) x=556, y=558 w=444 h=220 -->
+  <rect x="556" y="558" width="444" height="220" rx="14" fill="rgba(15,23,42,0.72)" stroke="rgba(248,113,113,0.22)" stroke-width="1"/>
+  <rect x="556" y="558" width="4" height="220" rx="2" fill="#f87171"/>
+  <circle cx="592" cy="616" r="18" fill="rgba(248,113,113,0.14)" stroke="#f87171" stroke-width="1" stroke-opacity="0.4"/>
+  <text x="592" y="623" fill="#f87171" font-size="18" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700" text-anchor="middle">✕</text>
+  <text x="624" y="613" fill="#f8fafc" font-size="19" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700">No idea what's overdue</text>
+  <text x="580" y="658" fill="#94a3b8" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif">Quoted, outstanding, overdue —</text>
+  <text x="580" y="680" fill="#94a3b8" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif">you don't know until cash hurts.</text>
+  <text x="580" y="722" fill="#64748b" font-size="13" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-style="italic">Every few months.</text>
+
+  <!-- Footer -->
+  <line x1="200" y1="844" x2="880" y2="844" stroke="#1e293b" stroke-width="1"/>
+  <text x="540" y="890" fill="#60a5fa" font-size="22" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700" text-anchor="middle">FlowLab connects every step.</text>
+  <text x="540" y="932" fill="#60a5fa" font-size="22" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700" text-anchor="middle">flowlabsolutions.au — 14-day free trial</text>
+</svg>
