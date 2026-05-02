@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <defs>
+    <radialGradient id="g1" cx="0" cy="0" r="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="g2" cx="1080" cy="0" r="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="gcard" cx="540" cy="580" r="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="#020617"/>
+  <rect width="1080" height="1080" fill="url(#g1)"/>
+  <rect width="1080" height="1080" fill="url(#g2)"/>
+
+  <!-- Feature pill -->
+  <rect x="390" y="176" width="300" height="28" rx="14" fill="rgba(59,130,246,0.12)" stroke="#3b82f6" stroke-opacity="0.4" stroke-width="1"/>
+  <text x="540" y="195" fill="#bfdbfe" font-size="11" font-family="'DM Mono', 'Courier New', monospace" letter-spacing="3" text-anchor="middle">AI-POWERED QUOTING</text>
+
+  <!-- Headline -->
+  <text x="540" y="296" fill="#f8fafc" font-size="66" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800" text-anchor="middle" letter-spacing="-1.5">Quote in under</text>
+  <text x="540" y="374" fill="#60a5fa" font-size="66" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800" text-anchor="middle" letter-spacing="-1.5">2 minutes.</text>
+
+  <!-- Quote card -->
+  <rect x="120" y="430" width="840" height="272" rx="16" fill="rgba(15,23,42,0.82)" stroke="rgba(96,165,250,0.22)" stroke-width="1"/>
+  <rect x="120" y="430" width="840" height="272" rx="16" fill="url(#gcard)"/>
+
+  <!-- Card left: job input -->
+  <text x="160" y="472" fill="#60a5fa" font-size="10" font-family="'DM Mono', 'Courier New', monospace" letter-spacing="3">ENQUIRY INPUT</text>
+  <text x="160" y="510" fill="#f8fafc" font-size="20" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700">Lawn mow — 400m², overgrown</text>
+  <text x="160" y="538" fill="#94a3b8" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif">Site condition: Overgrown (×1.35 surcharge applied)</text>
+  <text x="160" y="560" fill="#94a3b8" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif">Your rate: $0.45/m²  ·  Est. drive time: 14 min</text>
+
+  <!-- Vertical divider in card -->
+  <line x1="540" y1="452" x2="540" y2="678" stroke="rgba(148,163,184,0.14)" stroke-width="1"/>
+
+  <!-- Card right: quote output -->
+  <text x="580" y="472" fill="#94a3b8" font-size="10" font-family="'DM Mono', 'Courier New', monospace" letter-spacing="3">ESTIMATED QUOTE</text>
+  <text x="580" y="566" fill="#f8fafc" font-size="64" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800">$185</text>
+  <text x="714" y="540" fill="#94a3b8" font-size="16" font-family="'Plus Jakarta Sans', system-ui, sans-serif">.00</text>
+  <text x="580" y="600" fill="#64748b" font-size="13" font-family="'Plus Jakarta Sans', system-ui, sans-serif">inc. GST  ·  reviewed in FlowLab</text>
+
+  <!-- Send button in card -->
+  <rect x="580" y="628" width="176" height="40" rx="8" fill="#3b82f6"/>
+  <text x="668" y="653" fill="#020617" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700" text-anchor="middle">Review &amp; Send →</text>
+
+  <!-- Time badge -->
+  <rect x="880" y="438" width="64" height="64" rx="12" fill="rgba(96,165,250,0.14)" stroke="#60a5fa" stroke-opacity="0.3" stroke-width="1"/>
+  <text x="912" y="466" fill="#60a5fa" font-size="22" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800" text-anchor="middle">&lt;2</text>
+  <text x="912" y="488" fill="#60a5fa" font-size="11" font-family="'Plus Jakarta Sans', system-ui, sans-serif" text-anchor="middle">min</text>
+
+  <!-- Sub copy -->
+  <text x="540" y="770" fill="#cbd5e1" font-size="18" font-family="'Plus Jakarta Sans', system-ui, sans-serif" text-anchor="middle">Describe the job. FlowLab prices it using your own rates.</text>
+  <text x="540" y="800" fill="#cbd5e1" font-size="18" font-family="'Plus Jakarta Sans', system-ui, sans-serif" text-anchor="middle">You review, adjust if needed, and send.</text>
+
+  <!-- URL -->
+  <text x="540" y="900" fill="#60a5fa" font-size="26" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="700" text-anchor="middle">flowlabsolutions.au</text>
+  <text x="540" y="936" fill="#475569" font-size="14" font-family="'Plus Jakarta Sans', system-ui, sans-serif" text-anchor="middle">14-day free trial · No credit card required</text>
+</svg>
