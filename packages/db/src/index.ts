@@ -48,6 +48,7 @@ import type { XeroCredentials } from "@flowlab/integrations/xero";
 import { getXeroInvoice } from "@flowlab/integrations/xero";
 import { assessJobWeatherRisks } from "@flowlab/integrations/bom";
 import { optimiseJobRoute, resolveGoogleMapsApiKey } from "@flowlab/integrations/google-maps";
+import { pickMatchedCustomerId } from "./customer-matching";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 const AUTOMATION_MAX_ATTEMPTS = 5;
@@ -2623,17 +2624,28 @@ export async function createSimpleQuote(input: {
   const [firstName, ...lastParts] = name.split(/\s+/);
   const lastName = lastParts.join(" ") || "Customer";
 
-  const existingCustomer = await prisma.customer.findFirst({
-    where: {
-      tenantId: input.tenantId,
-      ...(email
-        ? { email }
-        : { phone: mobile })
-    }
-  });
+  const [emailMatch, phoneMatch] = await Promise.all([
+    email
+      ? prisma.customer.findFirst({ where: { tenantId: input.tenantId, email } })
+      : Promise.resolve(null),
+    mobile
+      ? prisma.customer.findFirst({ where: { tenantId: input.tenantId, phone: mobile } })
+      : Promise.resolve(null)
+  ]);
+
+  const matchedCustomerId = pickMatchedCustomerId(emailMatch?.id ?? null, phoneMatch?.id ?? null);
+  const existingCustomer = matchedCustomerId
+    ? (emailMatch?.id === matchedCustomerId ? emailMatch : phoneMatch)
+    : null;
 
   const customer = existingCustomer
-    ? existingCustomer
+    ? await prisma.customer.update({
+        where: { id: existingCustomer.id },
+        data: {
+          phone: mobile || existingCustomer.phone,
+          email: existingCustomer.email || email || existingCustomer.email
+        }
+      })
     : await prisma.customer.create({
         data: {
           tenantId: input.tenantId,
