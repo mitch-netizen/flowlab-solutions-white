@@ -49,6 +49,9 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.message === "Add a customer email for new customers") {
       return NextResponse.redirect(new URL('/dashboard/quotes/new?error=new_customer_email', request.url), 303);
     }
+    if (error instanceof Error && error.message === "Customer email and phone match different records") {
+      return NextResponse.redirect(new URL('/dashboard/quotes/new?error=customer_conflict', request.url), 303);
+    }
 
     throw error;
   }
