@@ -22,7 +22,8 @@ export default async function QuotePage({
 
   const requestHeaders = await headers();
   const host = requestHeaders.get("host") ?? "";
-  const protocol = host.includes("localhost") ? "http" : "https";
+  const forwardedProtocol = requestHeaders.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const protocol = forwardedProtocol || (host.includes("localhost") ? "http" : "https");
   const quoteUrl = `${protocol}://${host}/quote/${quote.accessToken}`;
   const isAccepted = quote.status === "accepted";
   const showSendActions = query.created === "1" && !isAccepted;
