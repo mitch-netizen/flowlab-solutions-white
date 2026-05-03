@@ -2328,6 +2328,9 @@ export async function updateTenantProfileSettings(input: {
   accentColour?: string;
   customDomain?: string;
   serviceAreaSuburbs?: string[];
+  suburb?: string;
+  postcode?: string;
+  businessType?: "lawn_mowing" | "cleaning" | "pest_control" | "gardening" | "handyman" | "pool_service" | "other";
 }) {
   const updated = await prisma.tenantProfile.update({
     where: { tenantId: input.tenantId },
@@ -2341,7 +2344,10 @@ export async function updateTenantProfileSettings(input: {
       accentColour: input.accentColour,
       customDomain: input.customDomain || null,
       customDomainVerified: false,
-      serviceAreaSuburbs: input.serviceAreaSuburbs ?? []
+      serviceAreaSuburbs: input.serviceAreaSuburbs ?? [],
+      suburb: input.suburb,
+      postcode: input.postcode,
+      businessType: input.businessType
     }
   });
 
@@ -2421,7 +2427,18 @@ export async function saveTenantScheduleSettings(input: {
     startTime: string;
     endTime: string;
   }>;
+  onlyIfEmpty?: boolean;
 }) {
+  if (input.onlyIfEmpty) {
+    const [existingScheduleCount, existingCommitmentCount] = await Promise.all([
+      prisma.workSchedule.count({ where: { tenantId: input.tenantId } }),
+      prisma.personalCommitment.count({ where: { tenantId: input.tenantId } })
+    ]);
+
+    if (existingScheduleCount > 0 || existingCommitmentCount > 0) {
+      return { ok: true, skipped: true as const };
+    }
+  }
   // Replace work schedule entirely
   await prisma.workSchedule.deleteMany({ where: { tenantId: input.tenantId } });
   if (input.workSchedule.length > 0) {
