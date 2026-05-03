@@ -47,7 +47,9 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
   const [error, setError] = useState("");
 
   const [businessName, setBusinessName] = useState(initialProfile.businessName);
-  const [selectedTradeKey, setSelectedTradeKey] = useState<string>("");
+  const [selectedTradeKey, setSelectedTradeKey] = useState<string>(
+    TRADES.find((trade) => trade.value === initialProfile.businessType)?.key ?? "other"
+  );
   const [mobile, setMobile] = useState(initialProfile.phone);
   const [suburbOrPostcode, setSuburbOrPostcode] = useState(initialProfile.serviceAreaSuburbs[0] ?? "");
 
@@ -179,9 +181,6 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
               className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
               disabled={saving}
               onClick={() => {
-                if (!businessName.trim()) return setError("Please enter your business name.");
-                if (!selectedTradeKey) return setError("Please choose your trade.");
-                if (!mobile.trim()) return setError("Please enter your mobile number.");
                 if (!suburbOrPostcode.trim()) return setError("Please enter your suburb or postcode.");
                 void saveAndContinue(3, async () => {
                   await post("/api/tenant/settings/profile-json", {
