@@ -58,6 +58,13 @@ function getAutomationHeadline(triggeredBy: string | null | undefined, requestSu
   }
 }
 
+function isSettingsLogEvent(event: { triggeredBy: string | null; requestSummary: string | null; responseSummary: string | null }) {
+  const triggeredBy = event.triggeredBy?.toLowerCase() ?? "";
+  const requestSummary = event.requestSummary?.toLowerCase() ?? "";
+  const responseSummary = event.responseSummary?.toLowerCase() ?? "";
+  return triggeredBy.includes("settings") || requestSummary.includes("settings") || responseSummary.includes("settings");
+}
+
 export default async function DashboardPage({
   searchParams
 }: {
@@ -177,7 +184,7 @@ export default async function DashboardPage({
   ].filter(Boolean) as Array<{ title: string; detail: string; href: string }>;
 
   const automationWins = snapshot.events
-    .filter((event) => event.status === "success" && event.triggeredBy !== "seed")
+    .filter((event) => event.status === "success" && event.triggeredBy !== "seed" && !isSettingsLogEvent(event))
     .slice(0, 5)
     .map((event) => ({
       id: event.id,
