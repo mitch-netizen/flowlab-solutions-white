@@ -21,53 +21,22 @@ export default async function OnboardingPage() {
       : buildTenantUrl(tenantSlug, "/enquiry");
 
   return (
-    
-      <DashboardPageScaffold
+    <DashboardPageScaffold
         eyebrow="Setup"
-        title="Finish the setup that makes the portal feel like your business."
-        description="Work through branding, pricing, services, and scheduling so the rest of the portal can operate with real defaults instead of placeholder logic."
+        title="Finish your business setup"
+        description="Three quick steps and you're ready to take bookings."
         section="setup"
       >
       <OnboardingWizard
         initialStep={currentStep}
         isCompleted={isCompleted}
         enquiryUrl={enquiryUrl}
-        tenantSlug={tenantSlug}
         initialProfile={{
           businessName: settings.profile?.businessName ?? "",
-          tagline: settings.profile?.tagline ?? "",
           phone: settings.profile?.phone ?? "",
-          email: settings.profile?.email ?? "",
-          primaryColour: settings.profile?.primaryColour ?? "#3B82F6",
-          secondaryColour: settings.profile?.secondaryColour ?? "#1E40AF",
-          accentColour: settings.profile?.accentColour ?? "#84CC16",
           serviceAreaSuburbs: settings.profile?.serviceAreaSuburbs ?? [],
           businessType: settings.profile?.businessType ?? "other"
         }}
-        initialPricing={
-          settings.pricingRates[0]
-            ? {
-                label: settings.pricingRates[0].label,
-                baseRatePerSquareM: settings.pricingRates[0].baseRatePerSquareM,
-                overgrownRate: settings.pricingRates[0].overgrownRate,
-                heavilyOvergrownRate: settings.pricingRates[0].heavilyOvergrownRate,
-                hourlyRate: settings.pricingRates[0].hourlyRate,
-                calloutFee: settings.pricingRates[0].calloutFee,
-                minimumCharge: settings.pricingRates[0].minimumCharge ?? 0,
-                gstEnabled: settings.pricingRates[0].gstEnabled
-              }
-            : null
-        }
-        initialServiceTemplates={settings.serviceTemplates.map((t) => ({
-          serviceName: t.name,
-          defaultPrice: t.defaultPrice ?? 0,
-          defaultDuration: t.defaultDuration ?? 0
-        }))}
-        initialWorkSchedule={settings.workSchedule.map((s) => ({
-          dayOfWeek: s.dayOfWeek,
-          startTime: s.startTime,
-          endTime: s.endTime
-        }))}
       />
     </DashboardPageScaffold>
   );

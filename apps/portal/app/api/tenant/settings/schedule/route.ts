@@ -16,12 +16,14 @@ export async function POST(request: Request) {
       startTime: string;
       endTime: string;
     }>;
+    onlyIfEmpty?: boolean;
   };
 
   await saveTenantScheduleSettings({
     tenantId: session.tenantId,
     workSchedule: body.workSchedule ?? [],
-    personalCommitments: body.personalCommitments ?? []
+    personalCommitments: body.personalCommitments ?? [],
+    onlyIfEmpty: body.onlyIfEmpty
   });
 
   return NextResponse.json({ ok: true });
