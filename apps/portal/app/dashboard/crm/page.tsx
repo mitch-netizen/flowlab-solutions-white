@@ -10,7 +10,7 @@ import { requireTenantSession } from "../../../lib/session";
 export default async function CrmPage({
   searchParams
 }: {
-  searchParams: Promise<{ closed?: string; error?: string }>;
+  searchParams: Promise<{ closed?: string; error?: string; created?: string }>;
 }) {
   const session = await requireTenantSession();
   const query = await searchParams;
@@ -35,7 +35,15 @@ export default async function CrmPage({
 
       {query.error ? (
         <div className="rounded-lg border bg-card p-4 border-l-4 border-l-red-500">
-          Something went wrong. Please try again.
+          {query.error === "invalid_customer"
+            ? "First name, last name, and email are required."
+            : "Something went wrong. Please try again."}
+        </div>
+      ) : null}
+
+      {query.created === "1" ? (
+        <div className="rounded-lg border bg-card p-4 border-l-4 border-l-green-500">
+          Customer saved successfully.
         </div>
       ) : null}
 
@@ -43,6 +51,49 @@ export default async function CrmPage({
         <div className="eyebrow">Requests inbox</div>
         <h2>Incoming customer requests</h2>
         <p className="text-sm text-muted-foreground">This is where new customer requests land. Open each request, confirm the details, then create a quote as the next step.</p>
+      </div>
+
+      <div className="rounded-lg border bg-card p-4 space-y-4">
+        <div className="space-y-2">
+          <div className="eyebrow">Manual add</div>
+          <h2>Create customer directly</h2>
+          <p className="text-sm text-muted-foreground">Add a customer to CRM without going through the quote flow.</p>
+        </div>
+        <form action="/api/tenant/crm/customers" method="post" className="grid gap-3 md:grid-cols-2">
+          <label className="space-y-1 text-sm">
+            <span>First name *</span>
+            <input name="firstName" required className="w-full rounded-md border bg-background px-3 py-2" />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span>Last name *</span>
+            <input name="lastName" required className="w-full rounded-md border bg-background px-3 py-2" />
+          </label>
+          <label className="space-y-1 text-sm md:col-span-2">
+            <span>Email *</span>
+            <input name="email" type="email" required className="w-full rounded-md border bg-background px-3 py-2" />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span>Phone</span>
+            <input name="phone" className="w-full rounded-md border bg-background px-3 py-2" />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span>Suburb</span>
+            <input name="suburb" className="w-full rounded-md border bg-background px-3 py-2" />
+          </label>
+          <label className="space-y-1 text-sm md:col-span-2">
+            <span>Address</span>
+            <input name="address" className="w-full rounded-md border bg-background px-3 py-2" />
+          </label>
+          <label className="space-y-1 text-sm md:col-span-2">
+            <span>Notes</span>
+            <textarea name="notes" rows={3} className="w-full rounded-md border bg-background px-3 py-2" />
+          </label>
+          <div className="md:col-span-2">
+            <button type="submit" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+              Save customer
+            </button>
+          </div>
+        </form>
       </div>
 
       <div id="recent-enquiries" className="rounded-lg border bg-card p-4 space-y-4">
