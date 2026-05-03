@@ -8,7 +8,8 @@ const errorMessages: Record<string, string> = {
   location: "Please add the job suburb or location.",
   description: "Please add a short job description.",
   amount: "Please add a quote amount greater than 0.",
-  new_customer_email: "For a new customer, please add an email address as well."
+  new_customer_email: "For a new customer, please add an email address as well.",
+  customer_conflict: "Email and mobile match different customers. Please resolve in CRM before creating the quote."
 };
 
 export default async function NewQuotePage({
