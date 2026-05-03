@@ -2624,18 +2624,34 @@ export async function createSimpleQuote(input: {
   const [firstName, ...lastParts] = name.split(/\s+/);
   const lastName = lastParts.join(" ") || "Customer";
 
-  const [emailMatch, phoneMatch] = await Promise.all([
+  const [emailMatches, phoneMatches] = await Promise.all([
     email
-      ? prisma.customer.findFirst({ where: { tenantId: input.tenantId, email } })
-      : Promise.resolve(null),
+      ? prisma.customer.findMany({
+          where: { tenantId: input.tenantId, email },
+          select: { id: true },
+          orderBy: { id: "asc" }
+        })
+      : Promise.resolve([]),
     mobile
-      ? prisma.customer.findFirst({ where: { tenantId: input.tenantId, phone: mobile } })
-      : Promise.resolve(null)
+      ? prisma.customer.findMany({
+          where: { tenantId: input.tenantId, phone: mobile },
+          select: { id: true },
+          orderBy: { id: "asc" }
+        })
+      : Promise.resolve([])
   ]);
 
-  const matchedCustomerId = pickMatchedCustomerId(emailMatch?.id ?? null, phoneMatch?.id ?? null);
+  const emailCustomerIds = emailMatches.map((customer) => customer.id);
+  const phoneCustomerIds = phoneMatches.map((customer) => customer.id);
+  const overlapCustomerId = emailCustomerIds.find((id) => phoneCustomerIds.includes(id)) ?? null;
+
+  const matchedCustomerId = pickMatchedCustomerId(
+    overlapCustomerId ?? emailCustomerIds[0] ?? null,
+    overlapCustomerId ?? phoneCustomerIds[0] ?? null
+  );
+
   const existingCustomer = matchedCustomerId
-    ? (emailMatch?.id === matchedCustomerId ? emailMatch : phoneMatch)
+    ? await prisma.customer.findUnique({ where: { id: matchedCustomerId } })
     : null;
 
   const customer = existingCustomer
