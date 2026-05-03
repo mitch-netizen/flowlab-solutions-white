@@ -23,7 +23,10 @@ export async function POST(request: Request) {
     secondaryColour: formData.has("secondaryColour") ? String(formData.get("secondaryColour") ?? "") : undefined,
     accentColour: formData.has("accentColour") ? String(formData.get("accentColour") ?? "") : undefined,
     customDomain: String(formData.get("customDomain") ?? ""),
-    serviceAreaSuburbs
+    serviceAreaSuburbs,
+    suburb: String(formData.get("suburb") ?? "").trim() || undefined,
+    postcode: String(formData.get("postcode") ?? "").trim() || undefined,
+    businessType: (String(formData.get("businessType") ?? "other") as "lawn_mowing" | "cleaning" | "pest_control" | "gardening" | "handyman" | "pool_service" | "other")
   });
 
   return NextResponse.redirect(new URL("/dashboard/settings", request.url), 303);
