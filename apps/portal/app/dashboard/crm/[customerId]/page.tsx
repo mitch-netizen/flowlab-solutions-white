@@ -27,6 +27,7 @@ export default async function CustomerRecordPage({
   }
 
   const { customer, communications, feedback, reminders, enquiries } = record;
+  const formatReceivedAt = (value: Date | string) => new Date(value).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" });
 
   return (
     
@@ -255,9 +256,9 @@ export default async function CustomerRecordPage({
       <div className="rounded-lg border bg-card p-4 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
-            <div className="eyebrow">Enquiries</div>
-            <h2>New requests still tied to this customer</h2>
-            <p>Open the linked quote or track the status of each request.</p>
+            <div className="eyebrow">Requests</div>
+            <h2>Requests from this customer</h2>
+            <p>Review the request details and create a quote if one has not been started yet.</p>
           </div>
         </div>
 
@@ -267,14 +268,17 @@ export default async function CustomerRecordPage({
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className={`status-pill ${enquiry.status === "new" ? "is-warning" : "is-off"}`}>{enquiry.status}</span>
-                  <span>{new Date(enquiry.createdAt).toLocaleString()}</span>
+                  <span>Received {formatReceivedAt(enquiry.createdAt)}</span>
                 </div>
+                <p className="text-sm text-muted-foreground">{customer.suburb ? `Suburb: ${customer.suburb}` : "Suburb: Not provided"}</p>
                 <h3>{enquiry.serviceRequest}</h3>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {enquiry.quote ? (
-                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={`/quote/${enquiry.quote.accessToken}`}>Open linked quote</Link>
-                ) : null}
+                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={`/quote/${enquiry.quote.accessToken}`}>Open quote</Link>
+                ) : (
+                  <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={`/dashboard/quotes?customerId=${customer.id}&enquiryId=${enquiry.id}`}>Create quote</Link>
+                )}
               </div>
             </div>
           )) : <p className="text-sm text-muted-foreground">No enquiries recorded for this customer yet.</p>}
