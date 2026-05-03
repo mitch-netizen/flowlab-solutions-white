@@ -1,11 +1,13 @@
 import Link from "next/link";
 
 import { getTenantDashboardSnapshot, prisma } from "@flowlab/db";
-import { Badge, formatDateTime, formatLabel, formatTime, getStatusTone } from "@flowlab/ui";
+import { buildTenantUrl } from "@flowlab/contracts/server";
+import { Badge, formatDateTime, formatTime } from "@flowlab/ui";
 
 import CustomerLink from "../../components/customer-link";
 import DashboardPageScaffold from "../../components/dashboard/page-scaffold";
 import { InvoicesTable, JobsTable } from "./dashboard-tables";
+import DashboardEmptyStateActions from "./DashboardEmptyStateActions";
 import { getCustomerRecordHref, getInvoiceRecordHref, getJobPrimaryHref, getJobRecordHref } from "../../lib/dashboard-links";
 import { requireTenantSession } from "../../lib/session";
 
@@ -189,6 +191,25 @@ export default async function DashboardPage({
       createdAt: event.createdAt
     }));
 
+
+  const tenantSlug = snapshot.tenant?.slug ?? "";
+  const bookingLink =
+    tenantSlug.length > 0
+      ? process.env.NODE_ENV === "development"
+        ? `http://${tenantSlug}.localhost:3001/enquiry`
+        : buildTenantUrl(tenantSlug, "/enquiry")
+      : null;
+
+  const isNewTenantEmptyState =
+    snapshot.jobs.length === 0 &&
+    snapshot.invoices.length === 0 &&
+    enquiriesThisWeek === 0 &&
+    bookedJobsThisWeek === 0 &&
+    topCustomerRows.length === 0 &&
+    attentionItems.length === 0 &&
+    automationWins.length === 0 &&
+    tomorrowJobs.length === 0;
+
   const headingName =
     currentUser?.firstName?.trim() ||
     snapshot.tenant?.profile?.businessName ||
@@ -224,6 +245,19 @@ export default async function DashboardPage({
         </div>
       )}
 
+      {isNewTenantEmptyState ? (
+        <div className="rounded-lg border bg-card p-5 space-y-4">
+          <div className="space-y-2">
+            <div className="eyebrow">Next step</div>
+            <h2 style={{ margin: 0 }}>Create your first quote</h2>
+            <p className="text-sm text-muted-foreground">You’re set up. Let’s get your first quote out.</p>
+          </div>
+          <DashboardEmptyStateActions bookingLink={bookingLink} />
+        </div>
+      ) : null}
+
+      {!isNewTenantEmptyState && (
+      <>
       <div className="rounded-lg border bg-card p-4">
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
@@ -395,6 +429,8 @@ export default async function DashboardPage({
           <InvoicesTable invoices={snapshot.invoices} />
         </div>
       </div>
+      </>
+      )}
     </DashboardPageScaffold>
   );
 }

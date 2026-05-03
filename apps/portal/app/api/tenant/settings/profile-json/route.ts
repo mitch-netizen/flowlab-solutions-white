@@ -17,6 +17,9 @@ export async function POST(request: Request) {
     accentColour?: string;
     customDomain?: string;
     serviceAreaSuburbs?: string[];
+    suburb?: string;
+    postcode?: string;
+    businessType?: "lawn_mowing" | "cleaning" | "pest_control" | "gardening" | "handyman" | "pool_service" | "other";
   };
 
   await updateTenantProfileSettings({
@@ -29,7 +32,10 @@ export async function POST(request: Request) {
     secondaryColour: body.secondaryColour,
     accentColour: body.accentColour,
     customDomain: body.customDomain,
-    serviceAreaSuburbs: body.serviceAreaSuburbs
+    serviceAreaSuburbs: body.serviceAreaSuburbs,
+    suburb: body.suburb,
+    postcode: body.postcode,
+    businessType: body.businessType
   });
 
   return NextResponse.json({ ok: true });
