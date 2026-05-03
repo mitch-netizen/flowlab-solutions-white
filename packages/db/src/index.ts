@@ -2598,6 +2598,69 @@ export async function getInvoicePaymentContextByToken(token: string) {
   });
 }
 
+
+export async function createSimpleQuote(input: {
+  tenantId: string;
+  customerName: string;
+  customerEmail?: string;
+  customerMobile?: string;
+  jobLocation: string;
+  jobDescription: string;
+  quoteAmount: number;
+}) {
+  const name = input.customerName.trim();
+  const location = input.jobLocation.trim();
+  const description = input.jobDescription.trim();
+  const email = input.customerEmail?.trim().toLowerCase() ?? "";
+  const mobile = input.customerMobile?.trim() ?? "";
+
+  if (!name) throw new Error("Customer name is required");
+  if (!location) throw new Error("Job suburb or location is required");
+  if (!description) throw new Error("Job description is required");
+  if (!Number.isFinite(input.quoteAmount) || input.quoteAmount <= 0) throw new Error("Quote amount must be more than 0");
+  if (!email && !mobile) throw new Error("Add a mobile number or email");
+
+  const [firstName, ...lastParts] = name.split(/\s+/);
+  const lastName = lastParts.join(" ") || "Customer";
+
+  const existingCustomer = await prisma.customer.findFirst({
+    where: {
+      tenantId: input.tenantId,
+      ...(email
+        ? { email }
+        : { phone: mobile })
+    }
+  });
+
+  const customer = existingCustomer
+    ? existingCustomer
+    : await prisma.customer.create({
+        data: {
+          tenantId: input.tenantId,
+          firstName: firstName || "Customer",
+          lastName,
+          email: email || (() => { throw new Error("Add a customer email for new customers"); })(),
+          phone: mobile || null,
+          suburb: location
+        }
+      });
+
+  const title = description.slice(0, 60);
+
+  return prisma.quote.create({
+    data: {
+      tenantId: input.tenantId,
+      customerId: customer.id,
+      title: title || "Service quote",
+      description,
+      amount: Number(input.quoteAmount.toFixed(2)),
+      status: "draft",
+      accessToken: toToken("quote")
+    },
+    include: { customer: true }
+  });
+}
+
 export async function createAgreementForQuote(quoteId: string) {
   const result = await createAgreementForQuoteClaim(quoteId);
   return result.agreement;
