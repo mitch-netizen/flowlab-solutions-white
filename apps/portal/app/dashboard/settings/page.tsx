@@ -42,29 +42,16 @@ export default async function SettingsPage({
       <DashboardPageScaffold
         eyebrow="Setup"
         title="Settings"
-        description="Update your business details, branding colours, pricing rates, and service templates."
+        description="Review or update your business basics, service area, and booking details."
         section="setup"
       >
 
-      <div className="rounded-lg border bg-card p-4">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Business</div>
-            <div className="text-3xl font-semibold">{snapshot.profile?.businessName ?? "Unnamed"}</div>
-            <p className="text-sm text-muted-foreground">{snapshot.profile?.tagline ?? "Add a short tagline so the public pages feel deliberate."}</p>
-          </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Pricing model</div>
-            <div className="text-3xl font-semibold">{getPricingModelLabel(pricingModel)}</div>
-            <p className="text-sm text-muted-foreground">{snapshot.pricingRates.length} pricing rate{snapshot.pricingRates.length === 1 ? "" : "s"} currently configured.</p>
-          </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Custom domain</div>
-            <div className="text-3xl font-semibold">{domainStatus}</div>
-            <p className="text-sm text-muted-foreground">{snapshot.profile?.customDomain ?? `${snapshot.tenant?.slug ?? "your-business"}.portal.domain`}</p>
-          </div>
-        </div>
+      <div className="rounded-lg border bg-card p-4 space-y-2">
+        <div className="eyebrow">Business basics</div>
+        <h2 style={{ marginBottom: 8 }}>Keep your onboarding details up to date</h2>
+        <p className="text-sm text-muted-foreground">Update your business name, trade type, phone, suburb or postcode, and service area in one place.</p>
       </div>
+
 
       <div className="cards-2 gap-4">
         <form className="surface form-grid space-y-4" action="/api/tenant/settings/profile" method="post">
@@ -84,16 +71,36 @@ export default async function SettingsPage({
               <Input id="tagline" name="tagline" defaultValue={snapshot.profile?.tagline ?? ""} />
             </div>
             <div className="space-y-4">
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone">Mobile</Label>
               <Input id="phone" name="phone" defaultValue={snapshot.profile?.phone ?? ""} />
             </div>
             <div className="space-y-4">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" defaultValue={snapshot.profile?.email ?? ""} />
             </div>
+            <div className="space-y-4">
+              <Label htmlFor="businessType">Trade/business type</Label>
+              <select id="businessType" name="businessType" defaultValue={snapshot.profile?.businessType ?? "other"} className="w-full rounded-lg border bg-background px-3 py-2 text-sm">
+                <option value="lawn_mowing">Lawn mowing</option>
+                <option value="gardening">Gardening</option>
+                <option value="cleaning">Cleaning</option>
+                <option value="handyman">Handyman</option>
+                <option value="pool_service">Pool service</option>
+                <option value="pest_control">Pest control</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="space-y-4">
+              <Label htmlFor="suburb">Main suburb</Label>
+              <Input id="suburb" name="suburb" defaultValue={snapshot.profile?.suburb ?? ""} />
+            </div>
+            <div className="space-y-4">
+              <Label htmlFor="postcode">Postcode</Label>
+              <Input id="postcode" name="postcode" defaultValue={snapshot.profile?.postcode ?? ""} />
+            </div>
             <div className="space-y-4 is-full">
-              <Label htmlFor="serviceAreaSuburbs">Service area suburbs</Label>
-              <Input id="serviceAreaSuburbs" name="serviceAreaSuburbs" defaultValue={snapshot.profile?.serviceAreaSuburbs.join(", ") ?? ""} />
+              <Label htmlFor="serviceAreaSuburbs">Service radius or suburbs</Label>
+              <Input id="serviceAreaSuburbs" name="serviceAreaSuburbs" defaultValue={snapshot.profile?.serviceAreaSuburbs.join(", ") ?? ""} placeholder="e.g. 15 km around Carlton, Fitzroy, Brunswick" />
             </div>
             <div className="space-y-4 is-full">
               <Label htmlFor="customDomain">Custom domain</Label>
@@ -117,6 +124,9 @@ export default async function SettingsPage({
           <Input type="hidden" name="tagline" value={snapshot.profile?.tagline ?? ""} />
           <Input type="hidden" name="phone" value={snapshot.profile?.phone ?? ""} />
           <Input type="hidden" name="email" value={snapshot.profile?.email ?? ""} />
+          <Input type="hidden" name="businessType" value={snapshot.profile?.businessType ?? "other"} />
+          <Input type="hidden" name="suburb" value={snapshot.profile?.suburb ?? ""} />
+          <Input type="hidden" name="postcode" value={snapshot.profile?.postcode ?? ""} />
           <Input type="hidden" name="serviceAreaSuburbs" value={snapshot.profile?.serviceAreaSuburbs.join(", ") ?? ""} />
           <Input type="hidden" name="customDomain" value={snapshot.profile?.customDomain ?? ""} />
 
@@ -139,9 +149,6 @@ export default async function SettingsPage({
             <Button type="submit">
               Save branding
             </Button>
-            <a className="ghost" href="/dashboard/automations">
-              Open automation controls
-            </a>
           </div>
         </form>
       </div>
