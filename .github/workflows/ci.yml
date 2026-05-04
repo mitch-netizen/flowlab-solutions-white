@@ -80,6 +80,9 @@ jobs:
       ENCRYPTION_MASTER_KEY: ${{ secrets.ENCRYPTION_MASTER_KEY }}
       DEFAULT_ROOT_DOMAIN: "flowlabsolutions.au"
       CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_ci_test_key"
+      SUPABASE_SERVICE_ROLE_KEY: "sb_secret_ci_test_key"
 
     steps:
       - uses: actions/checkout@v4
