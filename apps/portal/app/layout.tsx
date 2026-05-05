@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 export const dynamic = "force-dynamic";
 
 import { ensureAppEnv } from "@flowlab/contracts/server";
+import { getFlowLabLogoAsset } from "@flowlab/branding";
 import { getCurrentTheme } from "../lib/tenant";
 import "./globals.css";
 
@@ -29,7 +30,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `${theme.companyName} | Portal`,
     description: theme.tagline,
-    metadataBase: host ? new URL(`${protocol}://${host}`) : undefined
+    metadataBase: host ? new URL(`${protocol}://${host}`) : undefined,
+    icons: {
+      icon: theme.faviconUrl ?? getFlowLabLogoAsset("favicon")
+    }
   };
 }
 
