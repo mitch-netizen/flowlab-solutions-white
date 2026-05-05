@@ -10,11 +10,12 @@ import { requireTenantSession } from "../../../lib/session";
 export default async function CrmPage({
   searchParams
 }: {
-  searchParams: Promise<{ closed?: string; error?: string; created?: string }>;
+  searchParams: Promise<{ closed?: string; error?: string; created?: string; returnTo?: string }>;
 }) {
   const session = await requireTenantSession();
   const query = await searchParams;
   const snapshot = await getCrmSnapshot(session.tenantId);
+  const returnTo = query.returnTo?.startsWith("/dashboard/") ? query.returnTo : "";
 
   const formatReceivedAt = (value: Date | string) => new Date(value).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" });
 
@@ -60,6 +61,7 @@ export default async function CrmPage({
           <p className="text-sm text-muted-foreground">Add a customer to CRM without going through the quote flow.</p>
         </div>
         <form action="/api/tenant/crm/customers" method="post" className="grid gap-3 md:grid-cols-2">
+          {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
           <label className="space-y-1 text-sm">
             <span>First name *</span>
             <input name="firstName" required className="w-full rounded-md border bg-background px-3 py-2" />

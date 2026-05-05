@@ -26,6 +26,7 @@ export async function POST(request: Request) {
         address?: string;
         suburb?: string;
         notes?: string;
+        returnTo?: string;
       }
     : Object.fromEntries((await request.formData()).entries()) as unknown as {
         firstName: string;
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
         address?: string;
         suburb?: string;
         notes?: string;
+        returnTo?: string;
       };
 
   const firstName = String(body.firstName ?? "").trim();
@@ -44,13 +46,17 @@ export async function POST(request: Request) {
   const address = body.address ? String(body.address).trim() : undefined;
   const suburb = body.suburb ? String(body.suburb).trim() : undefined;
   const notes = body.notes ? String(body.notes).trim() : undefined;
+  const returnToRaw = body.returnTo ? String(body.returnTo).trim() : "";
+  const isSafeReturnTo = returnToRaw.startsWith("/dashboard/");
+  const returnTo = isSafeReturnTo ? returnToRaw : "";
 
   if (!firstName || !lastName || !email) {
     if (contentType.includes("application/json")) {
       return NextResponse.json({ error: "First name, last name, and email are required" }, { status: 400 });
     }
 
-    return NextResponse.redirect(new URL("/dashboard/crm?error=invalid_customer", request.url), 303);
+    const invalidTarget = returnTo ? `${returnTo}${returnTo.includes("?") ? "&" : "?"}error=invalid_customer` : "/dashboard/crm?error=invalid_customer";
+    return NextResponse.redirect(new URL(invalidTarget, request.url), 303);
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -130,6 +136,13 @@ export async function POST(request: Request) {
 
   if (contentType.includes("application/json")) {
     return NextResponse.json({ id: customer.id, ok: true });
+  }
+
+  if (returnTo) {
+    const returnUrl = new URL(returnTo, request.url);
+    returnUrl.searchParams.set("customerId", customer.id);
+    returnUrl.searchParams.set("created", "1");
+    return NextResponse.redirect(returnUrl, 303);
   }
 
   return NextResponse.redirect(new URL(`/dashboard/crm/${customer.id}`, request.url), 303);
