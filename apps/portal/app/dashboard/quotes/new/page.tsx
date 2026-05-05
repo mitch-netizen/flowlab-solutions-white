@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { prisma } from "@flowlab/db";
 
 import DashboardPageScaffold from "../../../../components/dashboard/page-scaffold";
+import { requireTenantSession } from "../../../../lib/session";
 
 const errorMessages: Record<string, string> = {
   customer_name: "Please add the customer name.",
@@ -15,10 +17,61 @@ const errorMessages: Record<string, string> = {
 export default async function NewQuotePage({
   searchParams
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; customerId?: string; enquiryId?: string }>;
 }) {
+  const session = await requireTenantSession();
   const query = await searchParams;
   const errorMessage = query.error ? errorMessages[query.error] : null;
+  const customerId = query.customerId?.trim() ?? "";
+  const enquiryId = query.enquiryId?.trim() ?? "";
+
+  const [customer, enquiry] = await Promise.all([
+    customerId
+      ? prisma.customer.findFirst({
+          where: {
+            id: customerId,
+            tenantId: session.tenantId
+          },
+          select: {
+            firstName: true,
+            lastName: true,
+            phone: true,
+            email: true,
+            suburb: true,
+            address: true
+          }
+        })
+      : Promise.resolve(null),
+    enquiryId
+      ? prisma.enquiry.findFirst({
+          where: {
+            id: enquiryId,
+            tenantId: session.tenantId,
+            ...(customerId ? { customerId } : {})
+          },
+          select: {
+            serviceRequest: true,
+            customer: {
+              select: {
+                firstName: true,
+                lastName: true,
+                phone: true,
+                email: true,
+                suburb: true,
+                address: true
+              }
+            }
+          }
+        })
+      : Promise.resolve(null)
+  ]);
+
+  const prefillCustomer = customer ?? enquiry?.customer ?? null;
+  const prefilledCustomerName = prefillCustomer ? `${prefillCustomer.firstName} ${prefillCustomer.lastName}`.trim() : "";
+  const prefilledCustomerMobile = prefillCustomer?.phone ?? "";
+  const prefilledCustomerEmail = prefillCustomer?.email ?? "";
+  const prefilledJobLocation = prefillCustomer?.suburb ?? prefillCustomer?.address ?? "";
+  const prefilledJobDescription = enquiry?.serviceRequest ?? "";
 
   return (
     <DashboardPageScaffold
@@ -36,28 +89,28 @@ export default async function NewQuotePage({
         <form action="/api/tenant/quotes/create" method="post" className="space-y-4">
           <label className="flex flex-col gap-2 text-sm">
             Customer name
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerName" required />
+            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerName" required defaultValue={prefilledCustomerName} />
           </label>
 
           <div className="grid gap-4">
             <label className="flex flex-col gap-2 text-sm">
               Customer mobile
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerMobile" placeholder="04xx xxx xxx" />
+              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerMobile" placeholder="04xx xxx xxx" defaultValue={prefilledCustomerMobile} />
             </label>
             <label className="flex flex-col gap-2 text-sm">
               Customer email
-              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerEmail" type="email" placeholder="name@example.com" />
+              <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerEmail" type="email" placeholder="name@example.com" defaultValue={prefilledCustomerEmail} />
             </label>
           </div>
 
           <label className="flex flex-col gap-2 text-sm">
             Job suburb or location
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="jobLocation" required />
+            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="jobLocation" required defaultValue={prefilledJobLocation} />
           </label>
 
           <label className="flex flex-col gap-2 text-sm">
             Short job description
-            <textarea className="w-full min-h-24 rounded-lg border bg-background px-3 py-2 text-sm" name="jobDescription" required />
+            <textarea className="w-full min-h-24 rounded-lg border bg-background px-3 py-2 text-sm" name="jobDescription" required defaultValue={prefilledJobDescription} />
           </label>
 
           <label className="flex flex-col gap-2 text-sm">
