@@ -73,13 +73,31 @@ jobs:
     needs: check
     if: github.event_name == 'push' || github.event_name == 'pull_request'
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: flowlab_ci
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      DIRECT_URL: ${{ secrets.DATABASE_URL }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      ENCRYPTION_MASTER_KEY: ${{ secrets.ENCRYPTION_MASTER_KEY }}
-      DEFAULT_ROOT_DOMAIN: "flowlabsolutions.au"
-      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      DATABASE_URL: "postgresql://ci:ci@localhost:5432/flowlab_ci"
+      DIRECT_URL: "postgresql://ci:ci@localhost:5432/flowlab_ci"
+      JWT_SECRET: "ci-test-secret-not-for-production"
+      ENCRYPTION_MASTER_KEY: "ci-test-master-key-not-for-production"
+      DEFAULT_ROOT_DOMAIN: "localhost"
+      CRON_SECRET: "ci-test-cron-secret"
+      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_ci_test_key"
+      SUPABASE_SERVICE_ROLE_KEY: "sb_secret_ci_test_key"
 
     steps:
       - uses: actions/checkout@v4
@@ -97,6 +115,12 @@ jobs:
 
       - name: Generate Prisma client
         run: npm run db:generate
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma
+
+      - name: Seed demo tenant
+        run: npm run db:seed
 
       - name: Start web app
         run: |
