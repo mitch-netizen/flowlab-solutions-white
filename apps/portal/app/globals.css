@@ -8,8 +8,8 @@
   --surface-2: color-mix(in srgb, var(--app-bg) 76%, black);
   --text-primary: #e1e1e1;
   --text-secondary: #676767;
-  --accent-primary: #00b4a1;
-  --accent-secondary: #04a9ba;
+  --accent-primary: var(--brand-accent, #00b4a1);
+  --accent-secondary: var(--brand-secondary, #04a9ba);
   --border-subtle: color-mix(in srgb, var(--text-primary) 20%, transparent);
 
   --radius-sm: 4px;
@@ -35,11 +35,11 @@
   --state-danger: #ef4444;
 
   /* Compatibility mapping: keep --brand-* alive */
-  --brand-primary: var(--app-bg);
-  --brand-secondary: var(--surface-1);
-  --brand-accent: var(--accent-primary);
-  --brand-background: var(--app-bg);
-  --brand-foreground: var(--text-primary);
+  --brand-primary: #1f2632;
+  --brand-secondary: #04a9ba;
+  --brand-accent: #00b4a1;
+  --brand-background: #1f2632;
+  --brand-foreground: #e1e1e1;
 
   /* Existing local aliases remapped to semantic tokens */
   --background: var(--app-bg);
