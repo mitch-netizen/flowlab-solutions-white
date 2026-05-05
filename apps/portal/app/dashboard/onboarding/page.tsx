@@ -11,8 +11,9 @@ export default async function OnboardingPage() {
     getTenantSettingsSnapshot(session.tenantId)
   ]);
 
-  const currentStep = snapshot.tenant?.users[0]?.onboardingStep ?? 1;
-  const isCompleted = snapshot.tenant?.users[0]?.onboardingCompleted ?? false;
+  const currentUser = snapshot.tenant?.users.find((user) => user.id === session.sub) ?? null;
+  const currentStep = currentUser?.onboardingStep ?? 1;
+  const isCompleted = currentUser?.onboardingCompleted ?? false;
 
   const tenantSlug = snapshot.tenant?.slug ?? "";
   const enquiryUrl =
