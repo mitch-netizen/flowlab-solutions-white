@@ -67,11 +67,14 @@ export default async function NewQuotePage({
   ]);
 
   const prefillCustomer = customer ?? enquiry?.customer ?? null;
+  const customerMissingFromParam = customerId.length > 0 && customer == null;
   const prefilledCustomerName = prefillCustomer ? `${prefillCustomer.firstName} ${prefillCustomer.lastName}`.trim() : "";
   const prefilledCustomerMobile = prefillCustomer?.phone ?? "";
   const prefilledCustomerEmail = prefillCustomer?.email ?? "";
   const prefilledJobLocation = prefillCustomer?.suburb ?? prefillCustomer?.address ?? "";
   const prefilledJobDescription = enquiry?.serviceRequest ?? "";
+  const crmReturnTo = `/dashboard/quotes/new${enquiryId ? `?enquiryId=${encodeURIComponent(enquiryId)}` : ""}`;
+  const createCustomerHref = `/dashboard/crm?returnTo=${encodeURIComponent(crmReturnTo)}#manual-add`;
 
   return (
     <DashboardPageScaffold
@@ -84,6 +87,18 @@ export default async function NewQuotePage({
       <div className="mx-auto w-full max-w-xl rounded-lg border bg-card p-4 sm:p-5">
         {errorMessage ? (
           <div className="mb-4 rounded-lg border border-red-400 bg-red-50 p-3 text-sm text-red-800">{errorMessage}</div>
+        ) : null}
+
+        {customerMissingFromParam ? (
+          <div className="mb-4 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900">
+            Selected customer was not found. <Link href={createCustomerHref} className="underline font-semibold">Create a customer in CRM</Link> and return here.
+          </div>
+        ) : null}
+
+        {!prefilledCustomerName ? (
+          <div className="mb-4 text-sm text-muted-foreground">
+            Need to add a customer first? <Link href={createCustomerHref} className="underline">Create customer in CRM</Link>.
+          </div>
         ) : null}
 
         <form action="/api/tenant/quotes/create" method="post" className="space-y-4">
