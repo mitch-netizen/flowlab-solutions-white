@@ -255,9 +255,9 @@ export default async function DashboardPage({
       {isNewTenantEmptyState ? (
         <div className="rounded-lg border bg-card p-5 space-y-4">
           <div className="space-y-2">
-            <div className="eyebrow">Next step</div>
-            <h2 style={{ margin: 0 }}>Create your first quote</h2>
-            <p className="text-sm text-muted-foreground">You’re set up. Let’s get your first quote out.</p>
+            <div className="eyebrow">Setup complete</div>
+            <h2 style={{ margin: 0 }}>You’re ready to send your first quote</h2>
+            <p className="text-sm text-muted-foreground">Your workspace is set up. Next action: create and send your first quote.</p>
           </div>
           <DashboardEmptyStateActions bookingLink={bookingLink} />
         </div>

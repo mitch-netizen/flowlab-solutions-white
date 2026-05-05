@@ -30,7 +30,7 @@ export default async function GettingStartedPage({
       <section className="hero" style={{ gridTemplateColumns: "1fr 0.8fr" }}>
         <div className="hero-card">
           <div className="pill">🎉 Account created</div>
-          <h1>Setting up your workspace…</h1>
+          <h1>Your workspace is almost ready.</h1>
           <p className="muted">
             Your FlowLab portal for <strong>{businessName}</strong> is being provisioned.
             This takes about 2–5 minutes while we configure your branded workspace and
@@ -53,17 +53,17 @@ export default async function GettingStartedPage({
             Go to my portal →
           </a>
           <p className="muted" style={{ fontSize: "0.8rem", marginTop: "0.75rem" }}>
-            If the link shows an error, wait 2–3 minutes and try again — SSL provisioning is automatic.
+            Once you sign in, complete the 3 quick setup steps, then send your first quote.
           </p>
         </div>
 
         <div className="panel">
-          <h2 style={{ marginTop: 0 }}>What's being set up</h2>
+          <h2 style={{ marginTop: 0 }}>What happens next</h2>
           <div className="grid">
             <div className="panel-soft">Your branded portal at <strong>{slug}.flowlabsolutions.au</strong></div>
             <div className="panel-soft">Owner login and secure session management</div>
-            <div className="panel-soft">3-step onboarding wizard ready on first login</div>
-            <div className="panel-soft">Quoting, scheduling, invoicing, and automations</div>
+            <div className="panel-soft">3-step setup to confirm your business details</div>
+            <div className="panel-soft">Then create and send your first quote</div>
           </div>
         </div>
       </section>
