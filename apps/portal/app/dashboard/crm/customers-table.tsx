@@ -49,7 +49,7 @@ export function CustomersTable({ customers }: { customers: CustomerRow[] }) {
       enableSorting: false,
       cell: ({ row }) => (
         <>
-          <Link href={`/dashboard/quotes?customerId=${row.original.id}`}>Quote</Link>
+          <Link href={`/dashboard/quotes/new?customerId=${row.original.id}`}>Quote</Link>
           {" · "}
           <Link href={`/dashboard/invoices?customerId=${row.original.id}`}>Invoice</Link>
         </>

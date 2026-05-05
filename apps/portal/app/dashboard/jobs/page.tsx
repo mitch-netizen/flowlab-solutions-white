@@ -47,7 +47,7 @@ export default async function JobBoardPage() {
         actions={
           <>
             <Link href="/dashboard/scheduler" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open scheduler</Link>
-            <Link href="/dashboard/quotes" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">New quote</Link>
+            <Link href="/dashboard/quotes/new" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">New quote</Link>
           </>
         }
       >
