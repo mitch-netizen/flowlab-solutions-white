@@ -1,3 +1,5 @@
+"use client";
+
 import { useMemo, useState } from "react";
 import type { CSSProperties, FocusEvent, InputHTMLAttributes } from "react";
 

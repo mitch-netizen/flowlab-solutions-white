@@ -34,12 +34,12 @@ function buildSemanticTokens(accentPrimary: string, accentSecondary: string) {
     "--shadow-sm": "0 12px 36px color-mix(in srgb, var(--app-bg) 80%, black)",
     "--shadow-md": "0 18px 52px color-mix(in srgb, var(--app-bg) 84%, black)",
     "--gradient-primary": "linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)",
-    /* Compatibility mapping: keep --brand-* alive */
-    "--brand-primary": "var(--app-bg)",
-    "--brand-secondary": "var(--surface-1)",
-    "--brand-accent": "var(--accent-primary)",
-    "--brand-background": "var(--app-bg)",
-    "--brand-foreground": "var(--text-primary)",
+    /* Compatibility mapping: keep --brand-* alive as concrete values */
+    "--brand-primary": "#1f2632",
+    "--brand-secondary": accentSecondary,
+    "--brand-accent": accentPrimary,
+    "--brand-background": "#1f2632",
+    "--brand-foreground": "#e1e1e1",
     /* Existing aliases retained */
     "--background": "var(--app-bg)",
     "--foreground": "var(--text-primary)",
