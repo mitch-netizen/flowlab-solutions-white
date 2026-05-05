@@ -76,7 +76,7 @@ export default async function DashboardPage({
   const tomorrowStart = startOfTomorrow();
   const tomorrowEnd = endOfTomorrow();
 
-  const [snapshot, enquiriesThisWeek, bookedJobsThisWeek, tomorrowJobs, topCustomers] = await Promise.all([
+  const [snapshot, enquiriesThisWeek, bookedJobsThisWeek, tomorrowJobs, topCustomers, quoteCount, enquiryCount] = await Promise.all([
     getTenantDashboardSnapshot(session.tenantId),
     prisma.platformEventLog.count({
       where: {
@@ -126,6 +126,12 @@ export default async function DashboardPage({
         }
       },
       take: 12
+    }),
+    prisma.quote.count({
+      where: { tenantId: session.tenantId }
+    }),
+    prisma.enquiry.count({
+      where: { tenantId: session.tenantId }
     })
   ]);
 
@@ -208,14 +214,10 @@ export default async function DashboardPage({
       : null;
 
   const isNewTenantEmptyState =
+    quoteCount === 0 &&
+    snapshot.customers.length === 0 &&
     snapshot.jobs.length === 0 &&
-    snapshot.invoices.length === 0 &&
-    enquiriesThisWeek === 0 &&
-    bookedJobsThisWeek === 0 &&
-    topCustomerRows.length === 0 &&
-    attentionItems.length === 0 &&
-    automationWins.length === 0 &&
-    tomorrowJobs.length === 0;
+    enquiryCount === 0;
 
   const headingName =
     currentUser?.firstName?.trim() ||
