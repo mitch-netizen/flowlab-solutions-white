@@ -91,6 +91,10 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function normalizePhone(phone: string) {
+  return phone.replace(/\D+/g, "");
+}
+
 function isNonNullable<T>(value: T | null | undefined): value is T {
   return value != null;
 }
@@ -2613,7 +2617,8 @@ export async function createSimpleQuote(input: {
   const location = input.jobLocation.trim();
   const description = input.jobDescription.trim();
   const email = input.customerEmail?.trim().toLowerCase() ?? "";
-  const mobile = input.customerMobile?.trim() ?? "";
+  const mobileRaw = input.customerMobile?.trim() ?? "";
+  const mobile = mobileRaw ? normalizePhone(mobileRaw) : "";
 
   if (!name) throw new Error("Customer name is required");
   if (!location) throw new Error("Job suburb or location is required");
@@ -2629,7 +2634,15 @@ export async function createSimpleQuote(input: {
       ? prisma.customer.findFirst({ where: { tenantId: input.tenantId, email } })
       : Promise.resolve(null),
     mobile
-      ? prisma.customer.findFirst({ where: { tenantId: input.tenantId, phone: mobile } })
+      ? prisma.customer.findFirst({
+          where: {
+            tenantId: input.tenantId,
+            OR: [
+              { phone: mobileRaw },
+              { phone: mobile }
+            ]
+          }
+        })
       : Promise.resolve(null)
   ]);
 
