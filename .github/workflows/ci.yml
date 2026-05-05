@@ -93,7 +93,7 @@ jobs:
       DIRECT_URL: "postgresql://ci:ci@localhost:5432/flowlab_ci"
       JWT_SECRET: "ci-test-secret-not-for-production"
       ENCRYPTION_MASTER_KEY: "ci-test-master-key-not-for-production"
-      DEFAULT_ROOT_DOMAIN: "flowlabsolutions.au"
+      DEFAULT_ROOT_DOMAIN: "localhost"
       CRON_SECRET: "ci-test-cron-secret"
       NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321"
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_ci_test_key"
