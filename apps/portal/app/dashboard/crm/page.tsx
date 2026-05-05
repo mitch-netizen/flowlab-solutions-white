@@ -127,7 +127,7 @@ export default async function CrmPage({
                     <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={`/quote/${enquiry.quote.accessToken}`}>Open quote</Link>
                   ) : (
                     <>
-                      <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={`/dashboard/quotes?customerId=${enquiry.customerId}&enquiryId=${enquiry.id}`}>Create quote</Link>
+                      <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={`/dashboard/quotes/new?customerId=${enquiry.customerId}&enquiryId=${enquiry.id}`}>Create quote</Link>
                       <form action={`/api/tenant/enquiries/${enquiry.id}/close`} method="post">
                         <input type="hidden" name="returnTo" value="/dashboard/crm" />
                         <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Close enquiry</button>
