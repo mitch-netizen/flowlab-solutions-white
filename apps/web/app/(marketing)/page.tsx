@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { getFlowLabLogoAsset } from "@flowlab/branding";
 import { countPublicTenantTrials } from "@flowlab/db";
 
 export const dynamic = "force-dynamic";
@@ -90,7 +91,13 @@ export default async function MarketingPage() {
       {/* ── Hero ────────────────────────────────────────────────── */}
       <section className="hero">
         <div className="grid">
-          <div className="pill">FlowLab Solutions</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <img
+              src={getFlowLabLogoAsset("dark")}
+              alt="FlowLab Solutions"
+              style={{ width: "min(360px, 85vw)", height: "auto", display: "block" }}
+            />
+          </div>
           <div className="hero-card">
             <h1 style={{ fontSize: "clamp(2.6rem, 6vw, 5rem)", lineHeight: 1.05, margin: 0 }}>
               Stop running your field service business from WhatsApp and spreadsheets.
