@@ -237,7 +237,7 @@ export default function TenantDetailPage() {
                       <div className="muted" style={{ fontSize: 13 }}>
                         {u.onboardingCompleted
                           ? "✅ Onboarding complete"
-                          : `🔄 Onboarding step ${u.onboardingStep}/6`}
+                          : `🔄 Onboarding step ${u.onboardingStep}/3`}
                         &nbsp;|&nbsp;
                         Last login: {u.lastLoginAt ? formatDate(u.lastLoginAt) : "Never"}
                       </div>

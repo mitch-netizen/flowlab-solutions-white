@@ -133,7 +133,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         }}>
           <span style={{ color: "#94a3b8", fontSize: 14 }}>⚡ Complete your setup to activate automations</span>
           <Link href="/dashboard/onboarding" style={{ color: "#3b82f6", fontSize: 13, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
-            Continue setup (Step {onboardingStep} of 6) →
+            Continue setup (Step {onboardingStep} of 3) →
           </Link>
         </div>
       )}
@@ -176,7 +176,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             </div>
             <div style={{ fontSize: 13, color: "#cbd5e1", marginBottom: 6 }}>
               {!onboardingComplete
-                ? `Setup in progress · Step ${onboardingStep} of 6`
+                ? `Setup in progress · Step ${onboardingStep} of 3`
                 : "Setup complete"}
             </div>
             <div style={{ fontSize: 12, color: "#64748b" }}>
