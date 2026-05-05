@@ -33,7 +33,7 @@ function getPricingSummary(
 export default async function QuotesPage({
   searchParams
 }: {
-  searchParams: Promise<{ customerId?: string; enquiryId?: string; created?: string }>;
+  searchParams: Promise<{ customerId?: string; enquiryId?: string; created?: string; error?: string }>;
 }) {
   const session = await requireTenantSession();
   const query = await searchParams;
@@ -68,6 +68,20 @@ export default async function QuotesPage({
   const onboardingComplete = tenantUser?.onboardingCompleted ?? false;
   const needsPricingSetup = !pricingConfigured && !onboardingComplete;
   const pricingSummary = getPricingSummary(pricingModel, rate);
+  const generateErrorMessage: Record<string, string> = {
+    customer_id_required: "Please select a customer before generating a quote.",
+    service_request_required: "Please add a service request before generating a quote.",
+    invalid_area_square_metres: "Area estimate must be greater than 0.",
+    invalid_estimated_hours: "Estimated hours must be greater than 0.",
+    invalid_site_condition: "Site condition is invalid. Please select a listed option.",
+    customer_not_found: "That customer record is no longer available. Please reselect a customer.",
+    enquiry_not_found: "That enquiry is no longer available. Open CRM and choose a fresh enquiry.",
+    enquiry_customer_mismatch: "The selected enquiry does not match the selected customer.",
+    enquiry_already_quoted: "This enquiry is already linked to a quote.",
+    ai_quote_limit_reached: "Monthly AI quote limit reached for this plan.",
+    quote_generate_failed: "Quote generation failed. Please try again."
+  };
+  const generateError = query.error ? generateErrorMessage[query.error] ?? "Quote generation failed. Please try again." : null;
 
   return (
     
@@ -87,6 +101,12 @@ export default async function QuotesPage({
       {query.created === "1" ? (
         <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
           <p>Draft quote created and linked to the selected customer{prefilledEnquiryId ? " enquiry" : ""}.</p>
+        </div>
+      ) : null}
+
+      {generateError ? (
+        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-rose-500">
+          <p>{generateError}</p>
         </div>
       ) : null}
 
