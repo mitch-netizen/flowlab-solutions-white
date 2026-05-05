@@ -25,6 +25,16 @@ const TRADES = [
   { key: "other", label: "Other", value: "other" }
 ] as const;
 
+const BUSINESS_TYPE_TO_TRADE_KEY: Record<BusinessType, (typeof TRADES)[number]["key"]> = {
+  lawn_mowing: "other",
+  cleaning: "cleaner",
+  pest_control: "pest_control",
+  gardening: "landscaper",
+  handyman: "builder",
+  pool_service: "other",
+  other: "other"
+};
+
 interface Props {
   initialStep: number;
   isCompleted: boolean;
@@ -48,7 +58,7 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
 
   const [businessName, setBusinessName] = useState(initialProfile.businessName);
   const [selectedTradeKey, setSelectedTradeKey] = useState<string>(
-    TRADES.find((trade) => trade.value === initialProfile.businessType)?.key ?? "other"
+    BUSINESS_TYPE_TO_TRADE_KEY[initialProfile.businessType] ?? "other"
   );
   const [mobile, setMobile] = useState(initialProfile.phone);
   const [suburbOrPostcode, setSuburbOrPostcode] = useState(initialProfile.serviceAreaSuburbs[0] ?? "");

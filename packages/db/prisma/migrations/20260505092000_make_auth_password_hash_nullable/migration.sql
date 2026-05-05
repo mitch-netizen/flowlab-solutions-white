@@ -1,0 +1,2 @@
+ALTER TABLE "PlatformUser" ALTER COLUMN "passwordHash" DROP NOT NULL;
+ALTER TABLE "TenantUser" ALTER COLUMN "passwordHash" DROP NOT NULL;
