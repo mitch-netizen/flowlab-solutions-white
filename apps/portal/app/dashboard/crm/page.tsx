@@ -38,6 +38,8 @@ export default async function CrmPage({
         <div className="rounded-lg border bg-card p-4 border-l-4 border-l-red-500">
           {query.error === "invalid_customer"
             ? "First name, last name, and email are required."
+            : query.error === "customer_conflict"
+              ? "Email and phone match different customers. Please open the right customer record before continuing."
             : "Something went wrong. Please try again."}
         </div>
       ) : null}
