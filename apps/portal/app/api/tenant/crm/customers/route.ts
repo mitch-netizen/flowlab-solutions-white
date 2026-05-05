@@ -13,6 +13,10 @@ import { decryptJson, encryptJson } from "@flowlab/integrations";
 import type { XeroCredentials } from "@flowlab/integrations/xero";
 import { upsertXeroContact } from "@flowlab/integrations/xero";
 
+function normalizePhone(phone: string) {
+  return phone.replace(/\D+/g, "");
+}
+
 export async function POST(request: Request) {
   const session = await requireTenantSession();
   const { tenantId } = session;
@@ -57,9 +61,11 @@ export async function POST(request: Request) {
   const [quickFirstName, ...quickLastParts] = customerName.split(/\s+/).filter(Boolean);
   const resolvedFirstName = isQuickQuoteCustomerCreate ? (quickFirstName ?? "") : firstName;
   const resolvedLastName = isQuickQuoteCustomerCreate ? (quickLastParts.join(" ") || "Customer") : lastName;
-  const resolvedPhone = isQuickQuoteCustomerCreate ? customerMobile || undefined : phone;
+  const resolvedPhoneRaw = isQuickQuoteCustomerCreate ? customerMobile || undefined : phone;
+  const resolvedPhone = resolvedPhoneRaw ? normalizePhone(resolvedPhoneRaw) : undefined;
+  const phoneSearchCandidates = [resolvedPhoneRaw, resolvedPhone].filter((value): value is string => Boolean(value));
   const resolvedEmailInput = isQuickQuoteCustomerCreate ? customerEmail : email;
-  const normalizedPhoneForSynthetic = (resolvedPhone ?? "").replace(/\D+/g, "");
+  const normalizedPhoneForSynthetic = resolvedPhone ?? "";
   const syntheticEmail = normalizedPhoneForSynthetic
     ? `no-email+${tenantId.slice(0, 8)}-${normalizedPhoneForSynthetic}@flowlab.local`
     : `no-email+${tenantId.slice(0, 8)}-${Date.now()}@flowlab.local`;
@@ -92,7 +98,7 @@ export async function POST(request: Request) {
       ? prisma.customer.findFirst({
           where: {
             tenantId,
-            phone: resolvedPhone
+            OR: phoneSearchCandidates.map((candidate) => ({ phone: candidate }))
           }
         })
       : Promise.resolve(null)

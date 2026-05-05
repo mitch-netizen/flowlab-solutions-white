@@ -8,12 +8,17 @@ function toStringValue(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
 
+function normalizePhone(phone: string) {
+  return phone.replace(/\D+/g, "");
+}
+
 export async function POST(request: Request) {
   const session = await requireTenantSession();
   const formData = await request.formData();
 
   const customerName = toStringValue(formData, "customerName");
-  const customerMobile = toStringValue(formData, "customerMobile");
+  const customerMobileRaw = toStringValue(formData, "customerMobile");
+  const customerMobile = customerMobileRaw ? normalizePhone(customerMobileRaw) : "";
   const customerEmail = toStringValue(formData, "customerEmail");
   const jobLocation = toStringValue(formData, "jobLocation");
   const jobDescription = toStringValue(formData, "jobDescription");
