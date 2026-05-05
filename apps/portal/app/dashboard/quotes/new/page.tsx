@@ -116,6 +116,7 @@ export default async function NewQuotePage({
               Customer email
               <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerEmail" type="email" placeholder="name@example.com" defaultValue={prefilledCustomerEmail} />
             </label>
+            <p className="text-xs text-muted-foreground">Add at least one: mobile or email.</p>
           </div>
 
           <label className="flex flex-col gap-2 text-sm">
@@ -124,18 +125,23 @@ export default async function NewQuotePage({
           </label>
 
           <label className="flex flex-col gap-2 text-sm">
-            Short job description
+            What needs to be done?
             <textarea className="w-full min-h-24 rounded-lg border bg-background px-3 py-2 text-sm" name="jobDescription" required defaultValue={prefilledJobDescription} />
+            <span className="text-xs text-muted-foreground">Include task, property type, and any access notes.</span>
           </label>
 
           <label className="flex flex-col gap-2 text-sm">
-            Quote amount (AUD)
+            Quote total (AUD)
             <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="quoteAmount" type="number" min="0.01" step="0.01" required />
+            <span className="text-xs text-muted-foreground">Total amount the customer will see.</span>
           </label>
 
-          <button className="inline-flex w-full items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
-            Save quote
-          </button>
+          <div className="space-y-2">
+            <button className="inline-flex w-full items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
+              Create quote and open customer link
+            </button>
+            <p className="text-xs text-muted-foreground">You&apos;ll get a link to send to your customer.</p>
+          </div>
         </form>
       </div>
     </DashboardPageScaffold>
