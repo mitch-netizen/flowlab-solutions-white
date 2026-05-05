@@ -160,7 +160,6 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
             disabled={saving}
             onClick={() => {
               if (!businessName.trim()) return setError("Please enter your business name.");
-              if (!selectedTradeKey) return setError("Please choose your trade.");
               if (!mobile.trim()) return setError("Please enter your mobile number.");
               void saveAndContinue(2, () =>
                 post("/api/tenant/settings/profile-json", {
