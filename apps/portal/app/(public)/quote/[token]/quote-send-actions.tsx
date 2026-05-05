@@ -6,11 +6,15 @@ type QuoteSendActionsProps = {
   quoteTitle: string;
   quoteUrl: string;
   customerName: string;
-  customerMobile: string | null;
+  customerPhone: string | null;
   customerEmail: string | null;
 };
 
-export function QuoteSendActions({ quoteTitle, quoteUrl, customerName, customerMobile, customerEmail }: QuoteSendActionsProps) {
+function normalizePhone(phone: string) {
+  return phone.replace(/\D+/g, "");
+}
+
+export function QuoteSendActions({ quoteTitle, quoteUrl, customerName, customerPhone, customerEmail }: QuoteSendActionsProps) {
   const [message, setMessage] = useState<string | null>(null);
 
   async function copyQuoteLink() {
@@ -40,8 +44,9 @@ export function QuoteSendActions({ quoteTitle, quoteUrl, customerName, customerM
     await copyQuoteLink();
   }
 
-  const smsHref = customerMobile
-    ? `sms:${customerMobile.replace(/\s+/g, "")}?body=${encodeURIComponent(`Hi ${customerName}, here is your quote from FlowLab: ${quoteUrl}`)}`
+  const normalizedCustomerPhone = customerPhone ? normalizePhone(customerPhone) : "";
+  const smsHref = normalizedCustomerPhone
+    ? `sms:${normalizedCustomerPhone}?body=${encodeURIComponent(`Hi ${customerName}, here is your quote from FlowLab: ${quoteUrl}`)}`
     : null;
   const emailHref = customerEmail
     ? `mailto:${customerEmail}?subject=${encodeURIComponent(`Quote: ${quoteTitle}`)}&body=${encodeURIComponent(`Hi ${customerName},\n\nHere is your quote: ${quoteUrl}`)}`
@@ -62,7 +67,9 @@ export function QuoteSendActions({ quoteTitle, quoteUrl, customerName, customerM
           <a className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={smsHref}>
             Send via SMS
           </a>
-        ) : null}
+        ) : (
+          <p className="text-xs text-muted-foreground">No customer mobile/phone saved for this quote. SMS unavailable.</p>
+        )}
         {emailHref ? (
           <a className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={emailHref}>
             Send via email

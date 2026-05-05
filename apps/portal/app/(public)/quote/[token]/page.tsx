@@ -54,7 +54,7 @@ export default async function QuotePage({
                 quoteTitle={quote.title}
                 quoteUrl={quoteUrl}
                 customerName={`${quote.customer.firstName} ${quote.customer.lastName}`.trim()}
-                customerMobile={quote.customer.phone ?? null}
+                customerPhone={quote.customer.phone ?? null}
                 customerEmail={quote.customer.email ?? null}
               />
             </div>
