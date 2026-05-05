@@ -6,7 +6,7 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start --port 3001",
-    "typecheck": "next typegen . && tsc -p tsconfig.json --noEmit",
+    "typecheck": "rm -rf .next/types && next typegen . && tsc -p tsconfig.json --noEmit",
     "lint": "eslint ."
   },
   "dependencies": {
