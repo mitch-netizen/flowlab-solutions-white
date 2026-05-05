@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { getFlowLabLogoAsset } from "@flowlab/branding";
 import { prisma } from "@flowlab/db";
 import { getPlanFeatures } from "@flowlab/contracts";
 import TenantUnavailable from "../../components/tenant-unavailable";
@@ -141,6 +142,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       <main className="grid gap-4 xl:grid-cols-[272px_minmax(0,1fr)]">
         <aside className="sticky top-4 h-fit space-y-4 rounded-lg border bg-card p-4">
           <div className="space-y-2">
+            <img
+              src={tenant.branding.logoUrl ?? getFlowLabLogoAsset("dark")}
+              alt={`${tenant.branding.businessName} logo`}
+              style={{ width: "100%", maxWidth: 240, height: "auto", display: "block", marginBottom: 10 }}
+            />
             <div className="eyebrow">Your workspace</div>
             <h2 style={{ margin: "6px 0 4px", lineHeight: 1.08 }}>{tenant.branding.businessName}</h2>
             <div style={{ color: "#cbd5e1", fontSize: 15, fontWeight: 600 }}>

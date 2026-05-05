@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { getFlowLabLogoAsset } from "@flowlab/branding";
 import { ensureAppEnv } from "@flowlab/contracts/server";
 import "./globals.css";
 
@@ -18,7 +19,10 @@ const monoFont = DM_Mono({
 
 export const metadata: Metadata = {
   title: "FlowLab Solutions",
-  description: "White-label field service automation for sole operators."
+  description: "White-label field service automation for sole operators.",
+  icons: {
+    icon: getFlowLabLogoAsset("favicon")
+  }
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
