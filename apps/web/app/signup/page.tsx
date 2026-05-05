@@ -203,7 +203,7 @@ export default async function SignupPage({
           <h2 style={{ marginTop: 0 }}>What happens next</h2>
           <div className="grid">
             <div className="panel-soft">Your tenant, profile, and owner login are created instantly.</div>
-            <div className="panel-soft">You land in the 6-step onboarding wizard tailored to your business type.</div>
+            <div className="panel-soft">You land in the 3-step onboarding wizard tailored to your business type.</div>
             <div className="panel-soft">Quoting, scheduling, invoicing, and automations all unlock from one branded dashboard.</div>
           </div>
         </div>

@@ -62,7 +62,7 @@ export default async function GettingStartedPage({
           <div className="grid">
             <div className="panel-soft">Your branded portal at <strong>{slug}.flowlabsolutions.au</strong></div>
             <div className="panel-soft">Owner login and secure session management</div>
-            <div className="panel-soft">6-step onboarding wizard ready on first login</div>
+            <div className="panel-soft">3-step onboarding wizard ready on first login</div>
             <div className="panel-soft">Quoting, scheduling, invoicing, and automations</div>
           </div>
         </div>
