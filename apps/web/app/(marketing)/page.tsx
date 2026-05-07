@@ -7,51 +7,46 @@ import { countPublicTenantTrials } from "@flowlab/db";
 export const dynamic = "force-dynamic";
 
 const PAINS = [
-  "Missed calls and messages sit too long before you reply.",
-  "Job details are scattered across texts, notes, and spreadsheets.",
-  "Quotes take too long, so leads go cold.",
-  "Bookings and follow-ups rely on memory.",
-  "Admin work piles up after hours."
+  "You miss calls while on the tools, then forget who needed what.",
+  "Job details end up split across texts, notes, and your calendar.",
+  "Quotes get delayed, and good leads book someone else.",
+  "Bookings and follow-ups depend on memory at the end of a long day.",
+  "You finish onsite work, then spend nights catching up on admin."
 ];
 
 const SOLUTION_MAP = [
   {
-    pain: "Slow response to new requests",
-    outcome: "Capture every request in one inbox so you can reply faster."
+    pain: "Calls and messages get missed",
+    outcome: "Every new request lands in one place, ready to action."
   },
   {
-    pain: "Scattered customer and job info",
-    outcome: "Keep customer history, quotes, and jobs together in one record."
+    pain: "Customer info is scattered",
+    outcome: "Customer details, job history, and notes stay in one record."
   },
   {
-    pain: "Manual quoting and missed follow-up",
-    outcome: "Send professional quotes quickly and trigger follow-ups automatically."
+    pain: "Quoting is slow and inconsistent",
+    outcome: "Send clear quotes faster, then run follow-ups automatically."
   },
   {
-    pain: "Booking handovers and status confusion",
-    outcome: "Move work from quote to booked job in one clear flow."
+    pain: "Work slips between quote and booking",
+    outcome: "Move from request to quote to booked job without losing momentum."
   }
 ];
 
-const HOW_IT_WORKS = [
-  "Capture request",
-  "Send quote",
-  "Book job",
-  "Follow up"
-];
+const HOW_IT_WORKS = ["Capture request", "Send quote", "Book job", "Follow up"];
 
 const BENEFITS = [
-  "Faster response times",
+  "Faster response to new work",
   "Fewer missed leads",
-  "Cleaner customer experience",
-  "Less admin at the end of the day"
+  "A cleaner, more professional customer experience",
+  "Less admin after hours"
 ];
 
 export default async function MarketingPage() {
   const tenantCount = await countPublicTenantTrials();
 
   return (
-    <main className="shell">
+    <main className="shell marketing-home">
       <header className="marketing-nav">
         <Link href="/" className="marketing-nav__brand" aria-label="FlowLab Solutions">
           <Image
@@ -72,13 +67,13 @@ export default async function MarketingPage() {
         </nav>
       </header>
 
-      <section className="hero hero--compact">
+      <section className="hero hero--clean">
         <div>
           <div className="pill">Built for tradies and service businesses</div>
-          <h1 className="hero-title">Stop losing jobs to admin chaos.</h1>
+          <h1 className="hero-title">Less paperwork. More paid work.</h1>
           <p className="muted hero-subtitle">
-            FlowLab puts requests, quotes, bookings, customers, and follow-ups into one simple flow.
-            Respond faster, look professional, and keep work moving.
+            FlowLab gives tradies one clear flow for requests, quotes, bookings, customer info,
+            and follow-ups. Reply faster, stay organised, and keep jobs moving.
           </p>
           <div className="button-row">
             <Link
@@ -96,7 +91,30 @@ export default async function MarketingPage() {
           </div>
           <p className="hero-fineprint muted">14-day free trial. No credit card required.</p>
         </div>
-        <div className="panel-soft stack-list" aria-label="Proof points">
+
+        <div className="story-graphic" aria-label="From scattered admin to one clear workflow">
+          <div className="story-graphic__lane">
+            <p className="story-graphic__label muted">Before</p>
+            <div className="story-graphic__chips story-graphic__chips--chaos">
+              <span>Missed call</span>
+              <span>Text thread</span>
+              <span>Paper note</span>
+              <span>Calendar</span>
+              <span>Late quote</span>
+            </div>
+          </div>
+          <div className="story-graphic__arrow" aria-hidden="true">→</div>
+          <div className="story-graphic__lane">
+            <p className="story-graphic__label muted">With FlowLab</p>
+            <div className="story-graphic__flow">
+              {HOW_IT_WORKS.map((step) => (
+                <div key={step} className="story-graphic__flow-step">{step}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="proof-strip" aria-label="Proof points">
           <div>
             <p className="muted">Businesses on trial</p>
             <strong className="value">{tenantCount}</strong>
@@ -106,34 +124,32 @@ export default async function MarketingPage() {
             <strong className="value">About 10 minutes</strong>
           </div>
           <div>
-            <p className="muted">Focus</p>
-            <strong className="value">Tradies and service operators</strong>
+            <p className="muted">Built for</p>
+            <strong className="value">Tradies and service businesses</strong>
           </div>
         </div>
       </section>
 
-      <section className="panel">
+      <section className="panel panel--flat">
         <h2 style={{ marginTop: 0 }}>The problem</h2>
         <p className="muted section-intro">
-          Most operators lose time and money chasing admin instead of doing paid work.
+          Most tradies are doing the job and the office work. That is where leads get missed.
         </p>
-        <div className="cards-3 cards-2">
+        <ul className="plain-list">
           {PAINS.map((pain) => (
-            <div key={pain} className="panel-soft">
-              <p style={{ margin: 0 }}>{pain}</p>
-            </div>
+            <li key={pain}>{pain}</li>
           ))}
-        </div>
+        </ul>
       </section>
 
-      <section className="panel">
+      <section className="panel panel--flat">
         <h2 style={{ marginTop: 0 }}>The solution</h2>
         <p className="muted section-intro">
-          FlowLab connects each step so work does not stall between tools.
+          FlowLab keeps your workflow in one place so nothing gets lost between steps.
         </p>
         <div className="stack-gap">
           {SOLUTION_MAP.map((row) => (
-            <div key={row.pain} className="panel-soft solution-row">
+            <div key={row.pain} className="solution-line">
               <p style={{ margin: 0 }}><strong>{row.pain}</strong></p>
               <p className="muted" style={{ margin: 0 }}>{row.outcome}</p>
             </div>
@@ -141,11 +157,17 @@ export default async function MarketingPage() {
         </div>
       </section>
 
-      <section id="how-it-works" className="panel">
+      <section id="how-it-works" className="panel panel--flat">
         <h2 style={{ marginTop: 0 }}>How it works</h2>
-        <div className="grid steps-grid">
+        <div className="timeline-rail" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="how-flow">
           {HOW_IT_WORKS.map((step, index) => (
-            <div key={step} className="panel-soft step-card">
+            <div key={step} className="flow-step">
               <span className="step-number">{index + 1}</span>
               <strong>{step}</strong>
             </div>
@@ -153,21 +175,20 @@ export default async function MarketingPage() {
         </div>
       </section>
 
-      <section className="panel">
+      <section className="panel panel--flat">
         <h2 style={{ marginTop: 0 }}>What you get</h2>
-        <div className="cards-3 cards-2">
+        <ul className="plain-list plain-list--benefits">
           {BENEFITS.map((benefit) => (
-            <div key={benefit} className="panel-soft">
-              <p style={{ margin: 0 }}>{benefit}</p>
-            </div>
+            <li key={benefit}>{benefit}</li>
           ))}
-        </div>
+        </ul>
       </section>
 
-      <section className="panel final-cta">
+      <section className="panel panel--flat final-cta">
         <h2 style={{ marginTop: 0 }}>Start with less risk and less admin</h2>
         <p className="muted">
-          Try FlowLab free for 14 days. Set up in minutes, run your first flow, and keep your current process while you test it.
+          Start your 14-day free trial. No credit card. Set it up quickly, send a real quote,
+          and see if it saves you time this week.
         </p>
         <div className="button-row" style={{ justifyContent: "center" }}>
           <Link
