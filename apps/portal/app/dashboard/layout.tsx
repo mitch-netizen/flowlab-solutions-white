@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
@@ -44,6 +45,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const features = getPlanFeatures(plan as Parameters<typeof getPlanFeatures>[0]);
 
   const isSuspended = status === "suspended" || status === "cancelled";
+  const logoSrc = tenant.branding.logoUrl ?? getFlowLabLogoAsset("dark");
+  const isRemoteLogo = /^https?:\/\//.test(logoSrc);
 
   // Redirect suspended/cancelled tenants to the upgrade page.
   // Read x-pathname (set by middleware) to avoid an infinite redirect loop
@@ -142,9 +145,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       <main className="grid gap-4 xl:grid-cols-[272px_minmax(0,1fr)]">
         <aside className="sticky top-4 h-fit space-y-4 rounded-lg border bg-card p-4">
           <div className="space-y-2">
-            <img
-              src={tenant.branding.logoUrl ?? getFlowLabLogoAsset("dark")}
+            <Image
+              src={logoSrc}
               alt={`${tenant.branding.businessName} logo`}
+              width={240}
+              height={80}
+              unoptimized={isRemoteLogo}
               style={{ width: "100%", maxWidth: 240, height: "auto", display: "block", marginBottom: 10 }}
             />
             <div className="eyebrow">Your workspace</div>
