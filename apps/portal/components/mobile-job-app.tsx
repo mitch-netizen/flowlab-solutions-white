@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { MobileJobAction } from "@flowlab/contracts";
 import { getCustomerRecordHref, getJobRecordHref } from "../lib/dashboard-links";
@@ -58,7 +58,7 @@ export function MobileJobApp({ jobs }: { jobs: JobCard[] }) {
     };
   }, []);
 
-  async function syncQueue(nextQueue = queue) {
+  const syncQueue = useCallback(async (nextQueue: MobileJobAction[]) => {
     if (!online || nextQueue.length === 0 || syncingRef.current) {
       return;
     }
@@ -81,11 +81,11 @@ export function MobileJobApp({ jobs }: { jobs: JobCard[] }) {
     } finally {
       syncingRef.current = false;
     }
-  }
+  }, [online]);
 
   useEffect(() => {
-    void syncQueue();
-  }, [online]);
+    void syncQueue(readQueue());
+  }, [online, syncQueue]);
 
   function enqueue(action: MobileJobAction) {
     const nextQueue = [...readQueue(), action];
