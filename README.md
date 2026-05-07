@@ -4,6 +4,10 @@
 
 FlowLab gives field service businesses a branded, end-to-end operations layer — from customer enquiry through to Xero invoice — without hiring an office.
 
+## Product reference maintenance
+
+The canonical product reference is `docs/flowlab-saas-specs-features-benefits-faq.md`. Any LLM, coding agent, or developer changing user-facing features, plan limits, integrations, automation behavior, onboarding, architecture, runtime specs, environment requirements, or known caveats must update that document in the same change when the reference would otherwise become stale.
+
 ## What it is
 
 FlowLab runs as a white-label SaaS. Each customer gets their own subdomain (or custom domain), their own isolated data, and a portal that feels like it was built for them. The platform is structured around five distinct apps:
