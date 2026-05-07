@@ -21,6 +21,7 @@ type DataTableProps<TData, TValue> = {
 
 export function DataTable<TData, TValue>({ columns, data, pageSize = 10 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
