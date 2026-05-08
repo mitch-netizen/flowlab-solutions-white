@@ -26,7 +26,7 @@ export default async function AdminPage() {
       description="Track tenant health, monitor platform-wide events, and spin up new branded operator workspaces."
       meta={<span className="pill">Platform overview</span>}
       actions={(
-        <Link href="/signup" className="cta">
+        <Link href="/admin/tenants/new" className="cta">
           Create tenant
         </Link>
       )}
@@ -39,6 +39,10 @@ export default async function AdminPage() {
           <div className="metric">
             <span className="muted">Jobs this month</span>
             <strong>{overview.stats.jobs}</strong>
+          </div>
+          <div className="metric">
+            <span className="muted">Enquiries</span>
+            <strong>{overview.stats.enquiries}</strong>
           </div>
           <div className="metric">
             <span className="muted">Platform revenue</span>
@@ -133,6 +137,25 @@ export default async function AdminPage() {
                 </div>
                 <p className="muted">{event.requestSummary}</p>
                 <Badge tone={getStatusTone(event.status)}>{formatLabel(event.status)}</Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="panel">
+          <h2>Recent enquiries across tenants</h2>
+          <div className="grid">
+            {overview.recentEnquiries.length === 0 ? <p className="muted">No enquiries recorded yet.</p> : null}
+            {overview.recentEnquiries.map((enquiry: (typeof overview.recentEnquiries)[number]) => (
+              <div key={enquiry.id} className="panel-soft">
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                  <strong>{enquiry.customer.firstName} {enquiry.customer.lastName}</strong>
+                  <span className="muted">{formatDateTime(enquiry.createdAt)}</span>
+                </div>
+                <p className="muted" style={{ marginBottom: 8 }}>
+                  {enquiry.tenant.profile?.businessName ?? enquiry.tenant.slug} | {formatLabel(enquiry.status)}
+                  {enquiry.quote ? ` | Quote ${formatLabel(enquiry.quote.status)}` : " | No quote yet"}
+                </p>
+                <p style={{ margin: 0 }}>{enquiry.serviceRequest}</p>
               </div>
             ))}
           </div>

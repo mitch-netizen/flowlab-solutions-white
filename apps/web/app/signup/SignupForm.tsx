@@ -42,31 +42,30 @@ export default function SignupForm({ action, startedAt }: Props) {
   }
 
   return (
-    <form ref={formRef} action={handleSubmit} className="space-y-4">
-      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+    <form ref={formRef} action={handleSubmit} className="flow-form">
+      <label>
         Business name
-        <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="businessName" required />
+        <input name="businessName" required />
       </label>
-      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+      <label>
         Your name
-        <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="ownerName" required />
+        <input name="ownerName" required />
       </label>
-      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+      <label>
         Email
-        <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="email" type="email" required />
+        <input name="email" type="email" required />
       </label>
-      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+      <label>
         Phone
-        <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="phone" />
+        <input name="phone" />
       </label>
-      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+      <label>
         Suburb
-        <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="suburb" />
+        <input name="suburb" />
       </label>
-      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+      <label>
         Password
         <input
-          className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
           name="password"
           type="password"
           required
@@ -74,17 +73,17 @@ export default function SignupForm({ action, startedAt }: Props) {
           autoComplete="new-password"
         />
       </label>
-      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+      <label>
         Business type
-        <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="businessType" defaultValue="lawn_mowing">
+        <select name="businessType" defaultValue="lawn_mowing">
           {["lawn_mowing","cleaning","pest_control","gardening","handyman","pool_service","other"].map((v) => (
             <option key={v} value={v}>{v.replaceAll("_", " ")}</option>
           ))}
         </select>
       </label>
-      <label className="flex flex-col gap-2 text-sm text-muted-foreground">
+      <label>
         Plan
-        <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="plan" defaultValue="professional">
+        <select name="plan" defaultValue="professional">
           {["starter", "professional", "growth"].map((v) => (
             <option key={v} value={v}>{v}</option>
           ))}
@@ -112,7 +111,7 @@ export default function SignupForm({ action, startedAt }: Props) {
         </p>
       )}
 
-      <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit" disabled={!captchaToken}>
+      <button className="marketing-button marketing-button--primary auth-button" type="submit" disabled={!captchaToken}>
         Start free 14-day trial
       </button>
 
