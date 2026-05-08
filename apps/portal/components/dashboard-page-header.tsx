@@ -22,16 +22,16 @@ export default function DashboardPageHeader({
   meta
 }: DashboardPageHeaderProps) {
   return (
-    <header className="space-y-4 rounded-lg border bg-card p-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-4xl space-y-2">
-          <div className="text-xs uppercase tracking-[0.22em] text-accent">{eyebrow}</div>
-          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-          <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+    <header className="portal-page-header">
+      <div className="portal-page-header__top">
+        <div className="portal-page-header__copy">
+          <div className="eyebrow">{eyebrow}</div>
+          <h1>{title}</h1>
+          <p>{description}</p>
         </div>
-        {actions ? <div className="flex flex-wrap items-start gap-2">{actions}</div> : null}
+        {actions ? <div className="portal-page-header__actions">{actions}</div> : null}
       </div>
-      {meta ? <div className="flex flex-wrap gap-2">{meta}</div> : null}
+      {meta ? <div className="portal-page-header__meta">{meta}</div> : null}
       <DashboardSectionTabs items={dashboardSectionTabs[section]} />
     </header>
   );

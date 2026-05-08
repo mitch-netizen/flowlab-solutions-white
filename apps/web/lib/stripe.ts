@@ -92,16 +92,16 @@ export function verifyStripeWebhookSignature(payload: string, signatureHeader: s
   if (!webhookSecret) throw new Error("STRIPE_WEBHOOK_SECRET is not configured");
   if (!signatureHeader) return false;
 
-  const parts = Object.fromEntries(
-    signatureHeader.split(",").map((part) => {
-      const [key, value] = part.split("=");
-      return [key, value];
-    })
-  );
+  const signatures: string[] = [];
+  let timestamp: string | null = null;
 
-  const timestamp = parts.t;
-  const signature = parts.v1;
-  if (!timestamp || !signature) return false;
+  for (const part of signatureHeader.split(",")) {
+    const [key, value] = part.split("=");
+    if (key === "t") timestamp = value ?? null;
+    if (key === "v1" && value) signatures.push(value);
+  }
+
+  if (!timestamp || signatures.length === 0) return false;
 
   const expected = crypto
     .createHmac("sha256", webhookSecret)
@@ -109,8 +109,13 @@ export function verifyStripeWebhookSignature(payload: string, signatureHeader: s
     .digest("hex");
 
   const expectedBuffer = Buffer.from(expected, "hex");
-  const signatureBuffer = Buffer.from(signature, "hex");
-  if (expectedBuffer.length !== signatureBuffer.length) return false;
 
-  return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
+  return signatures.some((signature) => {
+    try {
+      const signatureBuffer = Buffer.from(signature, "hex");
+      return expectedBuffer.length === signatureBuffer.length && crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
+    } catch {
+      return false;
+    }
+  });
 }
