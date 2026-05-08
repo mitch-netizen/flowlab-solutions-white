@@ -7,11 +7,12 @@ import { dashboardNavGroups, dashboardUtilityLinks, isDashboardHrefActive } from
 
 // App icons — restrained glyphs to keep the sidebar easy to scan
 const sectionIcon: Record<string, string> = {
-  Overview: "○",
-  CRM: "◇",
+  Today: "○",
+  Leads: "◇",
+  Quotes: "◆",
   Jobs: "▣",
-  Revenue: "△",
-  Setup: "✦"
+  Money: "△",
+  Settings: "✦"
 };
 
 type PortalSidebarNavProps = {

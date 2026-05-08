@@ -221,13 +221,14 @@ export default async function DashboardPage({
     
       <DashboardPageScaffold
         eyebrow="Overview"
-        title={`Hi ${headingName}, here’s the brief.`}
-        description={`This week you've had ${enquiriesThisWeek} new enquir${enquiriesThisWeek === 1 ? "y" : "ies"} and ${bookedJobsThisWeek} job${bookedJobsThisWeek === 1 ? "" : "s"} booked. Tomorrow ${tomorrowJobs.length === 0 ? "is clear so far." : `has ${tomorrowJobs.length} job${tomorrowJobs.length === 1 ? "" : "s"} in the run sheet.`}`}
+        title={`Today for ${headingName}`}
+        description={`Start here. Check new leads, send quotes, schedule jobs, then invoice through Xero. This week: ${enquiriesThisWeek} new enquir${enquiriesThisWeek === 1 ? "y" : "ies"}, ${bookedJobsThisWeek} booked job${bookedJobsThisWeek === 1 ? "" : "s"}.`}
         section="home"
         actions={(
           <>
-            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/scheduler">Open tomorrow&apos;s schedule</Link>
-            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/system-health">Review automations</Link>
+            <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href="/dashboard/quotes/new">New quote</Link>
+            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/crm">Open leads</Link>
+            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/scheduler">Open schedule</Link>
             <form action="/api/tenant/digest" method="post" style={{ display: "inline" }}>
               <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Send me today&apos;s brief</button>
             </form>
@@ -261,23 +262,31 @@ export default async function DashboardPage({
       {!isNewTenantEmptyState && (
       <>
       <div className="rounded-lg border bg-card p-4">
+        <div className="space-y-2" style={{ marginBottom: 18 }}>
+          <div className="eyebrow">Workflow</div>
+          <h2 style={{ margin: 0 }}>Move work left to right</h2>
+          <p className="text-sm text-muted-foreground" style={{ margin: 0 }}>Leads become quotes, quotes become jobs, jobs become Xero invoices.</p>
+        </div>
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">New enquiries this week</div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">1. Leads this week</div>
             <div className="text-3xl font-semibold">{enquiriesThisWeek}</div>
-            <p className="text-sm text-muted-foreground">Submitted via your public enquiry form.</p>
+            <p className="text-sm text-muted-foreground">Review requests and customer records.</p>
+            <Link className="inline-entity-link" href="/dashboard/crm">Open leads</Link>
           </div>
           <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Jobs booked this week</div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">2. Jobs booked</div>
             <div className="text-3xl font-semibold">{bookedJobsThisWeek}</div>
-            <p className="text-sm text-muted-foreground">In any active or completed stage.</p>
+            <p className="text-sm text-muted-foreground">Keep the job board and schedule current.</p>
+            <Link className="inline-entity-link" href="/dashboard/jobs">Open jobs</Link>
           </div>
           <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Tomorrow&apos;s run sheet</div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">3. Tomorrow</div>
             <div className="text-3xl font-semibold">{tomorrowJobs.length}</div>
             <p className="text-sm text-muted-foreground">
-              {tomorrowJobs.length === 0 ? "No jobs scheduled yet." : "Ready to review before the day starts."}
+              {tomorrowJobs.length === 0 ? "No jobs scheduled yet." : "Review the run sheet before the day starts."}
             </p>
+            <Link className="inline-entity-link" href="/dashboard/scheduler">Open schedule</Link>
           </div>
         </div>
       </div>
@@ -286,9 +295,9 @@ export default async function DashboardPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-2">
-              <div className="eyebrow">Tomorrow</div>
-              <h2>Run sheet</h2>
-              <p>Jobs scheduled for tomorrow, in order.</p>
+              <div className="eyebrow">Next shift</div>
+              <h2>Tomorrow&apos;s run sheet</h2>
+              <p>The jobs that need boots-on-ground attention next.</p>
             </div>
             <Link href="/dashboard/scheduler" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open scheduler</Link>
           </div>
@@ -318,9 +327,9 @@ export default async function DashboardPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-2">
-              <div className="eyebrow">Action required</div>
-              <h2>Needs attention</h2>
-              <p>Overdue invoices, failed automations, and expiring integrations in one place.</p>
+              <div className="eyebrow">Don&apos;t miss</div>
+              <h2>Needs action</h2>
+              <p>Only the things that can cost you time, money, or a customer.</p>
             </div>
             <Link href="/dashboard/system-health" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">View all</Link>
           </div>
