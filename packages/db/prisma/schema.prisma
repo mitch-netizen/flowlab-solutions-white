@@ -161,6 +161,8 @@ model TenantProfile {
   businessType         BusinessType
   timezone             String       @default("Australia/Brisbane")
   tenant               Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([customDomain])
 }
 
 model TenantIntegration {
