@@ -16,43 +16,48 @@ export type DashboardNavGroup = {
  */
 export const dashboardNavGroups: DashboardNavGroup[] = [
   {
-    title: "Overview",
+    title: "Today",
     items: [
-      { href: "/dashboard", label: "Home", description: "Today's briefing and priorities" }
+      { href: "/dashboard", label: "Dashboard", description: "What needs doing next" }
     ]
   },
   {
-    title: "CRM",
+    title: "Leads",
     items: [
-      { href: "/dashboard/crm", label: "Customers", description: "Customer records and history" },
-      { href: "/dashboard/retention", label: "Retention", description: "Reminders, reviews, and rebooking" }
+      { href: "/dashboard/crm", label: "Requests & customers", description: "New enquiries and customer records" },
+      { href: "/dashboard/retention", label: "Follow-up", description: "Reviews, rebooking, and reminders" }
+    ]
+  },
+  {
+    title: "Quotes",
+    items: [
+      { href: "/dashboard/quotes", label: "Quotes", description: "Price, send, and win work" },
+      { href: "/dashboard/agreements", label: "Approvals", description: "Signed quotes and service agreements" }
     ]
   },
   {
     title: "Jobs",
     items: [
-      { href: "/dashboard/jobs", label: "Job board", description: "All jobs by status" },
-      { href: "/dashboard/scheduler", label: "Schedule", description: "Availability and route planning" },
-      { href: "/dashboard/mobile", label: "Mobile app", description: "Field workflow and completion" }
+      { href: "/dashboard/jobs", label: "Job board", description: "All work by status" },
+      { href: "/dashboard/scheduler", label: "Schedule", description: "Tomorrow's run sheet and routes" },
+      { href: "/dashboard/mobile", label: "Field app", description: "Mobile workflow for the tools" }
     ]
   },
   {
-    title: "Revenue",
+    title: "Money",
     items: [
-      { href: "/dashboard/quotes", label: "Quotes", description: "Draft, send, and win work" },
-      { href: "/dashboard/agreements", label: "Agreements", description: "Templates and signatures" },
-      { href: "/dashboard/invoices", label: "Invoices", description: "Billing via Xero" }
+      { href: "/dashboard/invoices", label: "Invoices", description: "Billing through your Xero account" }
     ]
   },
   {
-    title: "Setup",
+    title: "Settings",
     items: [
-      { href: "/dashboard/automations", label: "Automations", description: "Built-in and advanced workflows" },
-      { href: "/dashboard/integrations", label: "Integrations", description: "Xero, Brevo, DocuSeal, and more" },
-      { href: "/dashboard/settings", label: "Settings", description: "Business profile and pricing" },
-      { href: "/dashboard/system-health", label: "System health", description: "Automation queues and alerts" },
-      { href: "/dashboard/onboarding", label: "Onboarding", description: "Finish setup and go live" },
-      { href: "/dashboard/upgrade", label: "Upgrade", description: "Plans, limits, and trial status" }
+      { href: "/dashboard/onboarding", label: "Setup checklist", description: "Finish the launch steps" },
+      { href: "/dashboard/settings", label: "Business settings", description: "Profile, services, pricing, and domains" },
+      { href: "/dashboard/integrations", label: "Connected apps", description: "Xero, Brevo, DocuSeal, and more" },
+      { href: "/dashboard/automations", label: "Automations", description: "What FlowLab does in the background" },
+      { href: "/dashboard/system-health", label: "Health & logs", description: "Failed jobs and automation alerts" },
+      { href: "/dashboard/upgrade", label: "Plan & billing", description: "Plan limits and trial status" }
     ]
   }
 ];
@@ -71,26 +76,26 @@ export const dashboardSectionTabs = {
     { href: "/dashboard", label: "Today" }
   ],
   crm: [
-    { href: "/dashboard/crm", label: "Customers" },
-    { href: "/dashboard/retention", label: "Retention" }
+    { href: "/dashboard/crm", label: "Requests & customers" },
+    { href: "/dashboard/retention", label: "Follow-up" }
   ],
   jobs: [
-    { href: "/dashboard/jobs", label: "Job board" },
+    { href: "/dashboard/jobs", label: "Jobs" },
     { href: "/dashboard/scheduler", label: "Schedule" },
-    { href: "/dashboard/mobile", label: "Mobile app" }
+    { href: "/dashboard/mobile", label: "Field app" }
   ],
   revenue: [
     { href: "/dashboard/quotes", label: "Quotes" },
-    { href: "/dashboard/agreements", label: "Agreements" },
+    { href: "/dashboard/agreements", label: "Approvals" },
     { href: "/dashboard/invoices", label: "Invoices" }
   ],
   setup: [
+    { href: "/dashboard/onboarding", label: "Setup checklist" },
+    { href: "/dashboard/settings", label: "Business settings" },
+    { href: "/dashboard/integrations", label: "Connected apps" },
     { href: "/dashboard/automations", label: "Automations" },
-    { href: "/dashboard/integrations", label: "Integrations" },
-    { href: "/dashboard/settings", label: "Settings" },
-    { href: "/dashboard/system-health", label: "System health" },
-    { href: "/dashboard/onboarding", label: "Onboarding" },
-    { href: "/dashboard/upgrade", label: "Upgrade" }
+    { href: "/dashboard/system-health", label: "Health & logs" },
+    { href: "/dashboard/upgrade", label: "Plan & billing" }
   ]
 } satisfies Record<string, DashboardNavItem[]>;
 
