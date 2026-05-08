@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { FlowLabBrandLink } from "../flowlab-brand";
+
 type AdminPageScaffoldProps = {
   title: string;
   description?: string;
@@ -20,6 +22,10 @@ function joinClassNames(...classes: Array<string | undefined>) {
 export default function AdminPageScaffold({ title, description, meta, actions, children }: AdminPageScaffoldProps) {
   return (
     <main className="shell admin-page-scaffold">
+      <div className="app-topbar">
+        <FlowLabBrandLink />
+        <span className="app-topbar__label">Platform</span>
+      </div>
       <section className="grid admin-page-scaffold-grid">
         <header className="hero-card admin-page-header">
           <div>

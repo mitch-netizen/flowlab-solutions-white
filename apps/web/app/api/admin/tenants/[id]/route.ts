@@ -21,6 +21,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       monthlyFee: true,
       trialEndsAt: true,
       billingEmail: true,
+      stripeCustomerId: true,
+      stripeSubscriptionId: true,
+      stripeSubscriptionStatus: true,
+      stripePriceId: true,
+      subscriptionStartDate: true,
       createdAt: true,
       notes: true,
       profile: {
@@ -39,6 +44,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         orderBy: { createdAt: "asc" },
         select: {
           id: true,
+          authUserId: true,
           email: true,
           firstName: true,
           lastName: true,
@@ -71,11 +77,42 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           status: true,
           requestSummary: true,
           errorMessage: true,
-          durationMs: true
+          durationMs: true,
+          triggeredBy: true
+        }
+      },
+      enquiries: {
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          createdAt: true,
+          serviceRequest: true,
+          status: true,
+          source: true,
+          convertedAt: true,
+          customer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              suburb: true
+            }
+          },
+          quote: {
+            select: {
+              id: true,
+              title: true,
+              amount: true,
+              status: true
+            }
+          }
         }
       },
       _count: {
-        select: { jobs: true, invoices: true, customers: true }
+        select: { jobs: true, invoices: true, customers: true, enquiries: true }
       }
     }
   });
@@ -101,6 +138,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body.plan) updates.plan = body.plan;
   if (body.status) updates.status = body.status;
   if (body.monthlyFee != null) updates.monthlyFee = body.monthlyFee;
+  if (body.billingEmail) updates.billingEmail = body.billingEmail;
+  if (body.stripeCustomerId != null) updates.stripeCustomerId = body.stripeCustomerId || null;
   if (body.notes != null) updates.notes = body.notes;
 
   if (Object.keys(updates).length > 0) {
