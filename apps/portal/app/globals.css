@@ -401,6 +401,34 @@ h3 {
   align-items: flex-start;
 }
 
+.portal-section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: var(--space-3);
+  border-top: 1px solid color-mix(in srgb, var(--text-primary) 9%, transparent);
+}
+
+.portal-section-tabs__item {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 7px 12px;
+  color: color-mix(in srgb, var(--text-primary) 54%, transparent);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.portal-section-tabs__item:hover,
+.portal-section-tabs__item.is-active {
+  border-color: color-mix(in srgb, var(--accent-primary) 24%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 11%, transparent);
+  color: var(--text-primary);
+}
+
 .portal-nav {
   display: grid;
   gap: 7px;
