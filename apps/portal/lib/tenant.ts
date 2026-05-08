@@ -1,15 +1,11 @@
 import { headers } from "next/headers";
+import { cache } from "react";
 
 import { getBrandingTheme, toStyleAttribute } from "@flowlab/branding";
 import { resolveTenantContext } from "@flowlab/db";
 import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 
-export async function getCurrentTenantContext() {
-  const incomingHost =
-    (await headers()).get("x-flowlab-host") ??
-    (await headers()).get("host") ??
-    `tenant.${getCanonicalRootDomain()}`;
-
+const resolveCurrentTenantContext = cache(async (incomingHost: string) => {
   const host = incomingHost.replace(/^https?:\/\//, "").toLowerCase();
   const isLocal =
     host === "localhost:3001" ||
@@ -27,12 +23,22 @@ export async function getCurrentTenantContext() {
   }
 
   return null;
+});
+
+export async function getCurrentTenantContext() {
+  const headerStore = await headers();
+  const incomingHost =
+    headerStore.get("x-flowlab-host") ??
+    headerStore.get("host") ??
+    `tenant.${getCanonicalRootDomain()}`;
+
+  return resolveCurrentTenantContext(incomingHost);
 }
 
-export async function getCurrentTheme() {
+export const getCurrentTheme = cache(async () => {
   const tenant = await getCurrentTenantContext();
   return getBrandingTheme(tenant);
-}
+});
 
 export async function getCurrentThemeStyle() {
   const theme = await getCurrentTheme();
