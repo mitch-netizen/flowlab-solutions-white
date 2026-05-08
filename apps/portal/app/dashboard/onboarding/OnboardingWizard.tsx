@@ -39,6 +39,10 @@ interface Props {
 
 const DEFAULT_WORK_SCHEDULE = [1, 2, 3, 4, 5].map((dayOfWeek) => ({ dayOfWeek, startTime: "07:00", endTime: "17:00" }));
 
+function getInitialTradeKey(businessType: BusinessType) {
+  return TRADES.find((trade) => trade.value === businessType)?.key ?? "other";
+}
+
 export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl, initialProfile }: Props) {
   const [step, setStep] = useState(Math.min(Math.max(initialStep, 1), 3));
   const [saving, setSaving] = useState(false);
@@ -47,7 +51,7 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
   const [error, setError] = useState("");
 
   const [businessName, setBusinessName] = useState(initialProfile.businessName);
-  const [selectedTradeKey, setSelectedTradeKey] = useState<string>("");
+  const [selectedTradeKey, setSelectedTradeKey] = useState<string>(() => getInitialTradeKey(initialProfile.businessType));
   const [mobile, setMobile] = useState(initialProfile.phone);
   const [suburbOrPostcode, setSuburbOrPostcode] = useState(initialProfile.serviceAreaSuburbs[0] ?? "");
 
