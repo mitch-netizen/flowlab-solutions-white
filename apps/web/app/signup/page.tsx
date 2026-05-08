@@ -1,9 +1,11 @@
 import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createSupabaseAdminClient } from "@flowlab/auth";
 import { consumeRateLimit, createTenantWithOwner } from "@flowlab/db";
 import { buildTenantUrl, signupInputSchema, validateBotGuard } from "@flowlab/contracts/server";
+import { FlowLabBrandLink } from "../../components/flowlab-brand";
 import SignupForm from "./SignupForm";
 
 /**
@@ -195,9 +197,13 @@ export default async function SignupPage({
 
   return (
     <main className="shell">
-      <section className="hero" style={{ gridTemplateColumns: "1fr 0.8fr" }}>
+      <div className="app-topbar">
+        <FlowLabBrandLink />
+        <Link href="/login" className="cta ghost">Login</Link>
+      </div>
+      <section className="hero app-hero">
         <div className="hero-card">
-          <div className="pill">Self-signup</div>
+          <div className="hero-badge">Lead-to-Loot setup</div>
           <h1>Start a 14-day FlowLab trial.</h1>
           <p className="muted">
             Create your tenant, owner login, and branded workspace in one step.
@@ -210,7 +216,7 @@ export default async function SignupPage({
           )}
           <SignupForm action={createSignup} startedAt={startedAt} />
         </div>
-        <div className="panel">
+        <div className="panel app-side-panel">
           <h2 style={{ marginTop: 0 }}>What happens next</h2>
           <div className="grid">
             <div className="panel-soft">Your tenant, profile, and owner login are created instantly.</div>

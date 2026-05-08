@@ -191,6 +191,9 @@ export async function listTenants(opts: { limit?: number; cursor?: string } = {}
       subscriptionStartDate: true,
       monthlyFee: true,
       stripeCustomerId: true,
+      stripeSubscriptionId: true,
+      stripeSubscriptionStatus: true,
+      stripePriceId: true,
       notes: true,
       profile: true,
       users: {
@@ -239,7 +242,7 @@ export async function listTenants(opts: { limit?: number; cursor?: string } = {}
 }
 
 export async function getPlatformOverview() {
-  const [tenants, jobs, invoices, events, platformIntegrations] = await Promise.all([
+  const [tenants, jobs, invoices, enquiries, recentEnquiries, events, platformIntegrations] = await Promise.all([
     prisma.tenant.findMany({
       include: {
         profile: true,
@@ -255,6 +258,20 @@ export async function getPlatformOverview() {
     }),
     prisma.job.count(),
     prisma.invoice.count(),
+    prisma.enquiry.count(),
+    prisma.enquiry.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 12,
+      include: {
+        customer: true,
+        tenant: {
+          include: {
+            profile: true
+          }
+        },
+        quote: true
+      }
+    }),
     prisma.platformEventLog.findMany({
       orderBy: { createdAt: "desc" },
       take: 25
@@ -274,9 +291,11 @@ export async function getPlatformOverview() {
       trials: tenants.filter((tenant: (typeof tenants)[number]) => tenant.status === "trial").length,
       jobs,
       invoices,
+      enquiries,
       totalRevenue,
       activeErrors
     },
+    recentEnquiries,
     events,
     platformIntegrations
   };
@@ -363,6 +382,9 @@ export async function getTenantById(id: string) {
       subscriptionStartDate: true,
       monthlyFee: true,
       stripeCustomerId: true,
+      stripeSubscriptionId: true,
+      stripeSubscriptionStatus: true,
+      stripePriceId: true,
       notes: true,
       profile: true,
       users: {

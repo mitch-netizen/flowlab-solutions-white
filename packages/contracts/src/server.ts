@@ -153,6 +153,8 @@ export const adminTenantUpdateSchema = z.object({
   plan: tenantPlanSchema.optional(),
   status: tenantStatusSchema.optional(),
   monthlyFee: z.coerce.number().min(0).max(100000).optional(),
+  billingEmail: z.string().trim().email().max(200).optional(),
+  stripeCustomerId: z.string().trim().max(120).optional(),
   notes: z.string().trim().max(4000).optional()
 });
 

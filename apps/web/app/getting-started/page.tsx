@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { buildTenantUrl } from "@flowlab/contracts/server";
+import { FlowLabBrandLink } from "../../components/flowlab-brand";
 
 export default async function GettingStartedPage({
   searchParams,
@@ -11,11 +12,11 @@ export default async function GettingStartedPage({
   if (!slug) {
     return (
       <main className="shell">
-        <section className="hero">
+        <section className="auth-shell">
           <div className="hero-card">
             <h1>Something went wrong</h1>
             <p className="muted">No workspace details found. Please try signing up again.</p>
-            <Link href="/signup" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Back to signup</Link>
+            <Link href="/signup" className="marketing-button marketing-button--primary auth-button">Back to signup</Link>
           </div>
         </section>
       </main>
@@ -27,9 +28,12 @@ export default async function GettingStartedPage({
 
   return (
     <main className="shell">
-      <section className="hero" style={{ gridTemplateColumns: "1fr 0.8fr" }}>
+      <div className="app-topbar">
+        <FlowLabBrandLink />
+      </div>
+      <section className="hero app-hero">
         <div className="hero-card">
-          <div className="pill">🎉 Account created</div>
+          <div className="hero-badge">Account created</div>
           <h1>Your workspace is almost ready.</h1>
           <p className="muted">
             Your FlowLab portal for <strong>{businessName}</strong> is being provisioned.
@@ -49,15 +53,15 @@ export default async function GettingStartedPage({
             </p>
           )}
 
-          <a href={portalUrl} className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ marginTop: "1.5rem", display: "inline-block" }}>
-            Go to my portal →
+          <a href={portalUrl} className="marketing-button marketing-button--primary auth-button" style={{ marginTop: "1.5rem" }}>
+            Go to my portal
           </a>
           <p className="muted" style={{ fontSize: "0.8rem", marginTop: "0.75rem" }}>
             Once you sign in, complete the 3 quick setup steps, then send your first quote.
           </p>
         </div>
 
-        <div className="panel">
+        <div className="panel app-side-panel">
           <h2 style={{ marginTop: 0 }}>What happens next</h2>
           <div className="grid">
             <div className="panel-soft">Your branded portal at <strong>{slug}.flowlabsolutions.au</strong></div>
