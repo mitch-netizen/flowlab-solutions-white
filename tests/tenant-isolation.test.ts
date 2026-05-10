@@ -290,6 +290,8 @@ describeIfDatabase("tenant isolation RLS regression", () => {
       { table: "Communication", tenantColumn: "\"tenantId\"" },
       { table: "Feedback", tenantColumn: "\"tenantId\"" },
       { table: "TenantIntegration", tenantColumn: "\"tenantId\"" },
+      { table: "TenantUsageEvent", tenantColumn: "\"tenantId\"" },
+      { table: "ActionSuggestion", tenantColumn: "\"tenantId\"" },
       { table: "PlatformEventLog", tenantColumn: "\"tenantId\"" },
       { table: "TenantUser", tenantColumn: "\"tenantId\"" },
     ] as const;

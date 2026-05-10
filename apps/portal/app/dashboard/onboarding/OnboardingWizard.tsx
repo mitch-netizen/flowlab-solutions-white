@@ -2,28 +2,22 @@
 
 import { useMemo, useState } from "react";
 
-type BusinessType =
-  | "lawn_mowing"
-  | "cleaning"
-  | "pest_control"
-  | "gardening"
-  | "handyman"
-  | "pool_service"
-  | "other";
+import type { BusinessType } from "@flowlab/contracts";
+import { getTradePreset, tradePresetOptions } from "@flowlab/contracts";
 
-const TRADES = [
-  { key: "plumber", label: "Plumber", value: "other" },
-  { key: "electrician", label: "Electrician", value: "other" },
-  { key: "builder", label: "Builder", value: "handyman" },
-  { key: "hvac", label: "HVAC", value: "other" },
-  { key: "pest_control", label: "Pest control", value: "pest_control" },
-  { key: "cleaner", label: "Cleaner", value: "cleaning" },
-  { key: "landscaper", label: "Landscaper", value: "gardening" },
-  { key: "mechanic", label: "Mechanic", value: "other" },
-  { key: "painter", label: "Painter", value: "handyman" },
-  { key: "locksmith", label: "Locksmith", value: "other" },
-  { key: "other", label: "Other", value: "other" }
-] as const;
+type PlaceSuggestion = {
+  placeId: string;
+  description: string;
+  mainText: string;
+  secondaryText: string;
+};
+
+const groupLabels: Record<string, string> = {
+  home_services: "Home services",
+  outdoor_property: "Outdoor/property",
+  cleaning_compliance: "Cleaning/compliance",
+  mobile_other: "Mobile/other"
+};
 
 interface Props {
   initialStep: number;
@@ -34,13 +28,12 @@ interface Props {
     phone: string;
     businessType: BusinessType;
     serviceAreaSuburbs: string[];
+    serviceBaseAddress: string;
+    serviceBasePlaceId: string;
+    serviceBaseLat: number | null;
+    serviceBaseLng: number | null;
+    serviceRadiusKm: number | null;
   };
-}
-
-const DEFAULT_WORK_SCHEDULE = [1, 2, 3, 4, 5].map((dayOfWeek) => ({ dayOfWeek, startTime: "07:00", endTime: "17:00" }));
-
-function getInitialTradeKey(businessType: BusinessType) {
-  return TRADES.find((trade) => trade.value === businessType)?.key ?? "other";
 }
 
 export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl, initialProfile }: Props) {
@@ -51,11 +44,25 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
   const [error, setError] = useState("");
 
   const [businessName, setBusinessName] = useState(initialProfile.businessName);
-  const [selectedTradeKey, setSelectedTradeKey] = useState<string>(() => getInitialTradeKey(initialProfile.businessType));
+  const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType>(initialProfile.businessType);
   const [mobile, setMobile] = useState(initialProfile.phone);
-  const [suburbOrPostcode, setSuburbOrPostcode] = useState(initialProfile.serviceAreaSuburbs[0] ?? "");
+  const [serviceBaseAddress, setServiceBaseAddress] = useState(initialProfile.serviceBaseAddress || initialProfile.serviceAreaSuburbs[0] || "");
+  const [serviceBasePlaceId, setServiceBasePlaceId] = useState(initialProfile.serviceBasePlaceId);
+  const [serviceBaseLat, setServiceBaseLat] = useState<number | null>(initialProfile.serviceBaseLat);
+  const [serviceBaseLng, setServiceBaseLng] = useState<number | null>(initialProfile.serviceBaseLng);
+  const [serviceRadiusKm, setServiceRadiusKm] = useState(initialProfile.serviceRadiusKm ?? getTradePreset(initialProfile.businessType).scheduleDefaults.serviceRadiusKm);
+  const [manualSuburbs, setManualSuburbs] = useState(initialProfile.serviceAreaSuburbs.join(", "));
+  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [mapsPreviewUrl, setMapsPreviewUrl] = useState("");
 
   const bookingLink = useMemo(() => enquiryUrl || "Your booking link will appear here after setup.", [enquiryUrl]);
+  const selectedPreset = useMemo(() => getTradePreset(selectedBusinessType), [selectedBusinessType]);
+  const groupedTrades = useMemo(() => {
+    return tradePresetOptions.reduce<Record<string, typeof tradePresetOptions>>((groups, option) => {
+      groups[option.group] = [...(groups[option.group] ?? []), option];
+      return groups;
+    }, {});
+  }, []);
 
   const post = async (url: string, body: unknown) => {
     const res = await fetch(url, {
@@ -95,6 +102,50 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
     }
   };
 
+  const searchPlaces = async (value: string) => {
+    setServiceBaseAddress(value);
+    setServiceBasePlaceId("");
+    if (value.trim().length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    const res = await fetch(`/api/tenant/maps/autocomplete?q=${encodeURIComponent(value)}`);
+    if (!res.ok) return;
+    const data = (await res.json()) as { suggestions?: PlaceSuggestion[] };
+    setSuggestions(data.suggestions ?? []);
+  };
+
+  const confirmPlace = async (place: PlaceSuggestion | null = null) => {
+    const manual = manualSuburbs.split(",").map((item) => item.trim()).filter(Boolean);
+    const res = await fetch("/api/tenant/maps/geocode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        placeId: place?.placeId || serviceBasePlaceId || undefined,
+        address: place ? undefined : serviceBaseAddress,
+        radiusKm: serviceRadiusKm,
+        manualSuburbs: manual
+      })
+    });
+    if (!res.ok) {
+      setError("We couldn't confirm that location. You can still type your service suburbs manually.");
+      return;
+    }
+    const data = (await res.json()) as {
+      place: { placeId: string; formattedAddress: string; lat: number; lng: number };
+      suggestedSuburbs: string[];
+      previewUrl: string | null;
+    };
+    setServiceBaseAddress(data.place.formattedAddress);
+    setServiceBasePlaceId(data.place.placeId);
+    setServiceBaseLat(data.place.lat);
+    setServiceBaseLng(data.place.lng);
+    setManualSuburbs(data.suggestedSuburbs.join(", "));
+    setMapsPreviewUrl(data.previewUrl ?? "");
+    setSuggestions([]);
+    setError("");
+  };
+
   if (completed) {
     return (
       <div className="rounded-lg border bg-card p-4">
@@ -106,39 +157,51 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
   }
 
   return (
-    <div className="rounded-lg border bg-card p-4" style={{ maxWidth: 520 }}>
+    <div className="rounded-lg border bg-card p-4" style={{ maxWidth: 760 }}>
       {step === 1 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <h1 style={{ margin: 0 }}>Tell us about your business</h1>
-          <p className="muted" style={{ marginTop: -4 }}>Just a few things — takes about 30 seconds.</p>
+          <p className="muted" style={{ marginTop: -4 }}>Choose your trade and FlowLab will pre-fill pricing, services, schedule defaults, and quote assumptions.</p>
 
           <label>
             <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>What&apos;s your business called?</div>
-            <input className="w-full rounded-lg border bg-background px-3 py-3 text-sm" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Joe’s Plumbing" />
+            <input className="w-full rounded-lg border bg-background px-3 py-3 text-sm" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Joe's Plumbing" />
           </label>
 
-          <div>
-            <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>What do you do?</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-              {TRADES.map((trade) => (
-                <button
-                  key={trade.label}
-                  type="button"
-                  onClick={() => setSelectedTradeKey(trade.key)}
-                  style={{
-                    minHeight: 44,
-                    borderRadius: 10,
-                    border: selectedTradeKey === trade.key ? "2px solid #3b82f6" : "1px solid #334155",
-                    background: selectedTradeKey === trade.key ? "#1e3a8a" : "#0f172a",
-                    color: "#e2e8f0",
-                    textAlign: "left",
-                    padding: "10px 12px"
-                  }}
-                >
-                  {trade.label}
-                </button>
-              ))}
-            </div>
+          <div style={{ display: "grid", gap: 12 }}>
+            <div className="muted" style={{ fontSize: 13 }}>What do you do?</div>
+            {Object.entries(groupedTrades).map(([group, options]) => (
+              <div key={group} style={{ display: "grid", gap: 8 }}>
+                <div className="muted" style={{ fontSize: 12 }}>{groupLabels[group] ?? group}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
+                  {options.map((trade) => (
+                    <button
+                      key={trade.businessType}
+                      type="button"
+                      onClick={() => {
+                        setSelectedBusinessType(trade.businessType);
+                        setServiceRadiusKm(getTradePreset(trade.businessType).scheduleDefaults.serviceRadiusKm);
+                      }}
+                      style={{
+                        minHeight: 44,
+                        borderRadius: 10,
+                        border: selectedBusinessType === trade.businessType ? "2px solid #3b82f6" : "1px solid #334155",
+                        background: selectedBusinessType === trade.businessType ? "#1e3a8a" : "#0f172a",
+                        color: "#e2e8f0",
+                        textAlign: "left",
+                        padding: "10px 12px"
+                      }}
+                    >
+                      {trade.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="panel-soft">
+            <strong>{selectedPreset.label}</strong> defaults: ${selectedPreset.pricingRate.minimumCharge} minimum, {selectedPreset.serviceTemplates.length} service templates, {selectedPreset.defaultDurationMins} min default duration, {selectedPreset.scheduleDefaults.serviceRadiusKm} km service radius.
           </div>
 
           <label>
@@ -157,7 +220,7 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
                 post("/api/tenant/settings/profile-json", {
                   businessName,
                   phone: mobile,
-                  businessType: (TRADES.find((trade) => trade.key === selectedTradeKey)?.value ?? "other")
+                  businessType: selectedBusinessType
                 }).then(() => Promise.resolve())
               );
             }}
@@ -169,12 +232,39 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
 
       {step === 2 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <h1 style={{ margin: 0 }}>Where do you work?</h1>
+          <h1 style={{ margin: 0 }}>Map your service area</h1>
           <label>
-            <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>Your main suburb or postcode</div>
-            <input className="w-full rounded-lg border bg-background px-3 py-3 text-sm" value={suburbOrPostcode} onChange={(e) => setSuburbOrPostcode(e.target.value)} />
+            <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>Business base or main suburb</div>
+            <input className="w-full rounded-lg border bg-background px-3 py-3 text-sm" value={serviceBaseAddress} onChange={(e) => void searchPlaces(e.target.value)} />
           </label>
-          <p className="muted" style={{ marginTop: -8 }}>We’ll cover 25 km around it — change anytime.</p>
+          {suggestions.length > 0 ? (
+            <div className="rounded-lg border bg-card/60 p-2" style={{ display: "grid", gap: 6 }}>
+              {suggestions.map((item) => (
+                <button key={item.placeId} type="button" className="rounded-lg border bg-secondary/40 px-3 py-2 text-left text-sm" onClick={() => void confirmPlace(item)}>
+                  <strong>{item.mainText}</strong>
+                  <span className="muted"> {item.secondaryText}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <label>
+            <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>Service radius ({serviceRadiusKm} km)</div>
+            <input className="w-full" type="range" min="5" max="80" step="5" value={serviceRadiusKm} onChange={(e) => setServiceRadiusKm(Number(e.target.value))} />
+          </label>
+          <label>
+            <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>Service suburbs</div>
+            <input className="w-full rounded-lg border bg-background px-3 py-3 text-sm" value={manualSuburbs} onChange={(e) => setManualSuburbs(e.target.value)} placeholder="Tannum Sands, Boyne Island, Gladstone" />
+          </label>
+          <button type="button" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" style={{ width: "fit-content" }} onClick={() => void confirmPlace(null)}>Confirm on map</button>
+          {mapsPreviewUrl ? (
+            <div
+              aria-label="Service area map preview"
+              className="rounded-lg border"
+              role="img"
+              style={{ width: "100%", height: 220, backgroundImage: `url(${mapsPreviewUrl})`, backgroundSize: "cover", backgroundPosition: "center" }}
+            />
+          ) : null}
+          <p className="muted" style={{ marginTop: -8 }}>FlowLab uses this for booking, travel-time checks, scheduling, and quote assumptions. Change it anytime in Settings.</p>
           {error && <p style={{ color: "#f87171", margin: 0 }}>{error}</p>}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button type="button" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground" style={{ background: "#1e293b" }} onClick={() => setStep(1)}>Back</button>
@@ -183,18 +273,23 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
               disabled={saving}
               onClick={() => {
                 if (!businessName.trim()) return setError("Please enter your business name.");
-                if (!selectedTradeKey) return setError("Please choose your trade.");
                 if (!mobile.trim()) return setError("Please enter your mobile number.");
-                if (!suburbOrPostcode.trim()) return setError("Please enter your suburb or postcode.");
+                if (!serviceBaseAddress.trim() && !manualSuburbs.trim()) return setError("Please enter your service area.");
                 void saveAndContinue(3, async () => {
+                  const suburbs = manualSuburbs.split(",").map((item) => item.trim()).filter(Boolean);
                   await post("/api/tenant/settings/profile-json", {
                     businessName,
                     phone: mobile,
-                    businessType: (TRADES.find((trade) => trade.key === selectedTradeKey)?.value ?? "other"),
-                    serviceAreaSuburbs: [suburbOrPostcode.trim()]
+                    businessType: selectedBusinessType,
+                    serviceAreaSuburbs: suburbs,
+                    serviceBaseAddress,
+                    serviceBasePlaceId,
+                    serviceBaseLat,
+                    serviceBaseLng,
+                    serviceRadiusKm
                   });
                   await post("/api/tenant/settings/schedule", {
-                    workSchedule: DEFAULT_WORK_SCHEDULE,
+                    workSchedule: selectedPreset.scheduleDefaults.workSchedule,
                     personalCommitments: [],
                     onlyIfEmpty: true
                   });
@@ -209,7 +304,7 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
 
       {step === 3 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <h1 style={{ margin: 0 }}>Here’s your booking link</h1>
+          <h1 style={{ margin: 0 }}>Here's your booking link</h1>
           <p className="muted">Share this with customers and they can request a job directly.</p>
           <div className="panel-soft" style={{ wordBreak: "break-all" }}>{bookingLink}</div>
           {error && <p style={{ color: "#f87171", margin: 0 }}>{error}</p>}
@@ -226,7 +321,7 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
               {saving ? "Finishing..." : "Finish setup"}
             </button>
           </div>
-          <p className="muted" style={{ margin: 0 }}>You’re set. Let’s send your first quote.</p>
+          <p className="muted" style={{ margin: 0 }}>You're set. Let's send your first quote.</p>
         </div>
       )}
     </div>
