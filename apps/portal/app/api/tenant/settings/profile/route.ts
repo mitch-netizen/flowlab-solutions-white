@@ -3,6 +3,7 @@ import { requireTenantSession } from "../../../../../lib/session";
 import { NextResponse } from "next/server";
 
 import { updateTenantProfileSettings } from "@flowlab/db";
+import { businessTypeSchema } from "@flowlab/contracts";
 
 export async function POST(request: Request) {
   const session = await requireTenantSession();
@@ -24,9 +25,14 @@ export async function POST(request: Request) {
     accentColour: formData.has("accentColour") ? String(formData.get("accentColour") ?? "") : undefined,
     customDomain: String(formData.get("customDomain") ?? ""),
     serviceAreaSuburbs,
+    serviceBaseAddress: String(formData.get("serviceBaseAddress") ?? "").trim() || undefined,
+    serviceBasePlaceId: String(formData.get("serviceBasePlaceId") ?? "").trim() || undefined,
+    serviceBaseLat: formData.get("serviceBaseLat") ? Number(formData.get("serviceBaseLat")) : undefined,
+    serviceBaseLng: formData.get("serviceBaseLng") ? Number(formData.get("serviceBaseLng")) : undefined,
+    serviceRadiusKm: formData.get("serviceRadiusKm") ? Number(formData.get("serviceRadiusKm")) : undefined,
     suburb: String(formData.get("suburb") ?? "").trim() || undefined,
     postcode: String(formData.get("postcode") ?? "").trim() || undefined,
-    businessType: (String(formData.get("businessType") ?? "other") as "lawn_mowing" | "cleaning" | "pest_control" | "gardening" | "handyman" | "pool_service" | "other")
+    businessType: businessTypeSchema.parse(String(formData.get("businessType") ?? "other"))
   });
 
   return NextResponse.redirect(new URL("/dashboard/settings", request.url), 303);

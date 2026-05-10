@@ -74,9 +74,9 @@ export async function generateAIQuote(input: AIQuoteInput): Promise<AIQuoteResul
 Site condition: ${conditionLabel}
 
 ${rateContext}`;
-  } else if (input.pricingModel === "hourly") {
+  } else if (input.pricingModel === "hourly" || input.pricingModel === "callout_plus_hourly") {
     const rateContext = input.pricingRate?.hourlyRate
-      ? `Hourly rate: $${input.pricingRate.hourlyRate}/hr
+      ? `${input.pricingModel === "callout_plus_hourly" ? `Call-out fee: $${input.pricingRate.calloutFee ?? 0}\n` : ""}Hourly rate: $${input.pricingRate.hourlyRate}/hr
 Minimum charge: $${minimum}
 GST: ${gst}`
       : "No hourly rate configured — use your best judgement for the local market.";

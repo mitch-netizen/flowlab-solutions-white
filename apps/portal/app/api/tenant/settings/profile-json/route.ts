@@ -3,6 +3,7 @@ import { requireTenantSession } from "../../../../../lib/session";
 import { NextResponse } from "next/server";
 
 import { updateTenantProfileSettings } from "@flowlab/db";
+import { businessTypeSchema } from "@flowlab/contracts";
 
 export async function POST(request: Request) {
   const session = await requireTenantSession();
@@ -17,10 +18,17 @@ export async function POST(request: Request) {
     accentColour?: string;
     customDomain?: string;
     serviceAreaSuburbs?: string[];
+    serviceBaseAddress?: string;
+    serviceBasePlaceId?: string;
+    serviceBaseLat?: number | null;
+    serviceBaseLng?: number | null;
+    serviceRadiusKm?: number | null;
     suburb?: string;
     postcode?: string;
-    businessType?: "lawn_mowing" | "cleaning" | "pest_control" | "gardening" | "handyman" | "pool_service" | "other";
+    businessType?: string;
   };
+
+  const businessType = body.businessType ? businessTypeSchema.parse(body.businessType) : undefined;
 
   await updateTenantProfileSettings({
     tenantId: session.tenantId,
@@ -33,9 +41,14 @@ export async function POST(request: Request) {
     accentColour: body.accentColour,
     customDomain: body.customDomain,
     serviceAreaSuburbs: body.serviceAreaSuburbs,
+    serviceBaseAddress: body.serviceBaseAddress,
+    serviceBasePlaceId: body.serviceBasePlaceId,
+    serviceBaseLat: body.serviceBaseLat,
+    serviceBaseLng: body.serviceBaseLng,
+    serviceRadiusKm: body.serviceRadiusKm,
     suburb: body.suburb,
     postcode: body.postcode,
-    businessType: body.businessType
+    businessType
   });
 
   return NextResponse.json({ ok: true });

@@ -1,4 +1,4 @@
-import { getPricingModel } from "@flowlab/contracts";
+import { getPricingModel, tradePresetOptions } from "@flowlab/contracts";
 import { getPendingRateSuggestions, getTenantSettingsSnapshot } from "@flowlab/db";
 
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
@@ -8,6 +8,19 @@ import { Label } from "../../../components/ui/label";
 import { requireTenantSession } from "../../../lib/session";
 import CustomDomainSection from "./CustomDomainSection";
 import RateSuggestionsPanel from "./RateSuggestionsPanel";
+import ServiceAreaMapEditor from "./ServiceAreaMapEditor";
+
+const groupLabels: Record<string, string> = {
+  home_services: "Home services",
+  outdoor_property: "Outdoor/property",
+  cleaning_compliance: "Cleaning/compliance",
+  mobile_other: "Mobile/other"
+};
+
+const groupedTrades = tradePresetOptions.reduce<Record<string, typeof tradePresetOptions>>((groups, option) => {
+  groups[option.group] = [...(groups[option.group] ?? []), option];
+  return groups;
+}, {});
 
 function getPricingModelLabel(model: ReturnType<typeof getPricingModel>) {
   switch (model) {
@@ -15,6 +28,8 @@ function getPricingModelLabel(model: ReturnType<typeof getPricingModel>) {
       return "Area based";
     case "hourly":
       return "Hourly";
+    case "callout_plus_hourly":
+      return "Call-out + hourly";
     default:
       return "Flat rate";
   }
@@ -81,13 +96,13 @@ export default async function SettingsPage({
             <div className="space-y-4">
               <Label htmlFor="businessType">Trade/business type</Label>
               <select id="businessType" name="businessType" defaultValue={snapshot.profile?.businessType ?? "other"} className="w-full rounded-lg border bg-background px-3 py-2 text-sm">
-                <option value="lawn_mowing">Lawn mowing</option>
-                <option value="gardening">Gardening</option>
-                <option value="cleaning">Cleaning</option>
-                <option value="handyman">Handyman</option>
-                <option value="pool_service">Pool service</option>
-                <option value="pest_control">Pest control</option>
-                <option value="other">Other</option>
+                {Object.entries(groupedTrades).map(([group, options]) => (
+                  <optgroup key={group} label={groupLabels[group] ?? group}>
+                    {options.map((option) => (
+                      <option key={option.businessType} value={option.businessType}>{option.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
             </div>
             <div className="space-y-4">
@@ -98,10 +113,14 @@ export default async function SettingsPage({
               <Label htmlFor="postcode">Postcode</Label>
               <Input id="postcode" name="postcode" defaultValue={snapshot.profile?.postcode ?? ""} />
             </div>
-            <div className="space-y-4 is-full">
-              <Label htmlFor="serviceAreaSuburbs">Service radius or suburbs</Label>
-              <Input id="serviceAreaSuburbs" name="serviceAreaSuburbs" defaultValue={snapshot.profile?.serviceAreaSuburbs.join(", ") ?? ""} placeholder="e.g. 15 km around Carlton, Fitzroy, Brunswick" />
-            </div>
+            <ServiceAreaMapEditor
+              initialAddress={snapshot.profile?.serviceBaseAddress ?? ""}
+              initialPlaceId={snapshot.profile?.serviceBasePlaceId ?? ""}
+              initialLat={snapshot.profile?.serviceBaseLat ?? null}
+              initialLng={snapshot.profile?.serviceBaseLng ?? null}
+              initialRadiusKm={snapshot.profile?.serviceRadiusKm ?? null}
+              initialSuburbs={snapshot.profile?.serviceAreaSuburbs ?? []}
+            />
             <div className="space-y-4 is-full">
               <Label htmlFor="customDomain">Custom domain</Label>
               <Input id="customDomain" name="customDomain" defaultValue={snapshot.profile?.customDomain ?? ""} placeholder="service.yourdomain.com" />
@@ -128,6 +147,11 @@ export default async function SettingsPage({
           <Input type="hidden" name="suburb" value={snapshot.profile?.suburb ?? ""} />
           <Input type="hidden" name="postcode" value={snapshot.profile?.postcode ?? ""} />
           <Input type="hidden" name="serviceAreaSuburbs" value={snapshot.profile?.serviceAreaSuburbs.join(", ") ?? ""} />
+          <Input type="hidden" name="serviceBaseAddress" value={snapshot.profile?.serviceBaseAddress ?? ""} />
+          <Input type="hidden" name="serviceBasePlaceId" value={snapshot.profile?.serviceBasePlaceId ?? ""} />
+          <Input type="hidden" name="serviceBaseLat" value={snapshot.profile?.serviceBaseLat ?? ""} />
+          <Input type="hidden" name="serviceBaseLng" value={snapshot.profile?.serviceBaseLng ?? ""} />
+          <Input type="hidden" name="serviceRadiusKm" value={snapshot.profile?.serviceRadiusKm ?? ""} />
           <Input type="hidden" name="customDomain" value={snapshot.profile?.customDomain ?? ""} />
 
           <div className="setup-field-grid">
@@ -158,7 +182,7 @@ export default async function SettingsPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Pricing rates</div>
             <h2 style={{ marginBottom: 8 }}>Current pricing configuration</h2>
-            <p>Your current pricing model and configured rates. Edit them from the onboarding wizard.</p>
+            <p>Your current pricing model and configured rates. These defaults are editable starting points for AI quotes.</p>
           </div>
 
           <div className="space-y-3">
@@ -168,6 +192,8 @@ export default async function SettingsPage({
                   ? `$${rate.baseRatePerSquareM ?? "—"}/m² · Overgrown $${rate.overgrownRate ?? "—"}/m² · Minimum $${rate.minimumCharge ?? "—"}`
                   : pricingModel === "hourly"
                     ? `$${rate.hourlyRate ?? "—"}/hr · Minimum $${rate.minimumCharge ?? "—"}`
+                    : pricingModel === "callout_plus_hourly"
+                      ? `Call-out $${rate.calloutFee ?? "—"} · $${rate.hourlyRate ?? "—"}/hr · Minimum $${rate.minimumCharge ?? "—"}`
                     : `Call-out $${rate.calloutFee ?? "—"} · Minimum $${rate.minimumCharge ?? "—"}`;
 
               return (
@@ -184,9 +210,7 @@ export default async function SettingsPage({
             }) : <p className="text-sm text-muted-foreground">No pricing rates configured yet.</p>}
           </div>
 
-          <a href="/dashboard/onboarding?step=3" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" style={{ justifySelf: "start" }}>
-            Edit pricing
-          </a>
+          <p className="text-sm text-muted-foreground">Use service templates below to tune the common jobs FlowLab suggests while quoting.</p>
         </div>
 
         <div className="rounded-lg border bg-card p-4 space-y-4">
