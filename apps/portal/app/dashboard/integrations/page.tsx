@@ -47,8 +47,8 @@ export default async function IntegrationsPage() {
           </div>
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Quick tip</div>
-            <div className="text-3xl font-semibold">2</div>
-            <p className="text-sm text-muted-foreground">Use Automations to toggle workflows on/off. Use Integrations to manage credentials and OAuth connections.</p>
+            <div className="text-3xl font-semibold">0</div>
+            <p className="text-sm text-muted-foreground">Most core providers are managed by FlowLab, so operators do not need API keys to get started.</p>
           </div>
         </div>
       </div>
@@ -83,6 +83,15 @@ export default async function IntegrationsPage() {
                   </div>
                   <h3>{serviceLabels[integration.service]}</h3>
                   <p>{integrationHelpText[integration.service]}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {integration.managementMode === "platform_managed"
+                      ? `Managed by FlowLab. Usage this month: ${integration.usageThisMonth ?? 0}.`
+                      : integration.managementMode === "connected_account"
+                        ? "Connect your account once; FlowLab manages the app credentials."
+                        : integration.managementMode === "advanced_optional"
+                          ? "Advanced optional workflow."
+                          : "Tenant-managed credentials override FlowLab defaults."}
+                  </p>
                 </div>
 
                 {isExpiringSoon ? (
@@ -99,19 +108,19 @@ export default async function IntegrationsPage() {
 
                 {isXero ? (
                   <div className="stack" style={{ gap: 14 }}>
-                    <p className="text-sm text-muted-foreground">Xero uses OAuth. Save the client credentials first, then connect your Xero organisation.</p>
-                    <form action="/api/tenant/integrations/xero/save" method="post" className="space-y-4">
-                      {integrationFieldDefinitions.xero.map((field) => (
-                        <label className="flex flex-col gap-2 text-sm text-muted-foreground" key={field.name}>
-                          {field.label}
-                          <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name={field.name} type={field.type ?? "text"} placeholder={field.placeholder} />
-                        </label>
-                      ))}
-                      <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Save credentials</button>
-                    </form>
+                    <p className="text-sm text-muted-foreground">Xero uses a FlowLab-managed OAuth app. Connect your Xero organisation; no client ID or secret is needed.</p>
                     <a href="/api/tenant/integrations/xero" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" style={{ display: "inline-flex", width: "fit-content" }}>
                       {integration.status === "connected" ? "Reconnect your business Xero" : "Connect your business Xero"}
                     </a>
+                  </div>
+                ) : integration.managementMode === "platform_managed" ? (
+                  <div className="stack" style={{ gap: 14 }}>
+                    <p className="text-sm text-muted-foreground">Managed automatically through FlowLab-owned credentials. Advanced tenant-owned credentials can be added later if this business needs a dedicated provider account.</p>
+                    <form action={`/api/tenant/integrations/${integration.service}/test`} method="post" className="space-y-4">
+                      <input type="hidden" name="service" value={integration.service} />
+                      <input type="hidden" name="tenantId" value={session.tenantId} />
+                      <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Check managed connection</button>
+                    </form>
                   </div>
                 ) : integrationFieldDefinitions[integration.service].length > 0 ? (
                   <div className="stack" style={{ gap: 14 }}>

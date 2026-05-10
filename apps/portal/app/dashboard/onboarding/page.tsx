@@ -36,7 +36,12 @@ export default async function OnboardingPage() {
           businessName: settings.profile?.businessName ?? "",
           phone: settings.profile?.phone ?? "",
           serviceAreaSuburbs: settings.profile?.serviceAreaSuburbs ?? [],
-          businessType: settings.profile?.businessType ?? "other"
+          businessType: settings.profile?.businessType ?? "other",
+          serviceBaseAddress: settings.profile?.serviceBaseAddress ?? "",
+          serviceBasePlaceId: settings.profile?.serviceBasePlaceId ?? "",
+          serviceBaseLat: settings.profile?.serviceBaseLat ?? null,
+          serviceBaseLng: settings.profile?.serviceBaseLng ?? null,
+          serviceRadiusKm: settings.profile?.serviceRadiusKm ?? null
         }}
       />
     </DashboardPageScaffold>

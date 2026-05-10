@@ -22,13 +22,45 @@ enum TenantPlan {
 }
 
 enum BusinessType {
+  plumbing
+  electrical
+  hvac
+  roofing
+  painting
+  carpentry
+  glazing
+  locksmith
+  garage_doors
   lawn_mowing
-  cleaning
-  pest_control
   gardening
-  handyman
+  landscaping
   pool_service
+  pressure_washing
+  gutter_cleaning
+  tree_services
+  fencing
+  residential_cleaning
+  commercial_cleaning
+  bond_cleaning
+  pest_control
+  carpet_cleaning
+  window_cleaning
+  fire_safety
+  test_and_tag
+  mobile_mechanic
+  appliance_repair
+  solar
+  security_systems
+  cleaning
+  handyman
   other
+}
+
+enum IntegrationManagementMode {
+  platform_managed
+  tenant_managed
+  connected_account
+  advanced_optional
 }
 
 enum IntegrationService {
@@ -132,6 +164,8 @@ model Tenant {
   timeOff               TimeOff[]
   personalCommitments   PersonalCommitment[]
   events                PlatformEventLog[]
+  usageEvents           TenantUsageEvent[]
+  actionSuggestions     ActionSuggestion[]
   apiKeys               TenantApiKey[]
   automationJobs        AutomationJob[]
   automationPreferences AutomationPreference[]
@@ -158,6 +192,11 @@ model TenantProfile {
   state                String?
   postcode             String?
   serviceAreaSuburbs   String[]
+  serviceBaseAddress   String?
+  serviceBasePlaceId   String?
+  serviceBaseLat       Float?
+  serviceBaseLng       Float?
+  serviceRadiusKm      Float?
   businessType         BusinessType
   timezone             String       @default("Australia/Brisbane")
   tenant               Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -173,6 +212,7 @@ model TenantIntegration {
   service           IntegrationService
   status            IntegrationStatus @default(not_configured)
   credentialsJson   String?
+  managementMode    IntegrationManagementMode @default(tenant_managed)
   lastTestedAt      DateTime?
   lastTestResult    String?
   lastErrorMessage  String?
@@ -199,6 +239,41 @@ model PlatformIntegration {
   oauthAccessToken  String?
   oauthRefreshToken String?
   oauthExpiresAt    DateTime?
+}
+
+model TenantUsageEvent {
+  id          String   @id @default(uuid())
+  tenantId    String
+  createdAt   DateTime @default(now())
+  service     String
+  operation   String
+  quantity    Int      @default(1)
+  metadataJson String?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, service, createdAt])
+}
+
+model ActionSuggestion {
+  id              String   @id @default(uuid())
+  tenantId        String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  category        String
+  priority        String
+  title           String
+  reason          String
+  targetUrl       String
+  suggestedAction String
+  status          String   @default("open")
+  snoozedUntil    DateTime?
+  source          String
+  sourceId        String?
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, category, createdAt])
 }
 
 model PlatformEventLog {

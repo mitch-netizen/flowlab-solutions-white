@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getTenantDashboardSnapshot, prisma } from "@flowlab/db";
+import { getTenantActionSuggestions, getTenantDashboardSnapshot, prisma } from "@flowlab/db";
 import { buildTenantUrl } from "@flowlab/contracts/server";
 import { Badge, formatDateTime, formatTime } from "@flowlab/ui";
 
@@ -69,7 +69,7 @@ export default async function DashboardPage({
   const tomorrowStart = startOfTomorrow();
   const tomorrowEnd = endOfTomorrow();
 
-  const [snapshot, enquiriesThisWeek, bookedJobsThisWeek, tomorrowJobs, topCustomers, quoteCount, enquiryCount] = await Promise.all([
+  const [snapshot, enquiriesThisWeek, bookedJobsThisWeek, tomorrowJobs, topCustomers, quoteCount, enquiryCount, actionSuggestions] = await Promise.all([
     getTenantDashboardSnapshot(session.tenantId),
     prisma.platformEventLog.count({
       where: {
@@ -125,7 +125,8 @@ export default async function DashboardPage({
     }),
     prisma.enquiry.count({
       where: { tenantId: session.tenantId }
-    })
+    }),
+    getTenantActionSuggestions(session.tenantId, { refresh: true, limit: 6 })
   ]);
 
   const currentUser = snapshot.tenant?.users.find((user) => user.id === session.sub) ?? snapshot.tenant?.users[0] ?? null;
@@ -292,6 +293,34 @@ export default async function DashboardPage({
       </div>
 
       <div className="cards-2">
+        <div className="rounded-lg border bg-card p-4 space-y-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="space-y-2">
+              <div className="eyebrow">Co-pilot</div>
+              <h2>Recommended next actions</h2>
+              <p>FlowLab watches for the small operational gaps that cost time, money, or momentum.</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {actionSuggestions.length > 0 ? actionSuggestions.map((item) => (
+              <div key={item.id} className="setup-row">
+                <div className="setup-row-main">
+                  <div className="setup-row-meta">
+                    <Badge tone={item.priority === "high" ? "warning" : "neutral"}>{item.priority}</Badge>
+                    <span>{item.category.replace(/_/g, " ")}</span>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{item.reason}</p>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={item.targetUrl}>{item.suggestedAction}</Link>
+                </div>
+              </div>
+            )) : <p className="text-sm text-muted-foreground">No recommended actions right now. Your core workflow looks clear.</p>}
+          </div>
+        </div>
+
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-2">

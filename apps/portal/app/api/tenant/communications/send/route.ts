@@ -4,8 +4,8 @@ import {
   BREVO_EMAIL_INTEGRATION_SERVICE,
   BREVO_SMS_INTEGRATION_SERVICE
 } from "@flowlab/contracts";
-import { getTenantIntegrationRecord, prisma } from "@flowlab/db";
-import { decryptJson, sendEmail, sendSms, buildBrandedEmailHtml } from "@flowlab/integrations";
+import { prisma, resolveIntegrationCredentials } from "@flowlab/db";
+import { sendEmail, sendSms, buildBrandedEmailHtml } from "@flowlab/integrations";
 import { logPlatformEvent } from "@flowlab/events";
 
 import { requireTenantSession } from "../../../../../lib/session";
@@ -76,9 +76,11 @@ export async function POST(request: Request) {
         throw new Error("Customer email is missing");
       }
 
-      const emailCredentials = decryptJson(
-        (await getTenantIntegrationRecord(session.tenantId, BREVO_EMAIL_INTEGRATION_SERVICE))?.credentialsJson ?? ""
-      );
+      const { credentials: emailCredentials } = await resolveIntegrationCredentials({
+        tenantId: session.tenantId,
+        service: BREVO_EMAIL_INTEGRATION_SERVICE,
+        envFallback: { apiKey: process.env.BREVO_API_KEY, fromEmail: process.env.BREVO_FROM_EMAIL, fromName: process.env.BREVO_FROM_NAME }
+      });
       const businessName = tenant?.profile?.businessName ?? "FlowLab";
       const html = buildBrandedEmailHtml({
         businessName,
@@ -94,9 +96,11 @@ export async function POST(request: Request) {
         throw new Error("Customer phone is missing");
       }
 
-      const smsCredentials = decryptJson(
-        (await getTenantIntegrationRecord(session.tenantId, BREVO_SMS_INTEGRATION_SERVICE))?.credentialsJson ?? ""
-      );
+      const { credentials: smsCredentials } = await resolveIntegrationCredentials({
+        tenantId: session.tenantId,
+        service: BREVO_SMS_INTEGRATION_SERVICE,
+        envFallback: { apiKey: process.env.BREVO_API_KEY, sender: process.env.BREVO_SMS_SENDER }
+      });
       await sendSms(smsCredentials, customer.phone, body);
     }
 
