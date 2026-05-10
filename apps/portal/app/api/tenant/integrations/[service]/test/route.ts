@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { integrationServiceSchema } from "@flowlab/contracts";
-import { getTenantIntegrationRecord, updateIntegrationTestResult } from "@flowlab/db";
+import { resolveIntegrationCredentials, updateIntegrationTestResult } from "@flowlab/db";
 import { logPlatformEvent } from "@flowlab/events";
-import { decryptJson, testIntegration } from "@flowlab/integrations";
+import { testIntegration } from "@flowlab/integrations";
 import { requireTenantSession } from "../../../../../../lib/session";
 
 export async function POST(request: Request, { params }: { params: Promise<{ service: string }> }) {
@@ -18,14 +18,34 @@ export async function POST(request: Request, { params }: { params: Promise<{ ser
   const service = parsedService.data;
   const tenantId = String(formData.get("tenantId") ?? "");
   const credentialValue = String(formData.get("credentialValue") ?? "");
+  const envFallback =
+    service === "google_maps"
+      ? { apiKey: process.env.GOOGLE_MAPS_API_KEY }
+      : service === "docuseal"
+        ? { apiKey: process.env.DOCUSEAL_API_KEY }
+        : service === "twilio"
+          ? { apiKey: process.env.BREVO_API_KEY, sender: process.env.BREVO_SMS_SENDER }
+          : service === "sendgrid"
+            ? { apiKey: process.env.BREVO_API_KEY, fromEmail: process.env.BREVO_FROM_EMAIL, fromName: process.env.BREVO_FROM_NAME }
+            : service === "xero"
+              ? { clientId: process.env.XERO_CLIENT_ID, clientSecret: process.env.XERO_CLIENT_SECRET }
+              : service === "stripe"
+                ? { secretKey: process.env.STRIPE_SECRET_KEY }
+                : undefined;
 
   // Ensure the tenant in the form matches the authenticated session
   if (tenantId && tenantId !== session.tenantId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const record = tenantId ? await getTenantIntegrationRecord(tenantId, service) : null;
-  const savedCredentials = record?.credentialsJson ? decryptJson(record.credentialsJson) : {};
+  const resolved = tenantId
+    ? await resolveIntegrationCredentials({
+        tenantId,
+        service,
+        envFallback
+      })
+    : { credentials: {} };
+  const savedCredentials = resolved.credentials;
   const credentials: Record<string, string> = credentialValue ? { ...savedCredentials, credentialValue } : savedCredentials;
   const result = await testIntegration(service, credentials);
 

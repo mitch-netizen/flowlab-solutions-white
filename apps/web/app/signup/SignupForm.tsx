@@ -2,12 +2,25 @@
 
 import { useRef, useState } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
+import { tradePresetOptions } from "@flowlab/contracts";
 
 // Use NEXT_PUBLIC_TURNSTILE_SITE_KEY from env when available.
 // Locally, set this to Cloudflare's always-pass test key (1x00000000000000000000AA)
 // so the widget renders and submits without error.
 const TURNSTILE_SITE_KEY =
   process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "0x4AAAAAAC5e9PqgPNA4tJ2F";
+
+const groupLabels: Record<string, string> = {
+  home_services: "Home services",
+  outdoor_property: "Outdoor/property",
+  cleaning_compliance: "Cleaning/compliance",
+  mobile_other: "Mobile/other"
+};
+
+const groupedTrades = tradePresetOptions.reduce<Record<string, typeof tradePresetOptions>>((groups, option) => {
+  groups[option.group] = [...(groups[option.group] ?? []), option];
+  return groups;
+}, {});
 
 interface Props {
   action: (formData: FormData) => Promise<void>;
@@ -75,9 +88,13 @@ export default function SignupForm({ action, startedAt }: Props) {
       </label>
       <label>
         Business type
-        <select name="businessType" defaultValue="lawn_mowing">
-          {["lawn_mowing","cleaning","pest_control","gardening","handyman","pool_service","other"].map((v) => (
-            <option key={v} value={v}>{v.replaceAll("_", " ")}</option>
+        <select name="businessType" defaultValue="plumbing">
+          {Object.entries(groupedTrades).map(([group, options]) => (
+            <optgroup key={group} label={groupLabels[group] ?? group}>
+              {options.map((option) => (
+                <option key={option.businessType} value={option.businessType}>{option.label}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </label>

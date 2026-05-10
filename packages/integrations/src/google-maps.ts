@@ -29,6 +29,23 @@ export interface OptimisedRoute {
   startAddress?: string;
 }
 
+export interface MapsPlaceSuggestion {
+  placeId: string;
+  description: string;
+  mainText: string;
+  secondaryText: string;
+}
+
+export interface GeocodedPlace {
+  placeId: string;
+  formattedAddress: string;
+  lat: number;
+  lng: number;
+  suburb: string | null;
+  postcode: string | null;
+  state: string | null;
+}
+
 /**
  * Get the Google Maps API key to use.
  * Prefers the per-tenant key; falls back to the platform-level key.
@@ -53,6 +70,134 @@ export function getSatelliteImageUrl(
   const encoded = encodeURIComponent(address);
 
   return `https://maps.googleapis.com/maps/api/staticmap?center=${encoded}&zoom=${zoom}&size=${size}&maptype=satellite&key=${apiKey}`;
+}
+
+export async function autocompleteServiceArea(input: {
+  query: string;
+  apiKey?: string;
+  country?: string;
+}): Promise<MapsPlaceSuggestion[]> {
+  const query = input.query.trim();
+  const apiKey = input.apiKey || process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey || query.length < 3) return [];
+
+  const params = new URLSearchParams({
+    input: query,
+    key: apiKey,
+    components: `country:${input.country ?? "au"}`,
+    types: "geocode"
+  });
+
+  const response = await fetch(`https://maps.googleapis.com/maps/api/place/autocomplete/json?${params.toString()}`, {
+    signal: AbortSignal.timeout(10_000)
+  });
+  if (!response.ok) throw new Error(`Places autocomplete returned ${response.status}`);
+
+  const data = (await response.json()) as {
+    status: string;
+    predictions?: Array<{
+      place_id: string;
+      description: string;
+      structured_formatting?: { main_text?: string; secondary_text?: string };
+    }>;
+  };
+  if (data.status !== "OK" && data.status !== "ZERO_RESULTS") throw new Error(`Places autocomplete: ${data.status}`);
+
+  return (data.predictions ?? []).slice(0, 6).map((prediction) => ({
+    placeId: prediction.place_id,
+    description: prediction.description,
+    mainText: prediction.structured_formatting?.main_text ?? prediction.description,
+    secondaryText: prediction.structured_formatting?.secondary_text ?? ""
+  }));
+}
+
+export async function geocodePlace(input: {
+  placeId?: string;
+  address?: string;
+  apiKey?: string;
+}): Promise<GeocodedPlace | null> {
+  const apiKey = input.apiKey || process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey || (!input.placeId && !input.address)) return null;
+
+  const params = new URLSearchParams({ key: apiKey });
+  if (input.placeId) params.set("place_id", input.placeId);
+  else params.set("address", input.address ?? "");
+
+  const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?${params.toString()}`, {
+    signal: AbortSignal.timeout(10_000)
+  });
+  if (!response.ok) throw new Error(`Geocode API returned ${response.status}`);
+
+  const data = (await response.json()) as {
+    status: string;
+    results?: Array<{
+      place_id: string;
+      formatted_address: string;
+      geometry: { location: { lat: number; lng: number } };
+      address_components: Array<{ long_name: string; short_name: string; types: string[] }>;
+    }>;
+  };
+  if (data.status !== "OK" || !data.results?.[0]) return null;
+
+  const result = data.results[0];
+  const component = (type: string) => result.address_components.find((item) => item.types.includes(type));
+
+  return {
+    placeId: result.place_id,
+    formattedAddress: result.formatted_address,
+    lat: result.geometry.location.lat,
+    lng: result.geometry.location.lng,
+    suburb: component("locality")?.long_name ?? component("postal_town")?.long_name ?? null,
+    postcode: component("postal_code")?.long_name ?? null,
+    state: component("administrative_area_level_1")?.short_name ?? null
+  };
+}
+
+export function suggestServiceAreaSuburbs(input: {
+  baseSuburb?: string | null;
+  formattedAddress?: string | null;
+  manualSuburbs?: string[];
+}) {
+  const values = [
+    input.baseSuburb,
+    ...(input.manualSuburbs ?? []),
+    ...(input.formattedAddress ?? "")
+      .split(",")
+      .map((part) => part.trim())
+      .map((part) => part.replace(/\b(NSW|QLD|VIC|TAS|SA|WA|NT|ACT)\b/g, "").trim())
+      .filter((part) => part.length > 2 && !/\d/.test(part) && part.toLowerCase() !== "australia")
+      .slice(0, 2)
+  ]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .map((value) => value.trim());
+
+  return Array.from(new Set(values)).slice(0, 8);
+}
+
+export function buildServiceAreaPreview(input: {
+  lat?: number | null;
+  lng?: number | null;
+  address?: string | null;
+  radiusKm?: number | null;
+  apiKey?: string;
+  size?: string;
+}) {
+  const apiKey = input.apiKey || process.env.GOOGLE_MAPS_API_KEY;
+  const center = input.lat != null && input.lng != null ? `${input.lat},${input.lng}` : input.address;
+  if (!apiKey || !center) return null;
+
+  const radiusKm = input.radiusKm ?? 25;
+  const zoom = radiusKm <= 10 ? 11 : radiusKm <= 25 ? 10 : radiusKm <= 50 ? 9 : 8;
+  const params = new URLSearchParams({
+    center,
+    zoom: String(zoom),
+    size: input.size ?? "640x320",
+    maptype: "roadmap",
+    key: apiKey
+  });
+  params.append("markers", `color:blue|${center}`);
+
+  return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
 }
 
 /**

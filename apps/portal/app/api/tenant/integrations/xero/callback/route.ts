@@ -6,9 +6,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { IntegrationService, IntegrationStatus } from "@prisma/client";
-import { getTenantIntegrationRecord, prisma } from "@flowlab/db";
+import { getTenantIntegrationRecord, prisma, resolveIntegrationCredentials } from "@flowlab/db";
 import { getCanonicalRootDomain } from "@flowlab/contracts/server";
-import { decryptJson, encryptJson } from "@flowlab/integrations";
+import { encryptJson } from "@flowlab/integrations";
 import { getXeroTenantId } from "@flowlab/integrations/xero";
 import { logPlatformEvent } from "@flowlab/events";
 
@@ -62,7 +62,15 @@ export async function GET(request: Request) {
 
   // Fetch tenant's Xero client credentials to exchange the code
   const integration = await getTenantIntegrationRecord(tenantId, "xero");
-  const credentials = integration?.credentialsJson ? decryptJson(integration.credentialsJson) : {};
+  const resolved = await resolveIntegrationCredentials({
+    tenantId,
+    service: "xero",
+    envFallback: {
+      clientId: process.env.XERO_CLIENT_ID,
+      clientSecret: process.env.XERO_CLIENT_SECRET
+    }
+  });
+  const credentials = resolved.credentials;
   const clientId = credentials.clientId || process.env.XERO_CLIENT_ID || "";
   const clientSecret = credentials.clientSecret || process.env.XERO_CLIENT_SECRET || "";
 
@@ -128,12 +136,14 @@ export async function GET(request: Request) {
         tenantId,
         service: IntegrationService.xero,
         status: IntegrationStatus.connected,
+        managementMode: "connected_account",
         credentialsJson: encryptJson(updatedCredentials),
         lastTestedAt: new Date(),
         lastTestResult: "success"
       },
       update: {
         status: IntegrationStatus.connected,
+        managementMode: "connected_account",
         credentialsJson: encryptJson(updatedCredentials),
         lastTestedAt: new Date(),
         lastTestResult: "success",

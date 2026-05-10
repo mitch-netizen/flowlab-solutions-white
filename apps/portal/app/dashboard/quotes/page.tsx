@@ -27,6 +27,10 @@ function getPricingSummary(
     return `$${rate.hourlyRate ?? "—"}/hr · Minimum $${rate.minimumCharge ?? "—"}`;
   }
 
+  if (pricingModel === "callout_plus_hourly") {
+    return `Call-out $${rate.calloutFee ?? "—"} · $${rate.hourlyRate ?? "—"}/hr · Minimum $${rate.minimumCharge ?? "—"}`;
+  }
+
   return `Call-out $${rate.calloutFee ?? "—"} · Minimum $${rate.minimumCharge ?? "—"}`;
 }
 
@@ -63,6 +67,7 @@ export default async function QuotesPage({
   const pricingConfigured = rate != null && (
     (pricingModel === "area_based" && rate.baseRatePerSquareM != null) ||
     (pricingModel === "hourly" && rate.hourlyRate != null) ||
+    (pricingModel === "callout_plus_hourly" && (rate.hourlyRate != null || rate.calloutFee != null)) ||
     (pricingModel === "flat_rate" && (rate.calloutFee != null || rate.minimumCharge != null))
   );
   const onboardingComplete = tenantUser?.onboardingCompleted ?? false;
@@ -113,10 +118,10 @@ export default async function QuotesPage({
       {needsPricingSetup ? (
         <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-amber-500">
           <h2>Set up your pricing first</h2>
-          <p>AI quoting uses your pricing rates to calculate the draft amount. Complete pricing in onboarding before generating the first quote.</p>
+          <p>AI quoting uses your pricing rates to calculate the draft amount. Review pricing in Settings before generating the first quote.</p>
           <div>
-            <Link href="/dashboard/onboarding" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-              Complete setup
+            <Link href="/dashboard/settings" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+              Review pricing
             </Link>
           </div>
         </div>
@@ -172,7 +177,7 @@ export default async function QuotesPage({
                 Area estimate (m²)
                 <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="areaSquareMetres" type="number" min="1" defaultValue="90" />
               </label>
-            ) : pricingModel === "hourly" ? (
+            ) : pricingModel === "hourly" || pricingModel === "callout_plus_hourly" ? (
               <label className="flex flex-col gap-2 text-sm text-muted-foreground">
                 Estimated hours
                 <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="estimatedHours" type="number" min="0.5" step="0.5" defaultValue="2" />
@@ -232,7 +237,7 @@ export default async function QuotesPage({
               </div>
               {!pricingConfigured ? (
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/onboarding?step=3">Fix pricing</Link>
+                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/settings">Fix pricing</Link>
                 </div>
               ) : null}
             </div>
