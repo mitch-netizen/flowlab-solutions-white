@@ -34,6 +34,15 @@ jobs:
       ENCRYPTION_MASTER_KEY: "ci-test-master-key-not-for-production"
       DEFAULT_ROOT_DOMAIN: "flowlabsolutions.au"
       CRON_SECRET: "ci-test-cron-secret"
+      BREVO_API_KEY: "ci-brevo-mock"
+      BREVO_FROM_EMAIL: "hello@example.com"
+      BREVO_SMS_SENDER: "FlowLab"
+      DOCUSEAL_API_KEY: "ci-docuseal-mock"
+      GOOGLE_MAPS_API_KEY: "ci-google-maps-mock"
+      ANTHROPIC_API_KEY: "ci-anthropic-mock"
+      STRIPE_SECRET_KEY: "sk_test_ci"
+      XERO_CLIENT_ID: "ci-xero-client"
+      XERO_CLIENT_SECRET: "ci-xero-secret"
       NODE_ENV: "test"
 
     steps:
@@ -49,6 +58,9 @@ jobs:
 
       - name: Generate Prisma client
         run: npm run db:generate
+
+      - name: Validate Prisma schema
+        run: npx prisma validate --schema=packages/db/prisma/schema.prisma
 
       - name: Run database migrations
         run: npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma
@@ -95,6 +107,15 @@ jobs:
       ENCRYPTION_MASTER_KEY: "ci-test-master-key-not-for-production"
       DEFAULT_ROOT_DOMAIN: "localhost"
       CRON_SECRET: "ci-test-cron-secret"
+      BREVO_API_KEY: "ci-brevo-mock"
+      BREVO_FROM_EMAIL: "hello@example.com"
+      BREVO_SMS_SENDER: "FlowLab"
+      DOCUSEAL_API_KEY: "ci-docuseal-mock"
+      GOOGLE_MAPS_API_KEY: "ci-google-maps-mock"
+      ANTHROPIC_API_KEY: "ci-anthropic-mock"
+      STRIPE_SECRET_KEY: "sk_test_ci"
+      XERO_CLIENT_ID: "ci-xero-client"
+      XERO_CLIENT_SECRET: "ci-xero-secret"
       NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321"
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_ci_test_key"
       SUPABASE_SERVICE_ROLE_KEY: "sb_secret_ci_test_key"

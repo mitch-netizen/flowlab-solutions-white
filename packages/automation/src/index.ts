@@ -13,14 +13,13 @@ import {
   getPendingRateSuggestions,
   getSchedulerRecommendations,
   isAutomationPreferenceEnabled,
-  getTenantIntegrationRecord,
   prisma,
+  resolveIntegrationCredentials,
   saveRateSuggestions
 } from "@flowlab/db";
 import { logPlatformEvent } from "@flowlab/events";
 import {
   buildBrandedEmailHtml,
-  decryptJson,
   fireMakeWebhook,
   sendEmail,
   sendSms
@@ -92,8 +91,14 @@ async function getCredentials(
   tenantId: string,
   service: typeof BREVO_SMS_INTEGRATION_SERVICE | typeof BREVO_EMAIL_INTEGRATION_SERVICE | "make_com"
 ) {
-  const record = await getTenantIntegrationRecord(tenantId, service);
-  return record?.credentialsJson ? decryptJson(record.credentialsJson) : {};
+  const envFallback =
+    service === BREVO_SMS_INTEGRATION_SERVICE
+      ? { apiKey: process.env.BREVO_API_KEY, sender: process.env.BREVO_SMS_SENDER }
+      : service === BREVO_EMAIL_INTEGRATION_SERVICE
+        ? { apiKey: process.env.BREVO_API_KEY, fromEmail: process.env.BREVO_FROM_EMAIL, fromName: process.env.BREVO_FROM_NAME }
+        : undefined;
+  const resolved = await resolveIntegrationCredentials({ tenantId, service, envFallback });
+  return resolved.credentials;
 }
 
 function shouldLogMakeWebhookResult(result: { status: number; body: string }) {

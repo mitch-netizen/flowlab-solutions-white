@@ -3,8 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-const BUSINESS_TYPES = ["lawn_mowing", "cleaning", "pest_control", "gardening", "handyman", "pool_service", "other"];
+import { tradePresetOptions } from "@flowlab/contracts";
+
 const PLANS = ["starter", "professional", "growth"];
+const groupLabels: Record<string, string> = {
+  home_services: "Home services",
+  outdoor_property: "Outdoor/property",
+  cleaning_compliance: "Cleaning/compliance",
+  mobile_other: "Mobile/other"
+};
+const groupedTrades = tradePresetOptions.reduce<Record<string, typeof tradePresetOptions>>((groups, option) => {
+  groups[option.group] = [...(groups[option.group] ?? []), option];
+  return groups;
+}, {});
 
 export function CreateTenantForm() {
   const router = useRouter();
@@ -59,9 +70,13 @@ export function CreateTenantForm() {
       </label>
       <label>
         Business type
-        <select name="businessType" defaultValue="lawn_mowing">
-          {BUSINESS_TYPES.map((type) => (
-            <option key={type} value={type}>{type.replaceAll("_", " ")}</option>
+        <select name="businessType" defaultValue="plumbing">
+          {Object.entries(groupedTrades).map(([group, options]) => (
+            <optgroup key={group} label={groupLabels[group] ?? group}>
+              {options.map((option) => (
+                <option key={option.businessType} value={option.businessType}>{option.label}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </label>

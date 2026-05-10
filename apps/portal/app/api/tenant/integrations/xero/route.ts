@@ -4,8 +4,7 @@ import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { getTenantIntegrationRecord } from "@flowlab/db";
-import { decryptJson } from "@flowlab/integrations";
+import { resolveIntegrationCredentials } from "@flowlab/db";
 
 /**
  * GET — Begin Xero OAuth flow.
@@ -14,14 +13,19 @@ import { decryptJson } from "@flowlab/integrations";
 export async function GET(request: Request) {
   const session = await requireTenantSession();
 
-  // Fetch tenant's Xero client credentials
-  const integration = await getTenantIntegrationRecord(session.tenantId, "xero");
-  const credentials = integration?.credentialsJson ? decryptJson(integration.credentialsJson) : {};
+  const { credentials } = await resolveIntegrationCredentials({
+    tenantId: session.tenantId,
+    service: "xero",
+    envFallback: {
+      clientId: process.env.XERO_CLIENT_ID,
+      clientSecret: process.env.XERO_CLIENT_SECRET
+    }
+  });
   const clientId = credentials.clientId || process.env.XERO_CLIENT_ID || "";
 
   if (!clientId) {
     return NextResponse.json(
-      { error: "Xero Client ID not configured. Add it in Integrations → Xero before connecting." },
+      { error: "FlowLab Xero app credentials are not configured yet." },
       { status: 400 }
     );
   }

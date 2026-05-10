@@ -7,7 +7,8 @@ import {
   type BusinessType,
   type TenantPlan,
   IntegrationService as PrismaIntegrationService,
-  IntegrationStatus as PrismaIntegrationStatus
+  IntegrationStatus as PrismaIntegrationStatus,
+  IntegrationManagementMode as PrismaIntegrationManagementMode
 } from "@prisma/client";
 import { signCustomerToken, verifyCustomerToken } from "@flowlab/auth";
 import type {
@@ -24,7 +25,8 @@ import {
   automationPreferenceDescriptors,
   automationRecipeDescriptors,
   getPlanFeatures,
-  getPricingModel
+  getPricingModel,
+  getTradePreset
 } from "@flowlab/contracts";
 import {
   buildTenantUrl,
@@ -82,6 +84,11 @@ function toTenantProfile(record: Prisma.TenantProfileGetPayload<{ include: { ten
     state: record.state,
     postcode: record.postcode,
     serviceAreaSuburbs: record.serviceAreaSuburbs,
+    serviceBaseAddress: record.serviceBaseAddress,
+    serviceBasePlaceId: record.serviceBasePlaceId,
+    serviceBaseLat: record.serviceBaseLat,
+    serviceBaseLng: record.serviceBaseLng,
+    serviceRadiusKm: record.serviceRadiusKm,
     businessType: record.businessType,
     timezone: record.timezone
   };
@@ -1480,10 +1487,23 @@ export async function getMobileJobSnapshot(tenantId: string) {
 }
 
 export async function getTenantIntegrations(tenantId: string): Promise<TenantIntegration[]> {
-  const records = await prisma.tenantIntegration.findMany({
-    where: { tenantId },
-    orderBy: { service: "asc" }
-  });
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+
+  const [records, usage] = await Promise.all([
+    prisma.tenantIntegration.findMany({
+      where: { tenantId },
+      orderBy: { service: "asc" }
+    }),
+    prisma.tenantUsageEvent.groupBy({
+      by: ["service"],
+      where: { tenantId, createdAt: { gte: monthStart } },
+      _sum: { quantity: true }
+    }).catch(() => [])
+  ]);
+
+  const usageByService = new Map(usage.map((row) => [row.service, row._sum.quantity ?? 0]));
 
   return records.map((integration) => ({
     id: integration.id,
@@ -1494,7 +1514,10 @@ export async function getTenantIntegrations(tenantId: string): Promise<TenantInt
     lastTestResult: integration.lastTestResult as "success" | "failed" | null,
     lastErrorMessage: integration.lastErrorMessage,
     webhookUrl: integration.webhookUrl,
-    oauthExpiresAt: integration.oauthExpiresAt?.toISOString() ?? null
+    oauthExpiresAt: integration.oauthExpiresAt?.toISOString() ?? null,
+    managementMode: integration.managementMode,
+    platformManaged: integration.managementMode === "platform_managed",
+    usageThisMonth: usageByService.get(integration.service) ?? 0
   }));
 }
 
@@ -1513,6 +1536,7 @@ export async function saveTenantIntegrationCredentials(input: {
     data: {
       credentialsJson: input.credentialsJson,
       status: "connected",
+      managementMode: "tenant_managed",
       lastErrorMessage: null
     }
   });
@@ -1541,6 +1565,297 @@ export async function getPlatformIntegrations() {
   return prisma.platformIntegration.findMany({
     orderBy: { service: "asc" }
   });
+}
+
+export function getDefaultIntegrationManagementMode(service: IntegrationService) {
+  if (service === "make_com") return "advanced_optional" as const;
+  if (service === "xero") return "connected_account" as const;
+  if (["claude", "twilio", "sendgrid", "docuseal", "google_maps", "stripe"].includes(service)) {
+    return "platform_managed" as const;
+  }
+  return "tenant_managed" as const;
+}
+
+export async function resolveIntegrationCredentials(input: {
+  tenantId: string;
+  service: IntegrationService;
+  envFallback?: Record<string, string | undefined>;
+}) {
+  const [tenantRecord, platformRecord] = await Promise.all([
+    getTenantIntegrationRecord(input.tenantId, input.service),
+    getPlatformIntegrationRecord(input.service)
+  ]);
+
+  const tenantCredentials = tenantRecord?.credentialsJson ? decryptJson(tenantRecord.credentialsJson) : {};
+  const platformCredentials = platformRecord?.credentialsJson ? decryptJson(platformRecord.credentialsJson) : {};
+  const mode = tenantRecord?.managementMode ?? getDefaultIntegrationManagementMode(input.service);
+  const envCredentials = Object.fromEntries(
+    Object.entries(input.envFallback ?? {}).filter(([, value]) => typeof value === "string" && value.length > 0)
+  ) as Record<string, string>;
+
+  if (mode === "tenant_managed" && Object.keys(tenantCredentials).length > 0) {
+    return { credentials: tenantCredentials, source: "tenant" as const, mode };
+  }
+
+  if (mode === "connected_account") {
+    return { credentials: { ...platformCredentials, ...envCredentials, ...tenantCredentials }, source: "connected_account" as const, mode };
+  }
+
+  if (mode === "platform_managed" && Object.keys(platformCredentials).length > 0) {
+    return { credentials: platformCredentials, source: "platform" as const, mode };
+  }
+
+  if (Object.keys(envCredentials).length > 0) {
+    return { credentials: envCredentials, source: "env" as const, mode };
+  }
+
+  return { credentials: tenantCredentials, source: "tenant" as const, mode };
+}
+
+export async function recordTenantUsage(input: {
+  tenantId: string;
+  service: string;
+  operation: string;
+  quantity?: number;
+  metadata?: Record<string, unknown>;
+}) {
+  return prisma.tenantUsageEvent.create({
+    data: {
+      tenantId: input.tenantId,
+      service: input.service,
+      operation: input.operation,
+      quantity: input.quantity ?? 1,
+      metadataJson: input.metadata ? JSON.stringify(input.metadata) : null
+    }
+  });
+}
+
+export type ActionSuggestionInput = {
+  category: "quotes" | "crm" | "schedule" | "billing" | "automation" | "pricing" | "capacity";
+  priority: "high" | "medium" | "low";
+  title: string;
+  reason: string;
+  targetUrl: string;
+  suggestedAction: string;
+  source: string;
+  sourceId?: string | null;
+};
+
+export async function upsertActionSuggestions(tenantId: string, suggestions: ActionSuggestionInput[]) {
+  await prisma.actionSuggestion.deleteMany({
+    where: {
+      tenantId,
+      status: "open",
+      source: { in: suggestions.map((item) => item.source) }
+    }
+  });
+
+  if (suggestions.length === 0) return [];
+
+  await prisma.actionSuggestion.createMany({
+    data: suggestions.map((item) => ({
+      tenantId,
+      category: item.category,
+      priority: item.priority,
+      title: item.title,
+      reason: item.reason,
+      targetUrl: item.targetUrl,
+      suggestedAction: item.suggestedAction,
+      source: item.source,
+      sourceId: item.sourceId ?? null
+    }))
+  });
+
+  return getTenantActionSuggestions(tenantId);
+}
+
+export async function getTenantActionSuggestions(tenantId: string, opts: { refresh?: boolean; limit?: number } = {}) {
+  if (opts.refresh) {
+    await generateTenantActionSuggestions(tenantId);
+  }
+
+  const now = new Date();
+  return prisma.actionSuggestion.findMany({
+    where: {
+      tenantId,
+      status: "open",
+      OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }]
+    },
+    orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
+    take: opts.limit ?? 25
+  });
+}
+
+export async function resolveActionSuggestion(input: { tenantId: string; id: string; action: "dismiss" | "snooze" }) {
+  return prisma.actionSuggestion.updateMany({
+    where: { id: input.id, tenantId: input.tenantId },
+    data: input.action === "dismiss"
+      ? { status: "dismissed" }
+      : { status: "snoozed", snoozedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000) }
+  });
+}
+
+export async function generateTenantActionSuggestions(tenantId: string) {
+  const now = new Date();
+  const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const weekAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const [openEnquiries, staleQuotes, missingCustomers, overdueInvoices, upcomingJobs, failedAutomations, pricingRate, serviceTemplates] = await Promise.all([
+    prisma.enquiry.findMany({
+      where: { tenantId, status: "new" },
+      orderBy: { createdAt: "asc" },
+      take: 5,
+      include: { customer: true }
+    }),
+    prisma.quote.findMany({
+      where: { tenantId, status: "draft", createdAt: { lte: threeDaysAgo } },
+      orderBy: { createdAt: "asc" },
+      take: 5,
+      include: { customer: true }
+    }),
+    prisma.customer.findMany({
+      where: {
+        tenantId,
+        OR: [{ phone: null }, { suburb: null }, { address: null }]
+      },
+      orderBy: { createdAt: "desc" },
+      take: 5
+    }),
+    prisma.invoice.findMany({
+      where: {
+        tenantId,
+        status: { not: "paid" },
+        dueAt: { lt: now }
+      },
+      orderBy: { dueAt: "asc" },
+      take: 5,
+      include: { customer: true }
+    }),
+    prisma.job.findMany({
+      where: {
+        tenantId,
+        status: { in: ["scheduled", "in_progress"] },
+        scheduledFor: { gte: now, lte: weekAhead }
+      },
+      orderBy: { scheduledFor: "asc" },
+      take: 20,
+      include: { customer: true }
+    }),
+    prisma.automationJob.findMany({
+      where: { tenantId, status: { in: ["failed", "dead_letter"] } },
+      orderBy: { updatedAt: "desc" },
+      take: 5
+    }),
+    prisma.pricingRate.findFirst({ where: { tenantId } }),
+    prisma.serviceRateTemplate.count({ where: { tenantId } })
+  ]);
+
+  const suggestions: ActionSuggestionInput[] = [];
+
+  for (const enquiry of openEnquiries) {
+    suggestions.push({
+      category: "crm",
+      priority: "high",
+      title: `Quote ${enquiry.customer.firstName} ${enquiry.customer.lastName}`,
+      reason: `New enquiry waiting since ${enquiry.createdAt.toLocaleDateString("en-AU")}.`,
+      targetUrl: `/dashboard/quotes/new?customerId=${enquiry.customerId}&enquiryId=${enquiry.id}`,
+      suggestedAction: "Create a quote from this enquiry",
+      source: "open_enquiry",
+      sourceId: enquiry.id
+    });
+  }
+
+  for (const quote of staleQuotes) {
+    suggestions.push({
+      category: "quotes",
+      priority: "medium",
+      title: `Follow up quote for ${quote.customer.firstName}`,
+      reason: `Draft quote "${quote.title}" has been sitting for more than 3 days.`,
+      targetUrl: `/quote/${quote.accessToken}`,
+      suggestedAction: "Review the quote and send a follow-up",
+      source: "stale_quote",
+      sourceId: quote.id
+    });
+  }
+
+  for (const invoice of overdueInvoices) {
+    suggestions.push({
+      category: "billing",
+      priority: "high",
+      title: `Chase overdue invoice ${invoice.number}`,
+      reason: `${invoice.customer.firstName} ${invoice.customer.lastName} has an overdue balance of $${invoice.amount.toFixed(2)}.`,
+      targetUrl: `/dashboard/invoices/${invoice.id}`,
+      suggestedAction: "Send invoice follow-up",
+      source: "overdue_invoice",
+      sourceId: invoice.id
+    });
+  }
+
+  for (const customer of missingCustomers) {
+    suggestions.push({
+      category: "crm",
+      priority: "low",
+      title: `Complete ${customer.firstName}'s customer record`,
+      reason: "Missing phone, address, or suburb can slow quotes, reminders, and scheduling.",
+      targetUrl: `/dashboard/crm/${customer.id}`,
+      suggestedAction: "Add missing customer details",
+      source: "missing_customer_info",
+      sourceId: customer.id
+    });
+  }
+
+  if (upcomingJobs.length === 0) {
+    suggestions.push({
+      category: "capacity",
+      priority: "medium",
+      title: "Next week has no scheduled work",
+      reason: "Use rebooking reminders or open enquiries to fill available capacity.",
+      targetUrl: "/dashboard/crm#recent-enquiries",
+      suggestedAction: "Review open enquiries and rebooking opportunities",
+      source: "empty_schedule",
+      sourceId: null
+    });
+  } else if (upcomingJobs.filter((job) => job.scheduledFor && job.scheduledFor <= tomorrow).length === 0) {
+    suggestions.push({
+      category: "schedule",
+      priority: "medium",
+      title: "Tomorrow still has booking capacity",
+      reason: "There are upcoming jobs this week, but tomorrow has no confirmed run sheet.",
+      targetUrl: "/dashboard/scheduler",
+      suggestedAction: "Pull suitable work into tomorrow's schedule",
+      source: "tomorrow_gap",
+      sourceId: null
+    });
+  }
+
+  for (const job of failedAutomations) {
+    suggestions.push({
+      category: "automation",
+      priority: "high",
+      title: `Retry failed automation: ${job.kind}`,
+      reason: job.lastError ?? "An automation failed and may have blocked a customer update.",
+      targetUrl: "/dashboard/system-health",
+      suggestedAction: "Review and retry automation",
+      source: "failed_automation",
+      sourceId: job.id
+    });
+  }
+
+  if (!pricingRate || serviceTemplates === 0) {
+    suggestions.push({
+      category: "pricing",
+      priority: "medium",
+      title: "Finish pricing defaults",
+      reason: "Pricing and service templates make AI quotes faster and more consistent.",
+      targetUrl: "/dashboard/settings",
+      suggestedAction: "Review pricing and service templates",
+      source: "pricing_missing",
+      sourceId: null
+    });
+  }
+
+  return upsertActionSuggestions(tenantId, suggestions);
 }
 
 export async function getTenantEvents(tenantId: string): Promise<PlatformEventLogEntry[]> {
@@ -2288,12 +2603,13 @@ export async function createQuoteDraft(input: {
       estimated = Math.max(minimum, Math.round(perSquare * area));
       title = input.serviceRequest.split(".")[0]?.slice(0, 60) || "Service quote";
       description = `Formula-based draft (AI unavailable): ${area}m² × $${perSquare}/m² = $${estimated}. Review before sending.`;
-    } else if (pricingModel === "hourly") {
+    } else if (pricingModel === "hourly" || pricingModel === "callout_plus_hourly") {
       const hours = input.estimatedHours ?? 2;
       const hourlyRate = rate?.hourlyRate ?? 75;
-      estimated = Math.max(minimum, Math.round(hourlyRate * hours));
+      const callout = pricingModel === "callout_plus_hourly" ? (rate?.calloutFee ?? 0) : 0;
+      estimated = Math.max(minimum, Math.round(callout + hourlyRate * hours));
       title = input.serviceRequest.split(".")[0]?.slice(0, 60) || "Service quote";
-      description = `Formula-based draft (AI unavailable): ${hours}h × $${hourlyRate}/hr = $${estimated}. Review before sending.`;
+      description = `Formula-based draft (AI unavailable): ${callout ? `$${callout} call-out + ` : ""}${hours}h × $${hourlyRate}/hr = $${estimated}. Review before sending.`;
     } else {
       // flat_rate
       estimated = Math.max(minimum, rate?.calloutFee ?? minimum);
@@ -2355,10 +2671,16 @@ export async function updateTenantProfileSettings(input: {
   accentColour?: string;
   customDomain?: string;
   serviceAreaSuburbs?: string[];
+  serviceBaseAddress?: string;
+  serviceBasePlaceId?: string;
+  serviceBaseLat?: number | null;
+  serviceBaseLng?: number | null;
+  serviceRadiusKm?: number | null;
   suburb?: string;
   postcode?: string;
-  businessType?: "lawn_mowing" | "cleaning" | "pest_control" | "gardening" | "handyman" | "pool_service" | "other";
+  businessType?: BusinessType;
 }) {
+  const existingProfile = await prisma.tenantProfile.findUnique({ where: { tenantId: input.tenantId } });
   const updated = await prisma.tenantProfile.update({
     where: { tenantId: input.tenantId },
     data: {
@@ -2372,11 +2694,41 @@ export async function updateTenantProfileSettings(input: {
       customDomain: input.customDomain || null,
       customDomainVerified: false,
       serviceAreaSuburbs: input.serviceAreaSuburbs ?? [],
+      serviceBaseAddress: input.serviceBaseAddress,
+      serviceBasePlaceId: input.serviceBasePlaceId,
+      serviceBaseLat: input.serviceBaseLat,
+      serviceBaseLng: input.serviceBaseLng,
+      serviceRadiusKm: input.serviceRadiusKm,
       suburb: input.suburb,
       postcode: input.postcode,
       businessType: input.businessType
     }
   });
+
+  if (input.businessType && existingProfile?.businessType !== input.businessType) {
+    const [pricingCount, templateCount, serviceCount] = await Promise.all([
+      prisma.pricingRate.count({ where: { tenantId: input.tenantId } }),
+      prisma.serviceRateTemplate.count({ where: { tenantId: input.tenantId } }),
+      prisma.service.count({ where: { tenantId: input.tenantId } })
+    ]);
+
+    if (pricingCount === 0 && templateCount === 0 && serviceCount === 0) {
+      const preset = getTradePreset(input.businessType);
+      await saveTenantPricingSettings({
+        tenantId: input.tenantId,
+        pricingRate: preset.pricingRate,
+        serviceTemplates: preset.serviceTemplates
+      });
+      await prisma.service.createMany({
+        data: preset.serviceTemplates.map((service) => ({
+          tenantId: input.tenantId,
+          name: service.serviceName,
+          defaultPrice: service.defaultPrice,
+          defaultDuration: service.defaultDuration
+        }))
+      });
+    }
+  }
 
   await prisma.platformEventLog.create({
     data: {
@@ -3802,6 +4154,7 @@ export async function createTenantWithOwner(input: {
   plan: TenantPlan;
 }) {
   const slugBase = slugifyBusinessName(input.businessName);
+  const preset = getTradePreset(input.businessType);
   const existing = await prisma.tenant.count({
     where: {
       slug: {
@@ -3833,6 +4186,8 @@ export async function createTenantWithOwner(input: {
           email: input.email,
           suburb: input.suburb,
           serviceAreaSuburbs: input.suburb ? [input.suburb] : [],
+          serviceBaseAddress: input.suburb,
+          serviceRadiusKm: preset.scheduleDefaults.serviceRadiusKm,
           businessType: input.businessType,
           timezone: "Australia/Brisbane"
         }
@@ -3856,8 +4211,30 @@ export async function createTenantWithOwner(input: {
     data: ["twilio", "sendgrid", "stripe", "docuseal", "google_maps", "xero", "make_com", "claude"].map((service) => ({
       tenantId: tenant.id,
       service: service as PrismaIntegrationService,
-      status: service === "claude" ? "connected" : "not_configured"
+      status: ["claude", "google_maps", "docuseal", "twilio", "sendgrid"].includes(service) ? "connected" : "not_configured",
+      managementMode: getDefaultIntegrationManagementMode(service as IntegrationService) as PrismaIntegrationManagementMode
     }))
+  });
+
+  await saveTenantPricingSettings({
+    tenantId: tenant.id,
+    pricingRate: preset.pricingRate,
+    serviceTemplates: preset.serviceTemplates
+  });
+
+  await prisma.service.createMany({
+    data: preset.serviceTemplates.map((service) => ({
+      tenantId: tenant.id,
+      name: service.serviceName,
+      defaultPrice: service.defaultPrice,
+      defaultDuration: service.defaultDuration
+    }))
+  });
+
+  await saveTenantScheduleSettings({
+    tenantId: tenant.id,
+    workSchedule: preset.scheduleDefaults.workSchedule,
+    personalCommitments: []
   });
 
   return tenant;
@@ -4497,7 +4874,8 @@ export async function ensureDemoSeed() {
     data: ["twilio", "sendgrid", "stripe", "docuseal", "google_maps", "xero", "make_com", "claude"].map((service) => ({
       tenantId: tenant.id,
       service: service as PrismaIntegrationService,
-      status: service === "claude" ? "connected" : "not_configured"
+      status: ["claude", "google_maps", "docuseal", "twilio", "sendgrid"].includes(service) ? "connected" : "not_configured",
+      managementMode: getDefaultIntegrationManagementMode(service as IntegrationService) as PrismaIntegrationManagementMode
     })),
     skipDuplicates: true
   });
