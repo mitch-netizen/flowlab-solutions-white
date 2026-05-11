@@ -19,10 +19,13 @@ const groupLabels: Record<string, string> = {
   mobile_other: "Mobile/other"
 };
 
+type XeroImportResult = { imported: number; skipped: number; noEmail: number };
+
 interface Props {
   initialStep: number;
   isCompleted: boolean;
   enquiryUrl: string;
+  xeroConnected: boolean;
   initialProfile: {
     businessName: string;
     phone: string;
@@ -36,12 +39,14 @@ interface Props {
   };
 }
 
-export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl, initialProfile }: Props) {
+export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl, xeroConnected, initialProfile }: Props) {
   const [step, setStep] = useState(Math.min(Math.max(initialStep, 1), 3));
   const [saving, setSaving] = useState(false);
   const [completed, setCompleted] = useState(isCompleted);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<XeroImportResult | null>(null);
 
   const [businessName, setBusinessName] = useState(initialProfile.businessName);
   const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType>(initialProfile.businessType);
@@ -327,6 +332,46 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
               {saving ? "Finishing..." : "Finish setup"}
             </button>
           </div>
+
+          {xeroConnected && (
+            <div className="rounded-lg border bg-card/60 p-4" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div>
+                <strong style={{ fontSize: 14 }}>Import existing customers from Xero</strong>
+                <p className="muted" style={{ margin: "4px 0 0" }}>
+                  Pulls all Xero contacts into your CRM in one go. Existing records are skipped — nothing is overwritten.
+                </p>
+              </div>
+              {importResult ? (
+                <p style={{ margin: 0, fontSize: 13, color: "#86efac" }}>
+                  Done — {importResult.imported} imported, {importResult.skipped} already existed
+                  {importResult.noEmail > 0 ? `, ${importResult.noEmail} skipped (no email)` : ""}.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  disabled={importing}
+                  className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold"
+                  style={{ width: "fit-content" }}
+                  onClick={async () => {
+                    setImporting(true);
+                    try {
+                      const res = await fetch("/api/tenant/crm/import/xero", { method: "POST" });
+                      if (!res.ok) throw new Error("Import failed");
+                      const data = await res.json() as XeroImportResult;
+                      setImportResult(data);
+                    } catch {
+                      setError("Xero import failed. Check your connection and try again.");
+                    } finally {
+                      setImporting(false);
+                    }
+                  }}
+                >
+                  {importing ? "Importing..." : "Import customers from Xero"}
+                </button>
+              )}
+            </div>
+          )}
+
           <p className="muted" style={{ margin: 0 }}>You're set. Let's send your first quote.</p>
         </div>
       )}

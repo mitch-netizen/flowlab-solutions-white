@@ -1,4 +1,4 @@
-import { getTenantDashboardSnapshot, getTenantSettingsSnapshot } from "@flowlab/db";
+import { getTenantDashboardSnapshot, getTenantIntegrationRecord, getTenantSettingsSnapshot } from "@flowlab/db";
 import { buildTenantUrl } from "@flowlab/contracts/server";
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../lib/session";
@@ -6,10 +6,12 @@ import OnboardingWizard from "./OnboardingWizard";
 
 export default async function OnboardingPage() {
   const session = await requireTenantSession();
-  const [snapshot, settings] = await Promise.all([
+  const [snapshot, settings, xeroRecord] = await Promise.all([
     getTenantDashboardSnapshot(session.tenantId),
-    getTenantSettingsSnapshot(session.tenantId)
+    getTenantSettingsSnapshot(session.tenantId),
+    getTenantIntegrationRecord(session.tenantId, "xero")
   ]);
+  const xeroConnected = xeroRecord?.status === "connected";
 
   const currentUser = snapshot.tenant?.users.find((user) => user.id === session.sub) ?? null;
   const currentStep = currentUser?.onboardingStep ?? 1;
@@ -32,6 +34,7 @@ export default async function OnboardingPage() {
         initialStep={currentStep}
         isCompleted={isCompleted}
         enquiryUrl={enquiryUrl}
+        xeroConnected={xeroConnected}
         initialProfile={{
           businessName: settings.profile?.businessName ?? "",
           phone: settings.profile?.phone ?? "",
