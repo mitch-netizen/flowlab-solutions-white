@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@flowlab/db";
 
 import DashboardPageScaffold from "../../../../components/dashboard/page-scaffold";
+import SubmitButton from "../../../../components/submit-button";
 import { requireTenantSession } from "../../../../lib/session";
 
 const errorMessages: Record<string, string> = {
@@ -137,10 +138,10 @@ export default async function NewQuotePage({
           </label>
 
           <div className="space-y-2">
-            <button className="inline-flex w-full items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
-              Create quote and open customer link
-            </button>
-            <p className="text-xs text-muted-foreground">You&apos;ll get a link to send to your customer.</p>
+            <SubmitButton className="inline-flex w-full items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" loadingText="Creating quote...">
+              Create quote
+            </SubmitButton>
+            <p className="text-xs text-muted-foreground">You&apos;ll get a shareable link to send directly to your customer.</p>
           </div>
         </form>
       </div>

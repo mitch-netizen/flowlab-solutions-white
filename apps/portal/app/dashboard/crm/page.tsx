@@ -4,6 +4,7 @@ import { getCrmSnapshot } from "@flowlab/db";
 
 import CustomerLink from "../../../components/customer-link";
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
+import SubmitButton from "../../../components/submit-button";
 import { CustomersTable } from "./customers-table";
 import { requireTenantSession } from "../../../lib/session";
 
@@ -19,12 +20,14 @@ export default async function CrmPage({
 
   const formatReceivedAt = (value: Date | string) => new Date(value).toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" });
 
+  const customerJobMap = new Map(snapshot.customers.map(c => [c.id, c.jobs]));
+
   return (
     
       <DashboardPageScaffold
         eyebrow="CRM"
-        title="Customer context without the noise."
-        description="Track who is new, who needs a follow-up, and who already has work, billing, or feedback history attached to their record."
+        title="Customers"
+        description="New requests land here first. Review each one, convert to a quote, then track the full history — jobs, invoices, and messages — on the customer record."
         section="crm"
       >
 
@@ -50,17 +53,11 @@ export default async function CrmPage({
         </div>
       ) : null}
 
-      <div className="rounded-lg border bg-card p-4 space-y-3">
-        <div className="eyebrow">Requests inbox</div>
-        <h2>Incoming customer requests</h2>
-        <p className="text-sm text-muted-foreground">This is where new customer requests land. Open each request, confirm the details, then create a quote as the next step.</p>
-      </div>
-
       <div className="rounded-lg border bg-card p-4 space-y-4">
         <div className="space-y-2">
-          <div className="eyebrow">Manual add</div>
-          <h2>Create customer directly</h2>
-          <p className="text-sm text-muted-foreground">Add a customer to CRM without going through the quote flow.</p>
+          <div className="eyebrow">Add customer</div>
+          <h2 id="manual-add">Add a customer manually</h2>
+          <p className="text-sm text-muted-foreground">Add a customer directly — for phone enquiries, referrals, or repeat clients not in the system yet. Only first name, last name, and email are required.</p>
         </div>
         <form action="/api/tenant/crm/customers" method="post" className="grid gap-3 md:grid-cols-2">
           {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
@@ -78,24 +75,24 @@ export default async function CrmPage({
           </label>
           <label className="space-y-1 text-sm">
             <span>Phone</span>
-            <input name="phone" className="w-full rounded-md border bg-background px-3 py-2" />
+            <input name="phone" type="tel" className="w-full rounded-md border bg-background px-3 py-2" placeholder="04xx xxx xxx" />
           </label>
           <label className="space-y-1 text-sm">
             <span>Suburb</span>
-            <input name="suburb" className="w-full rounded-md border bg-background px-3 py-2" />
+            <input name="suburb" className="w-full rounded-md border bg-background px-3 py-2" title="Used for service-area filtering and travel-time estimates." />
           </label>
           <label className="space-y-1 text-sm md:col-span-2">
             <span>Address</span>
-            <input name="address" className="w-full rounded-md border bg-background px-3 py-2" />
+            <input name="address" className="w-full rounded-md border bg-background px-3 py-2" placeholder="Full street address — helps with GPS routing. Suburb alone is fine if unknown." title="Full address for GPS navigation and service-area checks. Suburb alone is OK if address is not yet provided." />
           </label>
           <label className="space-y-1 text-sm md:col-span-2">
             <span>Notes</span>
-            <textarea name="notes" rows={3} className="w-full rounded-md border bg-background px-3 py-2" />
+            <textarea name="notes" rows={3} className="w-full rounded-md border bg-background px-3 py-2" placeholder="e.g. large property, dog on site, prefers afternoon visits" />
           </label>
           <div className="md:col-span-2">
-            <button type="submit" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" loadingText="Saving...">
               Save customer
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </div>
@@ -124,6 +121,16 @@ export default async function CrmPage({
                     </CustomerLink>
                   </h3>
                   <p className="text-sm text-muted-foreground">{enquiry.customer.suburb ? `Suburb: ${enquiry.customer.suburb}` : "Suburb: Not provided"}</p>
+                  {(() => {
+                    const jobs = customerJobMap.get(enquiry.customerId) ?? [];
+                    return (
+                      <p className="text-sm text-muted-foreground">
+                        {jobs.length > 0
+                          ? `${jobs.length} past job${jobs.length === 1 ? "" : "s"} · Last: ${jobs[0]!.status.replace(/_/g, " ")}`
+                          : "New customer — no prior jobs"}
+                      </p>
+                    );
+                  })()}
                   <p>{enquiry.serviceRequest}</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
@@ -134,7 +141,7 @@ export default async function CrmPage({
                       <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={`/dashboard/quotes/new?customerId=${enquiry.customerId}&enquiryId=${enquiry.id}`}>Create quote</Link>
                       <form action={`/api/tenant/enquiries/${enquiry.id}/close`} method="post">
                         <input type="hidden" name="returnTo" value="/dashboard/crm" />
-                        <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Close enquiry</button>
+                        <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" loadingText="Closing...">Close</SubmitButton>
                       </form>
                     </>
                   )}
@@ -143,8 +150,11 @@ export default async function CrmPage({
             ))
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">No requests yet. Customer requests from your booking link will appear here automatically.</p>
-              <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/onboarding">Open booking link</Link>
+              <p className="text-sm text-muted-foreground">No open requests yet. When customers submit a request through your booking page, they will appear here.</p>
+              <div className="flex flex-wrap gap-2">
+                <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href="/dashboard/quotes/new">Create a quote manually</Link>
+                <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/onboarding">View your booking link</Link>
+              </div>
             </div>
           )}
         </div>

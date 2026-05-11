@@ -41,6 +41,184 @@ export interface AIQuoteResult {
   durationMs: number;
 }
 
+export interface DraftMessageInput {
+  businessName: string;
+  businessType?: string;
+  customerFirstName: string;
+  customerLastName: string;
+  customerSuburb?: string | null;
+  customerNotes?: string | null;
+  channel: "email" | "sms";
+  intent?: string;
+  job?: {
+    summary: string;
+    status: string;
+    scheduledFor?: Date | null;
+    address?: string | null;
+    suburb?: string | null;
+    actualHours?: number | null;
+    estimatedHours?: number | null;
+  } | null;
+  invoice?: {
+    number: string;
+    amount: number;
+    status: string;
+    dueAt?: Date | null;
+  } | null;
+}
+
+export interface DraftMessageResult {
+  subject?: string;
+  body: string;
+}
+
+export async function draftCommunicationMessage(input: DraftMessageInput): Promise<DraftMessageResult> {
+  const isSms = input.channel === "sms";
+
+  const contextLines: string[] = [
+    `Business: ${input.businessName}${input.businessType ? ` (${input.businessType.replace(/_/g, " ")})` : ""}`,
+    `Customer: ${input.customerFirstName} ${input.customerLastName}${input.customerSuburb ? `, ${input.customerSuburb}` : ""}`,
+    input.customerNotes ? `Customer notes: ${input.customerNotes}` : ""
+  ];
+
+  if (input.job) {
+    contextLines.push(`Job: ${input.job.summary} — status: ${input.job.status}`);
+    if (input.job.scheduledFor) contextLines.push(`Scheduled: ${new Date(input.job.scheduledFor).toLocaleString("en-AU")}`);
+    if (input.job.address) contextLines.push(`Address: ${input.job.address}${input.job.suburb ? `, ${input.job.suburb}` : ""}`);
+    if (input.job.actualHours) contextLines.push(`Actual hours: ${input.job.actualHours}`);
+  }
+
+  if (input.invoice) {
+    contextLines.push(`Invoice: ${input.invoice.number} — $${input.invoice.amount} — status: ${input.invoice.status}`);
+    if (input.invoice.dueAt) contextLines.push(`Due: ${new Date(input.invoice.dueAt).toLocaleDateString("en-AU")}`);
+  }
+
+  if (input.intent) {
+    contextLines.push(`Operator intent: ${input.intent}`);
+  }
+
+  const systemPrompt = isSms
+    ? `You are a helpful assistant that writes short, friendly SMS messages on behalf of a trades business. Keep messages under 160 characters. Use plain conversational language. Sign off with the business name. Never use emoji unless the operator explicitly asks.`
+    : `You are a helpful assistant that writes concise, professional email messages on behalf of a trades business. Keep emails short — 2–4 sentences. Start with a greeting using the customer's first name. Be warm and direct. Sign off with the business name.`;
+
+  const userPrompt = [
+    "Write a draft message for the following context:",
+    ...contextLines.filter(Boolean),
+    isSms
+      ? "Format: SMS (under 160 characters, no subject line needed)"
+      : "Format: Email — first line must be 'Subject: <subject text>' then a blank line then the email body"
+  ].join("\n");
+
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 400,
+    system: systemPrompt,
+    messages: [{ role: "user", content: userPrompt }]
+  });
+
+  const raw = response.content[0]?.type === "text" ? response.content[0].text.trim() : "";
+
+  if (isSms) {
+    return { body: raw };
+  }
+
+  const subjectMatch = raw.match(/^Subject:\s*(.+)/im);
+  const subject = subjectMatch?.[1]?.trim() ?? "";
+  const emailBody = raw.replace(/^Subject:\s*.+\n?/im, "").trim();
+
+  return { subject, body: emailBody };
+}
+
+export interface ServiceTemplateSuggestionInput {
+  businessName: string;
+  businessType: string;
+  recentJobSummaries: string[];
+  existingTemplateNames: string[];
+}
+
+export interface ServiceTemplateSuggestion {
+  name: string;
+  defaultPrice: number;
+  defaultDuration: number;
+  reason: string;
+}
+
+export interface MarketRateCheckInput {
+  businessType: string;
+  businessName: string;
+  suburb?: string | null;
+  proposedAmount: number;
+  jobDescription: string;
+}
+
+export interface MarketRateCheckResult {
+  verdict: "competitive" | "above_market" | "below_market" | "unclear";
+  commentary: string;
+}
+
+export async function checkMarketRate(input: MarketRateCheckInput): Promise<MarketRateCheckResult> {
+  const prompt = `You are a trades business advisor for Australia. A ${input.businessType.replace(/_/g, " ")} business called "${input.businessName}" wants to know if their proposed price is competitive.
+
+Job description: "${input.jobDescription}"
+Proposed amount: $${input.proposedAmount} AUD${input.suburb ? `\nLocation: ${input.suburb}` : ""}
+
+Based on typical Australian market rates for this trade and job type, assess the proposed amount.
+
+Return a JSON object only — no markdown:
+{
+  "verdict": "competitive" | "above_market" | "below_market" | "unclear",
+  "commentary": "2-3 sentence assessment. Be specific about typical ranges if possible. Acknowledge when the job description is too vague to be certain."
+}`;
+
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 256,
+    messages: [{ role: "user", content: prompt }]
+  });
+
+  const raw = response.content[0]?.type === "text" ? response.content[0].text.trim() : "{}";
+  const jsonText = raw.replace(/^```[a-z]*\n?/, "").replace(/\n?```$/, "").trim();
+
+  try {
+    return JSON.parse(jsonText) as MarketRateCheckResult;
+  } catch {
+    return { verdict: "unclear", commentary: "Could not assess market rate for this job type. Try adding more detail to the job description." };
+  }
+}
+
+export async function suggestServiceTemplates(input: ServiceTemplateSuggestionInput): Promise<ServiceTemplateSuggestion[]> {
+  const prompt = `You are a business assistant helping "${input.businessName}", a ${input.businessType.replace(/_/g, " ")} business, set up service templates for quoting.
+
+Recent jobs completed:
+${input.recentJobSummaries.length > 0 ? input.recentJobSummaries.map((s, i) => `${i + 1}. ${s}`).join("\n") : "No jobs recorded yet."}
+
+Existing service templates (do not duplicate these):
+${input.existingTemplateNames.length > 0 ? input.existingTemplateNames.map((n) => `- ${n}`).join("\n") : "None yet."}
+
+Suggest 3–5 service templates that are not already covered. Base pricing on typical Australian trade rates for a ${input.businessType.replace(/_/g, " ")} business.
+
+Return a JSON array only — no markdown fences, no explanation:
+[
+  { "name": "Service name", "defaultPrice": 120, "defaultDuration": 60, "reason": "One sentence on why this is a good template to have." },
+  ...
+]`;
+
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 512,
+    messages: [{ role: "user", content: prompt }]
+  });
+
+  const raw = response.content[0]?.type === "text" ? response.content[0].text.trim() : "[]";
+  const jsonText = raw.replace(/^```[a-z]*\n?/, "").replace(/\n?```$/, "").trim();
+
+  try {
+    return JSON.parse(jsonText) as ServiceTemplateSuggestion[];
+  } catch {
+    return [];
+  }
+}
+
 export async function generateAIQuote(input: AIQuoteInput): Promise<AIQuoteResult> {
   const start = Date.now();
   const minimum = input.pricingRate?.minimumCharge ?? 55;

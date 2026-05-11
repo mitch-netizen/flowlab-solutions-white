@@ -4,6 +4,7 @@ import { getSchedulerRecommendations, getTenantSchedulerSnapshot } from "@flowla
 
 import CustomerLink from "../../../components/customer-link";
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
+import SubmitButton from "../../../components/submit-button";
 import { getJobPrimaryHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
@@ -23,15 +24,25 @@ export default async function SchedulerPage() {
       <DashboardPageScaffold
         eyebrow="Jobs"
         title="Scheduler"
-        description="See upcoming jobs alongside your availability, personal commitments, and time off — all in one view."
+        description="See your jobs, your schedule, and any conflicts at a glance."
         section="jobs"
         actions={(
           <>
-            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/actions?category=schedule">Schedule actions</Link>
+            <Link
+              className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold"
+              href="/dashboard/actions?category=schedule"
+              title="View all scheduling-related action suggestions"
+            >
+              Schedule actions
+            </Link>
             <form action="/api/tenant/scheduler/analyze" method="post">
-              <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
-                Queue schedule analysis
-              </button>
+              <SubmitButton
+                className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                loadingText="Queuing…"
+                title="Run the scheduling analysis and refresh recommendations"
+              >
+                Analyse schedule
+              </SubmitButton>
             </form>
           </>
         )}
@@ -42,7 +53,7 @@ export default async function SchedulerPage() {
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Recommendations</div>
             <div className="text-3xl font-semibold">{recommendations.length}</div>
-            <p className="text-sm text-muted-foreground">Jobs the analysis thinks deserve attention first.</p>
+            <p className="text-sm text-muted-foreground">Jobs with a scheduling conflict or an early start.</p>
           </div>
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Upcoming jobs</div>
@@ -52,7 +63,7 @@ export default async function SchedulerPage() {
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Blocked time</div>
             <div className="text-3xl font-semibold">{totalBlocks}</div>
-            <p className="text-sm text-muted-foreground">Personal commitments and time off logged against your schedule.</p>
+            <p className="text-sm text-muted-foreground">Commitments and time off that can't be overbooked.</p>
           </div>
         </div>
       </div>
@@ -61,8 +72,8 @@ export default async function SchedulerPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="eyebrow">Recommendations</div>
-            <h2>Scheduling recommendations</h2>
-            <p>Jobs flagged by the analysis as needing attention. Schedule conflicts also surface in the Action Inbox so operators can triage them beside quote, customer, and billing work.</p>
+            <h2>Scheduling flags</h2>
+            <p>Jobs with conflicts, gaps, or early starts. Conflicts also appear in the Action Inbox so you can triage them alongside quotes and billing.</p>
           </div>
           <Link href="/dashboard/actions?category=schedule" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open schedule actions</Link>
         </div>
@@ -89,11 +100,11 @@ export default async function SchedulerPage() {
                   {item.suggestedAction}
                 </p>
                 {item.reasons.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <ul className="mt-1 space-y-0.5 pl-4 text-sm text-amber-400 list-disc">
                     {item.reasons.map((reason) => (
-                      <span key={reason}>{reason}</span>
+                      <li key={reason}>{reason}</li>
                     ))}
-                  </div>
+                  </ul>
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
@@ -106,10 +117,13 @@ export default async function SchedulerPage() {
 
       <div className="cards-2">
         <div className="rounded-lg border bg-card p-4 space-y-4">
-          <div className="space-y-2">
-            <div className="eyebrow">Work week</div>
-            <h2 style={{ marginBottom: 8 }}>Default working windows</h2>
-            <p>Your default working hours, used when analysing and placing jobs.</p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="space-y-2">
+              <div className="eyebrow">Work week</div>
+              <h2 style={{ marginBottom: 8 }}>Default working windows</h2>
+              <p>Your default hours, used when analysing and placing jobs.</p>
+            </div>
+            <Link href="/dashboard/settings" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-3 py-1.5 text-xs font-semibold">Edit in Settings →</Link>
           </div>
 
           <div className="space-y-3">
@@ -155,7 +169,7 @@ export default async function SchedulerPage() {
           <div className="space-y-2">
             <div className="eyebrow">Upcoming jobs</div>
             <h2>Upcoming jobs</h2>
-            <p>Adjust the scheduled time for any job directly from this view.</p>
+            <p>Reschedule any job directly from here. Date and time fields accept keyboard entry too.</p>
           </div>
         </div>
 
@@ -195,9 +209,9 @@ export default async function SchedulerPage() {
                   defaultValue={job.scheduledFor ? new Date(job.scheduledFor).toISOString().slice(0, 16) : ""}
                   required
                 />
-                <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">
+                <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" loadingText="Saving…">
                   Save new time
-                </button>
+                </SubmitButton>
               </form>
             </div>
           )) : <p className="text-sm text-muted-foreground">No upcoming jobs are scheduled yet.</p>}

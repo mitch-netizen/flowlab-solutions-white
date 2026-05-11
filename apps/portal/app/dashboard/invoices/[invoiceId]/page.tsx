@@ -100,7 +100,7 @@ export default async function InvoiceRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Customer and payment</div>
-            <h2>Customer &amp; payment</h2>
+            <h2>Billing details</h2>
           </div>
 
           <div className="space-y-3">
@@ -203,7 +203,7 @@ export default async function InvoiceRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Invoice communication</div>
-            <h2>Messages linked directly to this invoice</h2>
+            <h2>Invoice messages</h2>
             <p>Messages sent specifically about this invoice.</p>
           </div>
 

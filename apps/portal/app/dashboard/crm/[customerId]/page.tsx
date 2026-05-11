@@ -89,7 +89,7 @@ export default async function CustomerRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Contact details</div>
-            <h2>Contact details</h2>
+            <h2>How to reach them</h2>
           </div>
 
           <div className="space-y-3">
@@ -115,7 +115,7 @@ export default async function CustomerRecordPage({
         <form action={`/api/tenant/crm/customers/${customer.id}/update`} method="post" className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Edit customer</div>
-            <h2>Edit customer</h2>
+            <h2>Update details</h2>
             <p>Changes apply across all jobs, invoices, and records linked to this customer.</p>
           </div>
 

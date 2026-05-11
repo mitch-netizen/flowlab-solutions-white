@@ -4,6 +4,7 @@ import { getServiceLabel, serviceLabels } from "@flowlab/contracts";
 import { getTenantAutomationHealth, getTenantEvents, getTenantIntegrations } from "@flowlab/db";
 
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
+import SubmitButton from "../../../components/submit-button";
 import { getCustomerRecordHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
@@ -114,9 +115,9 @@ export default async function SystemHealthPage() {
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <form action="/api/tenant/automation/retry" method="post">
                   <input type="hidden" name="jobId" value={job.id} />
-                  <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">
+                  <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" loadingText="Retrying…">
                     Retry
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             </div>
@@ -207,7 +208,7 @@ export default async function SystemHealthPage() {
                         color: event.status === "failed" ? "#fca5a5" : event.status === "success" ? "#86efac" : "#94a3b8"
                       }}
                     >
-                      {event.status}
+                      {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
                     </span>
                   </td>
                   <td style={{ color: "#cbd5e1" }}>
