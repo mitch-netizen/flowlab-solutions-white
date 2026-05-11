@@ -27,7 +27,7 @@ const categoryOptions = [
   { value: "all", label: "All groups" },
   ...Object.entries(actionSuggestionCategoryLabels).map(([category, label]) => ({
     value: category,
-    label: `${label} - ${category.replace(/_/g, " ")}`
+    label
   }))
 ];
 
@@ -55,7 +55,7 @@ export default async function ActionInboxPage({
     <DashboardPageScaffold
       eyebrow="Co-pilot"
       title="Action Inbox"
-      description="A practical list of the operational gaps FlowLab can see right now. Open the workflow, then dismiss or snooze the recommendation when it no longer needs attention."
+      description="FlowLab surfaces the next thing to act on. Follow the link, take action, then dismiss or snooze the card."
       section="home"
       actions={(
         <>
@@ -79,17 +79,17 @@ export default async function ActionInboxPage({
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Open</div>
             <div className="text-3xl font-semibold">{openActions.length}</div>
-            <p className="text-sm text-muted-foreground">Visible recommendations waiting for an operator.</p>
+            <p className="text-sm text-muted-foreground">Waiting for your attention right now.</p>
           </div>
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Snoozed</div>
             <div className="text-3xl font-semibold">{snoozedActions.length}</div>
-            <p className="text-sm text-muted-foreground">Hidden until they are worth seeing again.</p>
+            <p className="text-sm text-muted-foreground">Hidden for now — will resurface when relevant again.</p>
           </div>
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Dismissed</div>
             <div className="text-3xl font-semibold">{dismissedActions.length}</div>
-            <p className="text-sm text-muted-foreground">Closed recommendations kept for context.</p>
+            <p className="text-sm text-muted-foreground">Closed and kept for reference.</p>
           </div>
         </div>
       </div>
@@ -122,20 +122,28 @@ export default async function ActionInboxPage({
       <div className="rounded-lg border bg-card p-4 space-y-4">
         <div className="space-y-2">
           <div className="eyebrow">Recommended work</div>
-          <h2 style={{ margin: 0 }}>Operator-safe next actions</h2>
+          <h2 style={{ margin: 0 }}>Your next actions</h2>
           <p className="text-sm text-muted-foreground" style={{ margin: 0 }}>
-            These actions only navigate to the right workflow. Customer sends, schedule moves, and billing changes still require operator review.
+            Each card links to the right workflow. Sends, schedule changes, and billing still require your sign-off — FlowLab only shows you where to go.
           </p>
         </div>
+
+        {actions.length > 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Showing {actions.length} {status !== "all" ? status : ""} action{actions.length === 1 ? "" : "s"}{priority !== "all" ? ` · ${priority} priority` : ""}{category !== "all" ? ` · ${categoryOptions.find(c => c.value === category)?.label ?? category}` : ""}
+          </p>
+        ) : null}
 
         <div className="space-y-3">
           {actions.length > 0 ? actions.map((action) => (
             <ActionSuggestionCard key={action.id} action={action} returnTo={returnTo} />
           )) : (
             <div className="rounded-lg border bg-card/60 p-4 space-y-3">
-              <h3 style={{ margin: 0 }}>All clear</h3>
+              <h3 style={{ margin: 0 }}>Nothing here right now</h3>
               <p className="text-sm text-muted-foreground" style={{ margin: 0 }}>
-                No recommendations match these filters. You can still keep momentum by creating a quote, checking the run sheet, or reviewing customer requests.
+                {status === "open"
+                  ? "No open actions match these filters — good sign. Keep momentum going:"
+                  : "No actions match these filters. Try a different status or reset."}
               </p>
               <div className="flex flex-wrap gap-2">
                 <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href="/dashboard/quotes/new">Create quote</Link>

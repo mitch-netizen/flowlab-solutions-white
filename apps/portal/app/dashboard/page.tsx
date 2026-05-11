@@ -224,7 +224,7 @@ export default async function DashboardPage({
       <DashboardPageScaffold
         eyebrow="Overview"
         title={`Today for ${headingName}`}
-        description={`Start here. Check new leads, send quotes, schedule jobs, then invoice through Xero. This week: ${enquiriesThisWeek} new enquir${enquiriesThisWeek === 1 ? "y" : "ies"}, ${bookedJobsThisWeek} booked job${bookedJobsThisWeek === 1 ? "" : "s"}.`}
+        description={`Check leads, quotes, and tomorrow's schedule. This week: ${enquiriesThisWeek} new enquir${enquiriesThisWeek === 1 ? "y" : "ies"}, ${bookedJobsThisWeek} booked job${bookedJobsThisWeek === 1 ? "" : "s"}.`}
         section="home"
         actions={(
           <>
@@ -232,9 +232,6 @@ export default async function DashboardPage({
             <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/actions">Action Inbox</Link>
             <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/crm">Open leads</Link>
             <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/scheduler">Open schedule</Link>
-            <form action="/api/tenant/digest" method="post" style={{ display: "inline" }}>
-              <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Send me today&apos;s brief</button>
-            </form>
           </>
         )}
       >
@@ -267,29 +264,29 @@ export default async function DashboardPage({
       <div className="rounded-lg border bg-card p-4">
         <div className="space-y-2" style={{ marginBottom: 18 }}>
           <div className="eyebrow">Workflow</div>
-          <h2 style={{ margin: 0 }}>Move work left to right</h2>
-          <p className="text-sm text-muted-foreground" style={{ margin: 0 }}>Leads become quotes, quotes become jobs, jobs become Xero invoices.</p>
+          <h2 style={{ margin: 0 }}>Track work from lead to paid invoice</h2>
+          <p className="text-sm text-muted-foreground" style={{ margin: 0 }}>New enquiry → quote → job → Xero invoice.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">1. Leads this week</div>
+            <div className={`text-xs uppercase tracking-wider ${tomorrowJobs.length === 0 ? "text-muted-foreground" : "text-blue-400"}`}>Tomorrow</div>
+            <div className={`text-3xl font-semibold ${tomorrowJobs.length === 0 ? "" : "text-blue-400"}`}>{tomorrowJobs.length}</div>
+            <p className="text-sm text-muted-foreground">
+              {tomorrowJobs.length === 0 ? "Nothing scheduled yet — add jobs to the run sheet." : `${tomorrowJobs.length} job${tomorrowJobs.length === 1 ? "" : "s"} on the run sheet.`}
+            </p>
+            <Link className="inline-entity-link" href="/dashboard/scheduler">Open schedule</Link>
+          </div>
+          <div className="space-y-2">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Leads this week</div>
             <div className="text-3xl font-semibold">{enquiriesThisWeek}</div>
-            <p className="text-sm text-muted-foreground">Review requests and customer records.</p>
+            <p className="text-sm text-muted-foreground">Check new enquiries and create quotes.</p>
             <Link className="inline-entity-link" href="/dashboard/crm">Open leads</Link>
           </div>
           <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">2. Jobs booked</div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Jobs booked</div>
             <div className="text-3xl font-semibold">{bookedJobsThisWeek}</div>
-            <p className="text-sm text-muted-foreground">Keep the job board and schedule current.</p>
+            <p className="text-sm text-muted-foreground">Jobs moved into the schedule this week.</p>
             <Link className="inline-entity-link" href="/dashboard/jobs">Open jobs</Link>
-          </div>
-          <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">3. Tomorrow</div>
-            <div className="text-3xl font-semibold">{tomorrowJobs.length}</div>
-            <p className="text-sm text-muted-foreground">
-              {tomorrowJobs.length === 0 ? "No jobs scheduled yet." : "Review the run sheet before the day starts."}
-            </p>
-            <Link className="inline-entity-link" href="/dashboard/scheduler">Open schedule</Link>
           </div>
         </div>
       </div>
@@ -300,7 +297,7 @@ export default async function DashboardPage({
             <div className="space-y-2">
               <div className="eyebrow">Co-pilot</div>
               <h2>Action Inbox</h2>
-              <p>FlowLab watches the operational gaps that cost time, money, or momentum. Start with the highest-priority action, then snooze or dismiss anything that can wait.</p>
+              <p>Suggests the next thing to do — close a quote, invoice a finished job, follow up with a customer. Click any action to go straight to that workflow.</p>
             </div>
             <Link href="/dashboard/actions" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open full inbox</Link>
           </div>
@@ -311,12 +308,8 @@ export default async function DashboardPage({
             )) : (
               <div className="rounded-lg border bg-card/60 p-4 space-y-3">
                 <h3 style={{ margin: 0 }}>All clear</h3>
-                <p className="text-sm text-muted-foreground" style={{ margin: 0 }}>No recommended actions right now. Keep momentum by creating a quote, checking tomorrow, or reviewing open customer requests.</p>
-                <div className="flex flex-wrap gap-2">
-                  <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href="/dashboard/quotes/new">Create quote</Link>
-                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/scheduler">Open schedule</Link>
-                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/crm">Review requests</Link>
-                </div>
+                <p className="text-sm text-muted-foreground" style={{ margin: 0 }}>No open actions right now. Keep the momentum going with a new quote.</p>
+                <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href="/dashboard/quotes/new">Create quote</Link>
               </div>
             )}
           </div>

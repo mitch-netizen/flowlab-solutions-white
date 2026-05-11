@@ -10,6 +10,7 @@ import { requireTenantSession } from "../../../lib/session";
 import CustomDomainSection from "./CustomDomainSection";
 import RateSuggestionsPanel from "./RateSuggestionsPanel";
 import ServiceAreaMapEditor from "./ServiceAreaMapEditor";
+import ServiceTemplateSuggestions from "./ServiceTemplateSuggestions";
 
 const groupLabels: Record<string, string> = {
   home_services: "Home services",
@@ -42,7 +43,7 @@ export default async function SettingsPage({
   searchParams?: Promise<Record<string, string | undefined>>;
 }) {
   const session = await requireTenantSession();
-  const params = searchParams ? await searchParams : {};
+  const params = (searchParams ? await searchParams : {}) as Record<string, string | undefined>;
   const [snapshot, rateSuggestions] = await Promise.all([
     getTenantSettingsSnapshot(session.tenantId),
     getPendingRateSuggestions(session.tenantId)
@@ -64,17 +65,23 @@ export default async function SettingsPage({
 
       <div className="rounded-lg border bg-card p-4 space-y-2">
         <div className="eyebrow">Business basics</div>
-        <h2 style={{ marginBottom: 8 }}>Keep your onboarding details up to date</h2>
-        <p className="text-sm text-muted-foreground">These are starting points, not locked settings. Tune them as the business learns what work is profitable.</p>
+        <h2 style={{ marginBottom: 8 }}>Your business details</h2>
+        <p className="text-sm text-muted-foreground">These were pre-filled during onboarding. Update them as your business grows or your pricing evolves.</p>
       </div>
+
+      {params.branding === "saved" ? (
+        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
+          <p style={{ color: "#86efac" }}>Branding colours saved — customer-facing pages will reflect the update.</p>
+        </div>
+      ) : null}
 
 
       <div className="cards-2 gap-4">
         <form className="surface form-grid space-y-4" action="/api/tenant/settings/profile" method="post">
           <div className="setup-section-copy">
             <div className="eyebrow">Business details</div>
-            <h2 style={{ marginBottom: 8 }}>Core contact and service information</h2>
-            <p>Your business name, contact details, mapped service base, and service suburbs all in one form.</p>
+            <h2 style={{ marginBottom: 8 }}>Business name, phone, and service area</h2>
+            <p>Core details used on your booking page, quotes, and communications.</p>
           </div>
 
           <div className="setup-field-grid">
@@ -83,8 +90,8 @@ export default async function SettingsPage({
               <Input id="businessName" name="businessName" defaultValue={snapshot.profile?.businessName ?? ""} required />
             </div>
             <div className="space-y-4">
-              <Label htmlFor="tagline">Tagline</Label>
-              <Input id="tagline" name="tagline" defaultValue={snapshot.profile?.tagline ?? ""} />
+              <Label htmlFor="tagline">Tagline <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 400 }}>shown on your booking page header</span></Label>
+              <Input id="tagline" name="tagline" defaultValue={snapshot.profile?.tagline ?? ""} placeholder="e.g. Fast, reliable lawn care across Brisbane" title="Displayed under your business name on the public booking and quote pages" />
             </div>
             <div className="space-y-4">
               <Label htmlFor="phone">Mobile</Label>
@@ -123,8 +130,8 @@ export default async function SettingsPage({
               initialSuburbs={snapshot.profile?.serviceAreaSuburbs ?? []}
             />
             <div className="space-y-4 is-full">
-              <Label htmlFor="customDomain">Custom domain</Label>
-              <Input id="customDomain" name="customDomain" defaultValue={snapshot.profile?.customDomain ?? ""} placeholder="service.yourdomain.com" />
+              <Label htmlFor="customDomain">Custom domain <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 400 }}>optional</span></Label>
+              <Input id="customDomain" name="customDomain" defaultValue={snapshot.profile?.customDomain ?? ""} placeholder="service.yourdomain.com" title="Point a subdomain of your own domain here and your booking page will serve from it. Leave blank to use the default FlowLab subdomain." />
             </div>
           </div>
 
@@ -133,40 +140,25 @@ export default async function SettingsPage({
           </SubmitButton>
         </form>
 
-        <form className="surface form-grid space-y-4" action="/api/tenant/settings/profile" method="post">
+        <form className="surface form-grid space-y-4" action="/api/tenant/settings/branding" method="post">
           <div className="setup-section-copy">
             <div className="eyebrow">Branding</div>
             <h2 style={{ marginBottom: 8 }}>Customer-facing colour system</h2>
             <p>Applied to your quote, agreement, invoice, and all other customer-facing pages.</p>
           </div>
 
-          <Input type="hidden" name="businessName" value={snapshot.profile?.businessName ?? ""} />
-          <Input type="hidden" name="tagline" value={snapshot.profile?.tagline ?? ""} />
-          <Input type="hidden" name="phone" value={snapshot.profile?.phone ?? ""} />
-          <Input type="hidden" name="email" value={snapshot.profile?.email ?? ""} />
-          <Input type="hidden" name="businessType" value={snapshot.profile?.businessType ?? "other"} />
-          <Input type="hidden" name="suburb" value={snapshot.profile?.suburb ?? ""} />
-          <Input type="hidden" name="postcode" value={snapshot.profile?.postcode ?? ""} />
-          <Input type="hidden" name="serviceAreaSuburbs" value={snapshot.profile?.serviceAreaSuburbs.join(", ") ?? ""} />
-          <Input type="hidden" name="serviceBaseAddress" value={snapshot.profile?.serviceBaseAddress ?? ""} />
-          <Input type="hidden" name="serviceBasePlaceId" value={snapshot.profile?.serviceBasePlaceId ?? ""} />
-          <Input type="hidden" name="serviceBaseLat" value={snapshot.profile?.serviceBaseLat ?? ""} />
-          <Input type="hidden" name="serviceBaseLng" value={snapshot.profile?.serviceBaseLng ?? ""} />
-          <Input type="hidden" name="serviceRadiusKm" value={snapshot.profile?.serviceRadiusKm ?? ""} />
-          <Input type="hidden" name="customDomain" value={snapshot.profile?.customDomain ?? ""} />
-
           <div className="setup-field-grid">
             <div className="space-y-4">
               <Label htmlFor="primaryColour">Primary colour</Label>
-              <Input id="primaryColour" name="primaryColour" type="color" defaultValue={snapshot.profile?.primaryColour ?? "#2D5016"} />
+              <Input id="primaryColour" name="primaryColour" type="color" defaultValue={snapshot.profile?.primaryColour ?? "#2D5016"} title="Main brand colour — used for headings and primary buttons on customer-facing pages" />
             </div>
             <div className="space-y-4">
               <Label htmlFor="secondaryColour">Secondary colour</Label>
-              <Input id="secondaryColour" name="secondaryColour" type="color" defaultValue={snapshot.profile?.secondaryColour ?? "#1F2937"} />
+              <Input id="secondaryColour" name="secondaryColour" type="color" defaultValue={snapshot.profile?.secondaryColour ?? "#1F2937"} title="Background or dark accent colour used on customer-facing documents" />
             </div>
             <div className="space-y-4">
               <Label htmlFor="accentColour">Accent colour</Label>
-              <Input id="accentColour" name="accentColour" type="color" defaultValue={snapshot.profile?.accentColour ?? "#84CC16"} />
+              <Input id="accentColour" name="accentColour" type="color" defaultValue={snapshot.profile?.accentColour ?? "#84CC16"} title="Highlight colour for badges, links, and call-to-action elements" />
             </div>
           </div>
 
@@ -183,7 +175,7 @@ export default async function SettingsPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Pricing rates</div>
             <h2 style={{ marginBottom: 8 }}>Current pricing configuration</h2>
-            <p>Your current pricing model and configured rates. These editable defaults guide quote drafts and margin suggestions.</p>
+            <p>Your pricing model and configured rates. These guide quote drafts and margin suggestions. To change rates, contact support or update directly in your database settings.</p>
           </div>
 
           <div className="space-y-3">
@@ -211,14 +203,34 @@ export default async function SettingsPage({
             }) : <p className="text-sm text-muted-foreground">No pricing rates configured yet.</p>}
           </div>
 
-          <p className="text-sm text-muted-foreground">Use service templates below to tune the common jobs FlowLab suggests while quoting.</p>
+          {params.rates === "analysed" ? (
+            <div className="border-l-4 pl-4 border-l-emerald-500" style={{ padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "#86efac" }}>
+              Rate analysis complete — see suggestions below.
+            </div>
+          ) : params.rates === "insufficient" ? (
+            <div className="border-l-4 pl-4 border-l-amber-500" style={{ padding: "10px 14px", borderRadius: 12, fontSize: 13, color: "#fde68a" }}>
+              Not enough job history yet — complete at least 5 jobs to run a rate analysis.
+            </div>
+          ) : null}
+
+          <form action="/api/tenant/settings/rate-analysis" method="post">
+            <SubmitButton
+              className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold"
+              loadingText="Analysing…"
+              title="FlowLab reviews your last 30 jobs, compares actual vs estimated hours, and suggests rate adjustments using Claude."
+            >
+              Analyse my rates
+            </SubmitButton>
+          </form>
+
+          <p className="text-sm text-muted-foreground">Service templates speed up quoting by pre-filling common services and durations. Add them below.</p>
         </div>
 
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Service templates</div>
-            <h2 style={{ marginBottom: 8 }}>Reusable services and default durations</h2>
-            <p>Templates keep quoting and job creation faster when the common service types are already defined.</p>
+            <h2 style={{ marginBottom: 8 }}>Speed up quoting with service templates</h2>
+            <p>Pre-define your common services (e.g. &ldquo;Lawn mow: $85, 45 mins&rdquo;). FlowLab suggests them when drafting quotes — you can always override.</p>
           </div>
 
           {params.service === "created" ? (
@@ -239,7 +251,7 @@ export default async function SettingsPage({
                     <span className="status-pill is-off">Template</span>
                   </div>
                   <h3>{service.name}</h3>
-                  <p>${service.defaultPrice ?? 0} · {service.defaultDuration ?? 0} mins</p>
+                  <p>${service.defaultPrice ?? 0} per job · {service.defaultDuration ?? 0} min estimated duration</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <form action={`/api/tenant/settings/services?id=${service.id}`} method="post">
@@ -250,6 +262,8 @@ export default async function SettingsPage({
               </div>
             )) : <p className="text-sm text-muted-foreground">No service templates saved yet.</p>}
           </div>
+
+          <ServiceTemplateSuggestions />
 
           <form action="/api/tenant/settings/services" method="post" className="space-y-4" style={{ marginTop: 16 }}>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end" }} className="gap-4">

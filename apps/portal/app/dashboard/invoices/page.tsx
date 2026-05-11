@@ -7,6 +7,7 @@ import CustomerLink from "../../../components/customer-link";
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import SubmitButton from "../../../components/submit-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import InvoiceCreateForm from "./InvoiceCreateForm";
 import { getInvoiceRecordHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
@@ -89,89 +90,84 @@ export default async function InvoicesPage({
         </div>
       ) : null}
       <div className="cards-2">
-        <form className="rounded-lg border bg-card p-4 space-y-4" action="/api/tenant/invoices/create" method="post">
-          <input type="hidden" name="returnTo" value="/dashboard/invoices" />
-          <h2>Create invoice</h2>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-            Customer
-            <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="customerId" required defaultValue={prefilledCustomerId}>
-              <option value="" disabled>
-                Select a customer
-              </option>
-              {customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.firstName} {customer.lastName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-            Related job
-            <select className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="jobId" defaultValue={prefilledJobId}>
-              <option value="">No linked job</option>
-              {invoiceableJobs.map((job) => (
-                <option key={job.id} value={job.id}>
-                  {job.summary} · {job.customer.firstName} {job.customer.lastName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-            Amount
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="amount" type="number" min="1" step="0.01" defaultValue="95" required />
-          </label>
-          <label className="flex flex-col gap-2 text-sm text-muted-foreground">
-            Internal note
-            <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="note" defaultValue="Invoice for services rendered." />
-          </label>
-          <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" loadingText="Creating...">
-            Create invoice
-          </SubmitButton>
-        </form>
-        <div className="rounded-lg border bg-card p-4">
-          <h2>Revenue rules</h2>
-          <div className="rounded-lg border bg-card/60 p-4">
-            Invoices are created in Xero first. The invoice number, status, payment URL, and linked customer/job are mirrored here automatically.
+        <InvoiceCreateForm
+          customers={customers}
+          invoiceableJobs={invoiceableJobs}
+          prefilledCustomerId={prefilledCustomerId}
+          prefilledJobId={prefilledJobId}
+        />
+        <div className="rounded-lg border bg-card p-4 space-y-4">
+          <div className="space-y-2">
+            <div className="eyebrow">How it works</div>
+            <h2>Xero-powered billing</h2>
+            <p className="text-sm text-muted-foreground">Invoices live in Xero — FlowLab mirrors them so you can track status without leaving the dashboard.</p>
           </div>
-          <div className="rounded-lg border bg-card/60 p-4 mt-4">
-            If a customer pays or the invoice changes in Xero, use the sync action above to pull the latest status back.
+          <div className="space-y-3">
+            <div className="grid gap-4 border-t pt-4">
+              <div className="space-y-1">
+                <div className="text-sm font-medium">1. Create here → appears in Xero</div>
+                <p className="text-sm text-muted-foreground">When you create an invoice, it is pushed to Xero immediately. The invoice number and payment link are mirrored back.</p>
+              </div>
+            </div>
+            <div className="grid gap-4 border-t pt-4">
+              <div className="space-y-1">
+                <div className="text-sm font-medium">2. Customer pays in Xero → sync to update</div>
+                <p className="text-sm text-muted-foreground">Payment status does not auto-update. Use "Sync open invoices" to pull the latest status from Xero after payments come in.</p>
+              </div>
+            </div>
+            <div className="grid gap-4 border-t pt-4">
+              <div className="space-y-1">
+                <div className="text-sm font-medium">3. Paid invoices move the job to Done</div>
+                <p className="text-sm text-muted-foreground">Once an invoice syncs as paid, the linked job status updates automatically.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div className="rounded-lg border bg-card p-4">
-        <h2>Recent invoices</h2>
-        <Table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Invoice</TableHead>
-              <TableHead>Job</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Xero</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Public link</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {invoices.map((invoice) => (
-              <TableRow key={invoice.id}>
-                <TableCell><Link className="inline-entity-link" href={getInvoiceRecordHref(invoice.id)}>{invoice.number}</Link></TableCell>
-                <TableCell>{invoice.job ? <Link className="inline-entity-link" href={getJobRecordHref(invoice.job.id)}>{invoice.job.summary}</Link> : "—"}</TableCell>
-                <TableCell>
-                  <CustomerLink customerId={invoice.customer.id} className="inline-entity-link">
-                    {invoice.customer.firstName} {invoice.customer.lastName}
-                  </CustomerLink>
-                </TableCell>
-                <TableCell><Badge tone={getStatusTone(invoice.status)}>{formatLabel(invoice.status)}</Badge></TableCell>
-                <TableCell><Badge tone={getStatusTone(invoice.xeroStatus)}>{invoice.xeroStatus ? formatLabel(invoice.xeroStatus) : "Not synced"}</Badge></TableCell>
-                <TableCell>{formatCurrency(invoice.amount)}</TableCell>
-                <TableCell>
-                  <Link href={getInvoiceRecordHref(invoice.id)}>Open record</Link>
-                </TableCell>
+      <div className="rounded-lg border bg-card p-4 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <div className="eyebrow">Billing history</div>
+            <h2>All invoices</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/dashboard/invoices" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-3 py-1.5 text-xs font-semibold">All</Link>
+            <Link href="/dashboard/invoices?status=open" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-3 py-1.5 text-xs font-semibold">Open</Link>
+            <Link href="/dashboard/invoices?status=overdue" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-3 py-1.5 text-xs font-semibold">Overdue</Link>
+          </div>
+        </div>
+        {invoices.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No invoices yet. Create your first invoice above and it will appear here once it is pushed to Xero.</p>
+        ) : (
+          <Table className="w-full text-sm [&_th]:border-b [&_th]:p-3 [&_th]:text-left [&_td]:border-b [&_td]:p-3 [&_td]:text-left">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Invoice</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Job</TableHead>
+                <TableHead>Xero</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {invoices.map((invoice) => (
+                <TableRow key={invoice.id}>
+                  <TableCell><Link className="inline-entity-link" href={getInvoiceRecordHref(invoice.id)}>{invoice.number}</Link></TableCell>
+                  <TableCell>
+                    <CustomerLink customerId={invoice.customer.id} className="inline-entity-link">
+                      {invoice.customer.firstName} {invoice.customer.lastName}
+                    </CustomerLink>
+                  </TableCell>
+                  <TableCell><Badge tone={getStatusTone(invoice.status)}>{formatLabel(invoice.status)}</Badge></TableCell>
+                  <TableCell>{formatCurrency(invoice.amount)}</TableCell>
+                  <TableCell>{invoice.job ? <Link className="inline-entity-link" href={getJobRecordHref(invoice.job.id)}>{invoice.job.summary}</Link> : "—"}</TableCell>
+                  <TableCell><Badge tone={getStatusTone(invoice.xeroStatus)}>{invoice.xeroStatus ? formatLabel(invoice.xeroStatus) : "Not synced"}</Badge></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </DashboardPageScaffold>
   );

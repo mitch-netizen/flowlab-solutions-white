@@ -38,9 +38,15 @@ export function CustomersTable({ customers }: { customers: CustomerRow[] }) {
     {
       id: "health",
       header: "Health",
-      accessorFn: (row) => {
-        const overdueCount = row.invoices.filter((invoice) => invoice.dueAt && new Date(invoice.dueAt) < new Date() && invoice.status !== "paid").length;
-        return overdueCount > 0 ? "Needs attention" : row.jobs.length > 2 ? "Active" : "Light touch";
+      cell: ({ row }) => {
+        const overdueCount = row.original.invoices.filter((invoice) => invoice.dueAt && new Date(invoice.dueAt) < new Date() && invoice.status !== "paid").length;
+        if (overdueCount > 0) {
+          return <span className="text-amber-400 font-medium" title={`${overdueCount} overdue invoice${overdueCount === 1 ? "" : "s"} — follow up on payment`}>⚠ Overdue</span>;
+        }
+        if (row.original.jobs.length > 2) {
+          return <span className="text-emerald-400" title="Regular customer with multiple jobs">Active</span>;
+        }
+        return <span className="text-muted-foreground" title="Early-stage customer relationship">New</span>;
       }
     },
     {
