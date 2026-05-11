@@ -6,6 +6,7 @@ import { getTenantJobRecord } from "@flowlab/db";
 import CustomerLink from "../../../../components/customer-link";
 import DashboardPageScaffold from "../../../../components/dashboard/page-scaffold";
 import ManualCommunicationForm from "../../../../components/manual-communication-form";
+import SubmitButton from "../../../../components/submit-button";
 import { getInvoiceRecordHref } from "../../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../../lib/session";
 
@@ -41,9 +42,9 @@ export default async function JobRecordPage({
             {linkedInvoice ? <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href={getInvoiceRecordHref(linkedInvoice.id)}>Open linked invoice</Link> : null}
             {job.status === "in_progress" ? (
               <form action={`/api/tenant/jobs/${job.id}/on-my-way`} method="post">
-                <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
+                <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" loadingText="Sending...">
                   On my way →
-                </button>
+                </SubmitButton>
               </form>
             ) : null}
           </>
@@ -167,7 +168,7 @@ export default async function JobRecordPage({
                 required
               />
             </label>
-            <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Save schedule</button>
+            <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Save schedule</SubmitButton>
           </form>
 
           <form action={`/api/tenant/jobs/${job.id}/actuals`} method="post" className="space-y-4">
@@ -176,7 +177,7 @@ export default async function JobRecordPage({
               Actual hours
               <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="actualHours" type="number" min="0" step="0.25" defaultValue={job.actualHours ?? ""} required />
             </label>
-            <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Save actuals</button>
+            <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Save actuals</SubmitButton>
           </form>
         </div>
       </div>
@@ -214,6 +215,7 @@ export default async function JobRecordPage({
             <form action="/api/tenant/invoices/create" method="post" className="grid gap-4 rounded-lg border bg-card/40 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)]">
               <input type="hidden" name="customerId" value={job.customerId} />
               <input type="hidden" name="jobId" value={job.id} />
+              <input type="hidden" name="returnTo" value={`/dashboard/jobs/${job.id}`} />
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className="status-pill border-l-amber-500">Ready to invoice</span>
@@ -226,7 +228,7 @@ export default async function JobRecordPage({
                 <input id="invoice-amount" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="amount" type="number" min="1" step="0.01" defaultValue={job.estimatedHours ? Number(job.estimatedHours * 65).toFixed(2) : "95"} required />
                 <label htmlFor="invoice-note">Internal note</label>
                 <input id="invoice-note" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="note" defaultValue={`Invoice for ${job.summary}`} />
-                <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">Create linked invoice</button>
+                <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" loadingText="Creating...">Create linked invoice</SubmitButton>
               </div>
             </form>
           ) : null}

@@ -5,9 +5,18 @@ import { Badge, formatCurrency, formatLabel, getStatusTone } from "@flowlab/ui";
 
 import CustomerLink from "../../../components/customer-link";
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
+import SubmitButton from "../../../components/submit-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
 import { getInvoiceRecordHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
+
+const invoiceCreateErrors: Record<string, string> = {
+  invalid_input: "Customer and a positive amount are required.",
+  customer_not_found: "That customer could not be found. Try refreshing the page.",
+  xero_contact_failed: "Could not sync the customer to Xero. Check the Xero connection and try again.",
+  xero_invoice_failed: "Invoice was not created in Xero. Check the Xero connection and try again.",
+  xero_required: "Connect Xero before creating invoices.",
+};
 
 export default async function InvoicesPage({
   searchParams
@@ -47,13 +56,17 @@ export default async function InvoicesPage({
         section="revenue"
         actions={xeroConnected ? (
           <form action="/api/tenant/invoices/sync" method="post">
-            <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Sync open invoices from Xero</button>
+            <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" loadingText="Syncing...">Sync open invoices from Xero</SubmitButton>
           </form>
         ) : undefined}
       >
       {query.error === "xero_sync_failed" ? (
         <div className="rounded-lg border bg-card p-4 border-l-4 border-l-red-500 text-red-200">
           Could not refresh invoice status from Xero. Check the Xero connection and try again.
+        </div>
+      ) : query.error && invoiceCreateErrors[query.error] ? (
+        <div className="rounded-lg border bg-card p-4 border-l-4 border-l-red-500 text-red-200">
+          {invoiceCreateErrors[query.error]}
         </div>
       ) : null}
       {syncedCount > 0 || failedCount > 0 ? (
@@ -77,6 +90,7 @@ export default async function InvoicesPage({
       ) : null}
       <div className="cards-2">
         <form className="rounded-lg border bg-card p-4 space-y-4" action="/api/tenant/invoices/create" method="post">
+          <input type="hidden" name="returnTo" value="/dashboard/invoices" />
           <h2>Create invoice</h2>
           <label className="flex flex-col gap-2 text-sm text-muted-foreground">
             Customer
@@ -110,9 +124,9 @@ export default async function InvoicesPage({
             Internal note
             <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="note" defaultValue="Invoice for services rendered." />
           </label>
-          <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
+          <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" loadingText="Creating...">
             Create invoice
-          </button>
+          </SubmitButton>
         </form>
         <div className="rounded-lg border bg-card p-4">
           <h2>Revenue rules</h2>

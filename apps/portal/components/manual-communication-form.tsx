@@ -1,4 +1,4 @@
-import { Button } from "./ui/button";
+import SubmitButton from "./submit-button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select } from "./ui/select";
@@ -41,7 +41,7 @@ export default function ManualCommunicationForm({
         <Label htmlFor="body">Message</Label>
         <Textarea id="body" name="body" placeholder="Write the message the customer should receive." required />
       </div>
-      <Button type="submit">Send now</Button>
+      <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" loadingText="Sending...">Send now</SubmitButton>
     </form>
   );
 }

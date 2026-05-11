@@ -17,9 +17,11 @@ export async function POST(request: Request) {
   const jobId = formData.get("jobId") ? String(formData.get("jobId")) : undefined;
   const amount = Number(formData.get("amount") ?? 0);
   const note = String(formData.get("note") ?? "");
+  const rawReturnTo = String(formData.get("returnTo") ?? "");
+  const errorBase = rawReturnTo.startsWith("/dashboard") ? rawReturnTo : "/dashboard/invoices";
 
   if (!customerId || amount <= 0) {
-    return NextResponse.json({ error: "Customer and amount are required" }, { status: 400 });
+    return NextResponse.redirect(new URL(`${errorBase}?error=invalid_input`, request.url), 303);
   }
 
   // ── Xero path: push to Xero first, then mirror locally ────────────────────
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
     });
 
     if (!customer) {
-      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      return NextResponse.redirect(new URL(`${errorBase}?error=customer_not_found`, request.url), 303);
     }
 
     // 1. Upsert customer as a Xero Contact (idempotent — uses xeroContactId if set)
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
       // If Xero contact sync fails, abort — don't create a dangling local invoice.
       // Log internally but return a generic code so internals aren't leaked to the client.
       console.error("[invoice/create] Xero contact sync failed:", err instanceof Error ? err.message : String(err));
-      return NextResponse.json({ error: "xero_contact_sync_failed" }, { status: 502 });
+      return NextResponse.redirect(new URL(`${errorBase}?error=xero_contact_failed`, request.url), 303);
     }
 
     // 2. Determine invoice number (peek at count to keep consistent with local numbering)
@@ -111,7 +113,7 @@ export async function POST(request: Request) {
       }
     } catch (err) {
       console.error("[invoice/create] Xero invoice creation failed:", err instanceof Error ? err.message : String(err));
-      return NextResponse.json({ error: "xero_invoice_create_failed" }, { status: 502 });
+      return NextResponse.redirect(new URL(`${errorBase}?error=xero_invoice_failed`, request.url), 303);
     }
 
     // 4. Create local mirror record (reflects the Xero invoice)
