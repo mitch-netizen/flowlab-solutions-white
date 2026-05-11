@@ -73,7 +73,8 @@ export const dashboardUtilityLinks: DashboardNavItem[] = [
  */
 export const dashboardSectionTabs = {
   home: [
-    { href: "/dashboard", label: "Today" }
+    { href: "/dashboard", label: "Today" },
+    { href: "/dashboard/actions", label: "Action Inbox" }
   ],
   crm: [
     { href: "/dashboard/crm", label: "Requests & customers" },
