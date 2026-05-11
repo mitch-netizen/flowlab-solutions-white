@@ -30,8 +30,8 @@ export default function PortalSidebarNav({
     <div className="portal-nav">
       {dashboardNavGroups.map((group) => {
         const isGroupActive = group.items.some((item) => isDashboardHrefActive(pathname, item.href));
-        const isOnboarding = showOnboardingHighlight && group.title === "Setup";
-        const isUpgrade = showUpgradeHighlight && group.title === "Setup";
+        const isOnboarding = showOnboardingHighlight && group.title === "Settings";
+        const isUpgrade = showUpgradeHighlight && group.title === "Settings";
         const icon = sectionIcon[group.title] ?? "·";
 
         return (
