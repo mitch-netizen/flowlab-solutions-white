@@ -68,13 +68,14 @@ ALTER TABLE "TenantUsageEvent"
   FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE "TenantUsageEvent" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_all" ON "TenantUsageEvent"
-  AS PERMISSIVE FOR ALL TO service_role
-  USING (true) WITH CHECK (true);
-CREATE POLICY "tenant_isolation" ON "TenantUsageEvent"
-  AS PERMISSIVE FOR ALL TO authenticated
-  USING ("tenantId" = (SELECT current_setting('app.tenant_id'::text, true)))
-  WITH CHECK ("tenantId" = (SELECT current_setting('app.tenant_id'::text, true)));
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    EXECUTE 'CREATE POLICY "service_role_all" ON "TenantUsageEvent" AS PERMISSIVE FOR ALL TO service_role USING (true) WITH CHECK (true)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    EXECUTE 'CREATE POLICY "tenant_isolation" ON "TenantUsageEvent" AS PERMISSIVE FOR ALL TO authenticated USING ("tenantId" = (SELECT current_setting(''app.tenant_id''::text, true))) WITH CHECK ("tenantId" = (SELECT current_setting(''app.tenant_id''::text, true)))';
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS "ActionSuggestion" (
   "id" TEXT NOT NULL,
@@ -102,10 +103,11 @@ ALTER TABLE "ActionSuggestion"
   FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE "ActionSuggestion" ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "service_role_all" ON "ActionSuggestion"
-  AS PERMISSIVE FOR ALL TO service_role
-  USING (true) WITH CHECK (true);
-CREATE POLICY "tenant_isolation" ON "ActionSuggestion"
-  AS PERMISSIVE FOR ALL TO authenticated
-  USING ("tenantId" = (SELECT current_setting('app.tenant_id'::text, true)))
-  WITH CHECK ("tenantId" = (SELECT current_setting('app.tenant_id'::text, true)));
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    EXECUTE 'CREATE POLICY "service_role_all" ON "ActionSuggestion" AS PERMISSIVE FOR ALL TO service_role USING (true) WITH CHECK (true)';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    EXECUTE 'CREATE POLICY "tenant_isolation" ON "ActionSuggestion" AS PERMISSIVE FOR ALL TO authenticated USING ("tenantId" = (SELECT current_setting(''app.tenant_id''::text, true))) WITH CHECK ("tenantId" = (SELECT current_setting(''app.tenant_id''::text, true)))';
+  END IF;
+END $$;
