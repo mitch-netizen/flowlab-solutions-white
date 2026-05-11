@@ -2,6 +2,7 @@ import { getPricingModel, tradePresetOptions } from "@flowlab/contracts";
 import { getPendingRateSuggestions, getTenantSettingsSnapshot } from "@flowlab/db";
 
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
+import SubmitButton from "../../../components/submit-button";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
@@ -127,9 +128,9 @@ export default async function SettingsPage({
             </div>
           </div>
 
-          <Button type="submit">
+          <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
             Save business details
-          </Button>
+          </SubmitButton>
         </form>
 
         <form className="surface form-grid space-y-4" action="/api/tenant/settings/profile" method="post">
@@ -170,9 +171,9 @@ export default async function SettingsPage({
           </div>
 
           <div className="setup-row-actions" style={{ justifyContent: "flex-start" }}>
-            <Button type="submit">
+            <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
               Save branding
-            </Button>
+            </SubmitButton>
           </div>
         </form>
       </div>
@@ -243,7 +244,7 @@ export default async function SettingsPage({
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <form action={`/api/tenant/settings/services?id=${service.id}`} method="post">
                     <Input type="hidden" name="_method" value="DELETE" />
-                    <Button variant="ghost" type="submit" style={{ fontSize: 12 }}>Remove</Button>
+                    <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-transparent px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground" loadingText="Removing...">Remove</SubmitButton>
                   </form>
                 </div>
               </div>
@@ -264,7 +265,7 @@ export default async function SettingsPage({
                 <Label htmlFor="serviceTemplateDuration">Duration (mins)</Label>
                 <Input id="serviceTemplateDuration" name="defaultDuration" type="number" min="0" step="5" placeholder="60" />
               </div>
-              <Button variant="ghost" type="submit">Add template</Button>
+              <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" loadingText="Adding...">Add template</SubmitButton>
             </div>
           </form>
         </div>
