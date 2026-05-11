@@ -55,15 +55,17 @@ export default function ActionSuggestionCard({
         <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={action.targetUrl}>
           {action.suggestedAction}
         </Link>
-        {action.status !== "dismissed" ? (
+        {visibleStatus !== "Dismissed" ? (
           <>
-            <form action={`/api/tenant/actions/${action.id}/resolve`} method="post">
-              <input type="hidden" name="action" value="snooze" />
-              <input type="hidden" name="returnTo" value={returnTo} />
-              <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">
-                Snooze
-              </button>
-            </form>
+            {visibleStatus !== "Snoozed" ? (
+              <form action={`/api/tenant/actions/${action.id}/resolve`} method="post">
+                <input type="hidden" name="action" value="snooze" />
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">
+                  Snooze
+                </button>
+              </form>
+            ) : null}
             <form action={`/api/tenant/actions/${action.id}/resolve`} method="post">
               <input type="hidden" name="action" value="dismiss" />
               <input type="hidden" name="returnTo" value={returnTo} />
