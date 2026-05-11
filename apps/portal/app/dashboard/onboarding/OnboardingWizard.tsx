@@ -220,7 +220,13 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
                 post("/api/tenant/settings/profile-json", {
                   businessName,
                   phone: mobile,
-                  businessType: selectedBusinessType
+                  businessType: selectedBusinessType,
+                  serviceBaseAddress: serviceBaseAddress || undefined,
+                  serviceBasePlaceId: serviceBasePlaceId || undefined,
+                  serviceBaseLat,
+                  serviceBaseLng,
+                  serviceRadiusKm,
+                  serviceAreaSuburbs: manualSuburbs ? manualSuburbs.split(",").map(s => s.trim()).filter(Boolean) : undefined
                 }).then(() => Promise.resolve())
               );
             }}
