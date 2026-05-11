@@ -6,6 +6,7 @@ import { getCustomerCrmRecord } from "@flowlab/db";
 import CustomerLink from "../../../../components/customer-link";
 import DashboardPageScaffold from "../../../../components/dashboard/page-scaffold";
 import ManualCommunicationForm from "../../../../components/manual-communication-form";
+import SubmitButton from "../../../../components/submit-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../../components/ui/table";
 import { getInvoiceRecordHref, getJobRecordHref } from "../../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../../lib/session";
@@ -88,7 +89,7 @@ export default async function CustomerRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Contact details</div>
-            <h2>Contact details</h2>
+            <h2>How to reach them</h2>
           </div>
 
           <div className="space-y-3">
@@ -114,7 +115,7 @@ export default async function CustomerRecordPage({
         <form action={`/api/tenant/crm/customers/${customer.id}/update`} method="post" className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Edit customer</div>
-            <h2>Edit customer</h2>
+            <h2>Update details</h2>
             <p>Changes apply across all jobs, invoices, and records linked to this customer.</p>
           </div>
 
@@ -151,7 +152,7 @@ export default async function CustomerRecordPage({
             </label>
           </div>
 
-          <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">Save customer</button>
+          <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Save customer</SubmitButton>
         </form>
       </div>
 
@@ -365,7 +366,7 @@ export default async function CustomerRecordPage({
                     Remind me on
                     <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" type="date" name="dueAt" required />
                   </label>
-                  <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Set reminder</button>
+                  <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" loadingText="Setting...">Set reminder</SubmitButton>
                 </div>
               </form>
             </div>

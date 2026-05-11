@@ -6,6 +6,7 @@ import { getTenantInvoiceRecord } from "@flowlab/db";
 import CustomerLink from "../../../../components/customer-link";
 import DashboardPageScaffold from "../../../../components/dashboard/page-scaffold";
 import ManualCommunicationForm from "../../../../components/manual-communication-form";
+import SubmitButton from "../../../../components/submit-button";
 import { getJobRecordHref } from "../../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../../lib/session";
 
@@ -38,11 +39,11 @@ export default async function InvoiceRecordPage({
           <>
             <CustomerLink customerId={invoice.customerId} className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open customer</CustomerLink>
             <form action={`/api/tenant/invoices/${invoice.id}/sync`} method="post">
-              <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Sync from Xero</button>
+              <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" loadingText="Syncing...">Sync from Xero</SubmitButton>
             </form>
             {invoice.status !== "paid" && invoice.status !== "voided" ? (
               <form action={`/api/tenant/invoices/${invoice.id}/mark-paid`} method="post">
-                <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">Mark as paid</button>
+                <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" loadingText="Marking paid...">Mark as paid</SubmitButton>
               </form>
             ) : null}
             {invoice.paymentLink ? (
@@ -99,7 +100,7 @@ export default async function InvoiceRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Customer and payment</div>
-            <h2>Customer &amp; payment</h2>
+            <h2>Billing details</h2>
           </div>
 
           <div className="space-y-3">
@@ -202,7 +203,7 @@ export default async function InvoiceRecordPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Invoice communication</div>
-            <h2>Messages linked directly to this invoice</h2>
+            <h2>Invoice messages</h2>
             <p>Messages sent specifically about this invoice.</p>
           </div>
 

@@ -1899,11 +1899,12 @@ export async function generateTenantActionSuggestions(tenantId: string) {
   const suggestions: ActionSuggestionInput[] = [];
 
   for (const enquiry of openEnquiries) {
+    const suburb = enquiry.customer.suburb ? ` (${enquiry.customer.suburb})` : "";
     suggestions.push({
       category: "crm",
       priority: "high",
       title: `Quote ${enquiry.customer.firstName} ${enquiry.customer.lastName}`,
-      reason: `New enquiry waiting since ${enquiry.createdAt.toLocaleDateString("en-AU")}.`,
+      reason: `Enquiry from ${enquiry.customer.firstName}${suburb} waiting since ${enquiry.createdAt.toLocaleDateString("en-AU")}.`,
       targetUrl: `/dashboard/quotes/new?customerId=${enquiry.customerId}&enquiryId=${enquiry.id}`,
       suggestedAction: "Create a quote from this enquiry",
       source: "open_enquiry",
@@ -1912,11 +1913,12 @@ export async function generateTenantActionSuggestions(tenantId: string) {
   }
 
   for (const quote of staleQuotes) {
+    const staleDays = Math.floor((now.getTime() - quote.createdAt.getTime()) / 86400000);
     suggestions.push({
       category: "quotes",
       priority: "medium",
       title: `Follow up quote for ${quote.customer.firstName}`,
-      reason: `Draft quote "${quote.title}" has been sitting for more than 3 days.`,
+      reason: `"${quote.title}" — $${quote.amount.toFixed(0)} — has been sitting for ${staleDays} day${staleDays === 1 ? "" : "s"} without follow-up.`,
       targetUrl: `/quote/${quote.accessToken}`,
       suggestedAction: "Review the quote and send a follow-up",
       source: "stale_quote",
@@ -1925,11 +1927,12 @@ export async function generateTenantActionSuggestions(tenantId: string) {
   }
 
   for (const invoice of overdueInvoices) {
+    const daysOverdue = invoice.dueAt ? Math.floor((now.getTime() - invoice.dueAt.getTime()) / 86400000) : 0;
     suggestions.push({
       category: "billing",
       priority: "high",
       title: `Chase overdue invoice ${invoice.number}`,
-      reason: `${invoice.customer.firstName} ${invoice.customer.lastName} has an overdue balance of $${invoice.amount.toFixed(2)}.`,
+      reason: `$${invoice.amount.toFixed(2)} due ${daysOverdue} day${daysOverdue === 1 ? "" : "s"} ago — ${invoice.customer.firstName} ${invoice.customer.lastName} hasn't paid yet.`,
       targetUrl: `/dashboard/invoices/${invoice.id}`,
       suggestedAction: "Send invoice follow-up",
       source: "overdue_invoice",

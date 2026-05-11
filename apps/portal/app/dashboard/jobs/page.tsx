@@ -4,6 +4,7 @@ import { getJobBoard, getTenantCustomers } from "@flowlab/db";
 
 import CustomerLink from "../../../components/customer-link";
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
+import SubmitButton from "../../../components/submit-button";
 import { getInvoiceRecordHref, getJobRecordHref } from "../../../lib/dashboard-links";
 import { requireTenantSession } from "../../../lib/session";
 
@@ -20,7 +21,7 @@ const statusBgClass: Record<string, string> = {
   quoted: "bg-slate-500",
   scheduled: "bg-blue-500",
   in_progress: "bg-amber-500",
-  complete: "bg-green-500",
+  complete: "bg-amber-400",
   invoiced: "bg-violet-500",
   paid: "bg-emerald-500"
 };
@@ -65,9 +66,9 @@ export default async function JobBoardPage() {
             <p className="text-sm text-muted-foreground">Scheduled or currently in progress.</p>
           </div>
           <div className="space-y-2">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Awaiting invoice</div>
-            <div className="text-3xl font-semibold">{awaitingInvoice}</div>
-            <p className="text-sm text-muted-foreground">{quotedJobs} more quoted job{quotedJobs === 1 ? "" : "s"} are still waiting to be booked.</p>
+            <div className={`text-xs uppercase tracking-wider ${awaitingInvoice > 0 ? "text-amber-400" : "text-muted-foreground"}`}>Awaiting invoice</div>
+            <div className={`text-3xl font-semibold ${awaitingInvoice > 0 ? "text-amber-400" : ""}`}>{awaitingInvoice}</div>
+            <p className="text-sm text-muted-foreground">{quotedJobs > 0 ? `${quotedJobs} quoted job${quotedJobs === 1 ? "" : "s"} still waiting to be booked.` : "No jobs waiting to be booked."}</p>
           </div>
         </div>
       </div>
@@ -77,7 +78,7 @@ export default async function JobBoardPage() {
           <div className="space-y-2">
             <div className="eyebrow">Create job</div>
             <h2>Add work straight into the board</h2>
-            <p>Add work directly to the board. You can schedule it now or leave it as a quote to confirm later.</p>
+            <p>Only customer and job summary are required. Schedule, hours, and address can be added later from the job record.</p>
           </div>
           <label className="flex flex-col gap-2 text-sm text-muted-foreground">
             Customer
@@ -110,7 +111,7 @@ export default async function JobBoardPage() {
             Suburb
             <input className="w-full rounded-lg border bg-background px-3 py-2 text-sm" name="suburb" />
           </label>
-          <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">Create job</button>
+          <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" loadingText="Creating…">Create job</SubmitButton>
         </form>
 
         <div className="rounded-lg border bg-card p-4 space-y-4">
@@ -144,8 +145,8 @@ export default async function JobBoardPage() {
                 <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className="status-pill border-l-amber-500">Complete</span>
                 </div>
-                <h3>Completion should naturally lead to billing</h3>
-                <p>Completed jobs with no invoice should be obvious so cashflow doesn’t stall at the handoff.</p>
+                <h3>Complete — ready to invoice</h3>
+                <p>Work is done. Create the invoice directly from the job record so cashflow doesn’t stall at the handoff.</p>
               </div>
             </div>
           </div>

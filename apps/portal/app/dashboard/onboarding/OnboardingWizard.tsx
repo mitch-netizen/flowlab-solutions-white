@@ -19,10 +19,13 @@ const groupLabels: Record<string, string> = {
   mobile_other: "Mobile/other"
 };
 
+type XeroImportResult = { imported: number; skipped: number; noEmail: number };
+
 interface Props {
   initialStep: number;
   isCompleted: boolean;
   enquiryUrl: string;
+  xeroConnected: boolean;
   initialProfile: {
     businessName: string;
     phone: string;
@@ -36,12 +39,14 @@ interface Props {
   };
 }
 
-export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl, initialProfile }: Props) {
+export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl, xeroConnected, initialProfile }: Props) {
   const [step, setStep] = useState(Math.min(Math.max(initialStep, 1), 3));
   const [saving, setSaving] = useState(false);
   const [completed, setCompleted] = useState(isCompleted);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<XeroImportResult | null>(null);
 
   const [businessName, setBusinessName] = useState(initialProfile.businessName);
   const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType>(initialProfile.businessType);
@@ -161,7 +166,7 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
       {step === 1 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <h1 style={{ margin: 0 }}>Tell us about your business</h1>
-          <p className="muted" style={{ marginTop: -4 }}>Choose your trade and FlowLab will pre-fill editable pricing, services, schedule defaults, and quote assumptions.</p>
+          <p className="muted" style={{ marginTop: -4 }}>Choose your trade and FlowLab pre-fills pricing, service templates, and schedule defaults. Everything is editable — these are starting points, not locked-in settings.</p>
 
           <label>
             <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>What&apos;s your business called?</div>
@@ -201,7 +206,7 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
           </div>
 
           <div className="panel-soft">
-            <strong>{selectedPreset.label}</strong> starter defaults: ${selectedPreset.pricingRate.minimumCharge} minimum, {selectedPreset.serviceTemplates.length} editable service templates, {selectedPreset.defaultDurationMins} min default duration, {selectedPreset.scheduleDefaults.serviceRadiusKm} km service radius.
+            <strong>{selectedPreset.label}</strong> — FlowLab will set a ${selectedPreset.pricingRate.minimumCharge} minimum charge, {selectedPreset.serviceTemplates.length} service templates, {selectedPreset.defaultDurationMins} min default duration, and a {selectedPreset.scheduleDefaults.serviceRadiusKm} km service radius. You can adjust any of these in Settings after setup.
           </div>
 
           <label>
@@ -220,7 +225,13 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
                 post("/api/tenant/settings/profile-json", {
                   businessName,
                   phone: mobile,
-                  businessType: selectedBusinessType
+                  businessType: selectedBusinessType,
+                  serviceBaseAddress: serviceBaseAddress || undefined,
+                  serviceBasePlaceId: serviceBasePlaceId || undefined,
+                  serviceBaseLat,
+                  serviceBaseLng,
+                  serviceRadiusKm,
+                  serviceAreaSuburbs: manualSuburbs ? manualSuburbs.split(",").map(s => s.trim()).filter(Boolean) : undefined
                 }).then(() => Promise.resolve())
               );
             }}
@@ -248,11 +259,11 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
             </div>
           ) : null}
           <label>
-            <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>Service radius ({serviceRadiusKm} km)</div>
+            <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>Service radius ({serviceRadiusKm} km) — affects booking page filtering and travel-time checks</div>
             <input className="w-full" type="range" min="5" max="80" step="5" value={serviceRadiusKm} onChange={(e) => setServiceRadiusKm(Number(e.target.value))} />
           </label>
           <label>
-            <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>Service suburbs</div>
+            <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>Service suburbs — used on the booking page and quote cover. Drag the radius or type suburbs below, separated by commas.</div>
             <input className="w-full rounded-lg border bg-background px-3 py-3 text-sm" value={manualSuburbs} onChange={(e) => setManualSuburbs(e.target.value)} placeholder="Tannum Sands, Boyne Island, Gladstone" />
           </label>
           <button type="button" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" style={{ width: "fit-content" }} onClick={() => void confirmPlace(null)}>Confirm on map</button>
@@ -264,7 +275,7 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
               style={{ width: "100%", height: 220, backgroundImage: `url(${mapsPreviewUrl})`, backgroundSize: "cover", backgroundPosition: "center" }}
             />
           ) : null}
-          <p className="muted" style={{ marginTop: -8 }}>FlowLab uses this for booking, travel-time checks, scheduling, and quote assumptions. Change it anytime in Settings.</p>
+          <p className="muted" style={{ marginTop: -8 }}>This sets your service area on the booking page and helps FlowLab estimate travel time and schedule jobs. You can update it anytime in Settings.</p>
           {error && <p style={{ color: "#f87171", margin: 0 }}>{error}</p>}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button type="button" className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground" style={{ background: "#1e293b" }} onClick={() => setStep(1)}>Back</button>
@@ -304,8 +315,48 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
 
       {step === 3 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <h1 style={{ margin: 0 }}>Here's your booking link</h1>
-          <p className="muted">Share this with customers and they can request a job directly.</p>
+          <h1 style={{ margin: 0 }}>You&apos;re ready to take bookings</h1>
+
+          {xeroConnected && (
+            <div className="rounded-lg border bg-card/60 p-4" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div>
+                <strong style={{ fontSize: 14 }}>Import your Xero customers first</strong>
+                <p className="muted" style={{ margin: "4px 0 0" }}>
+                  Bring all your Xero contacts into FlowLab&apos;s CRM in one go — saves re-entering every client. Contacts already in the CRM are skipped — nothing is overwritten.
+                </p>
+              </div>
+              {importResult ? (
+                <p style={{ margin: 0, fontSize: 13, color: "#86efac" }}>
+                  Done — {importResult.imported} imported, {importResult.skipped} already existed
+                  {importResult.noEmail > 0 ? `, ${importResult.noEmail} skipped (no email)` : ""}.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  disabled={importing}
+                  className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold"
+                  style={{ width: "fit-content" }}
+                  onClick={async () => {
+                    setImporting(true);
+                    try {
+                      const res = await fetch("/api/tenant/crm/import/xero", { method: "POST" });
+                      if (!res.ok) throw new Error("Import failed");
+                      const data = await res.json() as XeroImportResult;
+                      setImportResult(data);
+                    } catch {
+                      setError("Xero import failed. Check your connection and try again.");
+                    } finally {
+                      setImporting(false);
+                    }
+                  }}
+                >
+                  {importing ? "Importing..." : "Import customers from Xero"}
+                </button>
+              )}
+            </div>
+          )}
+
+          <p className="muted">Share this link and customers can submit a job request directly. It&apos;ll land in your CRM as an enquiry.</p>
           <div className="panel-soft" style={{ wordBreak: "break-all" }}>{bookingLink}</div>
           {error && <p style={{ color: "#f87171", margin: 0 }}>{error}</p>}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -321,7 +372,8 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
               {saving ? "Finishing..." : "Finish setup"}
             </button>
           </div>
-          <p className="muted" style={{ margin: 0 }}>You're set. Let's send your first quote.</p>
+
+          <p className="muted" style={{ margin: 0 }}>You&apos;re set. Let&apos;s send your first quote.</p>
         </div>
       )}
     </div>
