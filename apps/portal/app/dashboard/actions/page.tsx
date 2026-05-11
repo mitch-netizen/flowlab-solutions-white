@@ -43,8 +43,9 @@ export default async function ActionInboxPage({
   const status = params.status ?? "open";
   const returnTo = `/dashboard/actions?status=${encodeURIComponent(status)}&priority=${encodeURIComponent(priority)}&category=${encodeURIComponent(category)}`;
 
-  const [actions, openActions, snoozedActions, dismissedActions] = await Promise.all([
-    getTenantActionInbox(session.tenantId, { refresh: true, status: status as "open" | "snoozed" | "dismissed" | "all", priority, category }),
+  const actions = await getTenantActionInbox(session.tenantId, { refresh: true, status: status as "open" | "snoozed" | "dismissed" | "all", priority, category });
+
+  const [openActions, snoozedActions, dismissedActions] = await Promise.all([
     getTenantActionInbox(session.tenantId, { status: "open", limit: 100 }),
     getTenantActionInbox(session.tenantId, { status: "snoozed", limit: 100 }),
     getTenantActionInbox(session.tenantId, { status: "dismissed", limit: 100 })
