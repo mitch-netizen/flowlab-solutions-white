@@ -57,14 +57,14 @@ export default async function SettingsPage({
       <DashboardPageScaffold
         eyebrow="Setup"
         title="Settings"
-        description="Review or update your business basics, service area, and booking details."
+        description="Review the editable defaults FlowLab set up during onboarding: business details, service area, pricing, services, and booking details."
         section="setup"
       >
 
       <div className="rounded-lg border bg-card p-4 space-y-2">
         <div className="eyebrow">Business basics</div>
         <h2 style={{ marginBottom: 8 }}>Keep your onboarding details up to date</h2>
-        <p className="text-sm text-muted-foreground">Update your business name, trade type, phone, suburb or postcode, and service area in one place.</p>
+        <p className="text-sm text-muted-foreground">These are starting points, not locked settings. Tune them as the business learns what work is profitable.</p>
       </div>
 
 
@@ -73,7 +73,7 @@ export default async function SettingsPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Business details</div>
             <h2 style={{ marginBottom: 8 }}>Core contact and service information</h2>
-            <p>Your business name, contact details, and service area all in one form.</p>
+            <p>Your business name, contact details, mapped service base, and service suburbs all in one form.</p>
           </div>
 
           <div className="setup-field-grid">
@@ -182,7 +182,7 @@ export default async function SettingsPage({
           <div className="setup-section-copy">
             <div className="eyebrow">Pricing rates</div>
             <h2 style={{ marginBottom: 8 }}>Current pricing configuration</h2>
-            <p>Your current pricing model and configured rates. These defaults are editable starting points for AI quotes.</p>
+            <p>Your current pricing model and configured rates. These editable defaults guide quote drafts and margin suggestions.</p>
           </div>
 
           <div className="space-y-3">

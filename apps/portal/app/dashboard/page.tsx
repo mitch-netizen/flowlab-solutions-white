@@ -10,6 +10,7 @@ import { InvoicesTable, JobsTable } from "./dashboard-tables";
 import DashboardEmptyStateActions from "./DashboardEmptyStateActions";
 import { getCustomerRecordHref, getInvoiceRecordHref, getJobPrimaryHref, getJobRecordHref } from "../../lib/dashboard-links";
 import { requireTenantSession } from "../../lib/session";
+import ActionSuggestionCard from "./actions/ActionSuggestionCard";
 
 function startOfToday() {
   const date = new Date();
@@ -126,7 +127,7 @@ export default async function DashboardPage({
     prisma.enquiry.count({
       where: { tenantId: session.tenantId }
     }),
-    getTenantActionSuggestions(session.tenantId, { refresh: true, limit: 6 })
+    getTenantActionSuggestions(session.tenantId, { refresh: true, limit: 5 })
   ]);
 
   const currentUser = snapshot.tenant?.users.find((user) => user.id === session.sub) ?? snapshot.tenant?.users[0] ?? null;
@@ -228,6 +229,7 @@ export default async function DashboardPage({
         actions={(
           <>
             <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href="/dashboard/quotes/new">New quote</Link>
+            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/actions">Action Inbox</Link>
             <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/crm">Open leads</Link>
             <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/scheduler">Open schedule</Link>
             <form action="/api/tenant/digest" method="post" style={{ display: "inline" }}>
@@ -297,27 +299,26 @@ export default async function DashboardPage({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-2">
               <div className="eyebrow">Co-pilot</div>
-              <h2>Recommended next actions</h2>
-              <p>FlowLab watches for the small operational gaps that cost time, money, or momentum.</p>
+              <h2>Action Inbox</h2>
+              <p>FlowLab watches the operational gaps that cost time, money, or momentum. Start with the highest-priority action, then snooze or dismiss anything that can wait.</p>
             </div>
+            <Link href="/dashboard/actions" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open full inbox</Link>
           </div>
 
           <div className="space-y-3">
             {actionSuggestions.length > 0 ? actionSuggestions.map((item) => (
-              <div key={item.id} className="setup-row">
-                <div className="setup-row-main">
-                  <div className="setup-row-meta">
-                    <Badge tone={item.priority === "high" ? "warning" : "neutral"}>{item.priority}</Badge>
-                    <span>{item.category.replace(/_/g, " ")}</span>
-                  </div>
-                  <h3>{item.title}</h3>
-                  <p>{item.reason}</p>
-                </div>
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={item.targetUrl}>{item.suggestedAction}</Link>
+              <ActionSuggestionCard key={item.id} action={item} returnTo="/dashboard" compact />
+            )) : (
+              <div className="rounded-lg border bg-card/60 p-4 space-y-3">
+                <h3 style={{ margin: 0 }}>All clear</h3>
+                <p className="text-sm text-muted-foreground" style={{ margin: 0 }}>No recommended actions right now. Keep momentum by creating a quote, checking tomorrow, or reviewing open customer requests.</p>
+                <div className="flex flex-wrap gap-2">
+                  <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href="/dashboard/quotes/new">Create quote</Link>
+                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/scheduler">Open schedule</Link>
+                  <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/crm">Review requests</Link>
                 </div>
               </div>
-            )) : <p className="text-sm text-muted-foreground">No recommended actions right now. Your core workflow looks clear.</p>}
+            )}
           </div>
         </div>
 
@@ -356,9 +357,9 @@ export default async function DashboardPage({
         <div className="rounded-lg border bg-card p-4 space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-2">
-              <div className="eyebrow">Don&apos;t miss</div>
-              <h2>Needs action</h2>
-              <p>Only the things that can cost you time, money, or a customer.</p>
+              <div className="eyebrow">System watch</div>
+              <h2>Health alerts</h2>
+              <p>Connection, automation, and billing alerts that may block the workflows in your Action Inbox.</p>
             </div>
             <Link href="/dashboard/system-health" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">View all</Link>
           </div>

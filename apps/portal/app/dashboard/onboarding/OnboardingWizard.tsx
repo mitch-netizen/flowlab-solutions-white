@@ -161,7 +161,7 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
       {step === 1 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <h1 style={{ margin: 0 }}>Tell us about your business</h1>
-          <p className="muted" style={{ marginTop: -4 }}>Choose your trade and FlowLab will pre-fill pricing, services, schedule defaults, and quote assumptions.</p>
+          <p className="muted" style={{ marginTop: -4 }}>Choose your trade and FlowLab will pre-fill editable pricing, services, schedule defaults, and quote assumptions.</p>
 
           <label>
             <div className="muted" style={{ fontSize: 13, marginBottom: 6 }}>What&apos;s your business called?</div>
@@ -201,7 +201,7 @@ export default function OnboardingWizard({ initialStep, isCompleted, enquiryUrl,
           </div>
 
           <div className="panel-soft">
-            <strong>{selectedPreset.label}</strong> defaults: ${selectedPreset.pricingRate.minimumCharge} minimum, {selectedPreset.serviceTemplates.length} service templates, {selectedPreset.defaultDurationMins} min default duration, {selectedPreset.scheduleDefaults.serviceRadiusKm} km service radius.
+            <strong>{selectedPreset.label}</strong> starter defaults: ${selectedPreset.pricingRate.minimumCharge} minimum, {selectedPreset.serviceTemplates.length} editable service templates, {selectedPreset.defaultDurationMins} min default duration, {selectedPreset.scheduleDefaults.serviceRadiusKm} km service radius.
           </div>
 
           <label>

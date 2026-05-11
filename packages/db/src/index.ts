@@ -1641,19 +1641,117 @@ export type ActionSuggestionInput = {
   sourceId?: string | null;
 };
 
+export type ActionSuggestionStatusFilter = "open" | "snoozed" | "dismissed" | "all";
+
+export const actionSuggestionCategoryLabels: Record<ActionSuggestionInput["category"], string> = {
+  automation: "Operations",
+  billing: "Billing",
+  capacity: "Schedule",
+  crm: "Customers",
+  pricing: "Revenue",
+  quotes: "Revenue",
+  schedule: "Schedule"
+};
+
+export const actionSuggestionPriorityRank: Record<ActionSuggestionInput["priority"], number> = {
+  high: 0,
+  medium: 1,
+  low: 2
+};
+
+export const deterministicActionSuggestionSources = [
+  "open_enquiry",
+  "stale_quote",
+  "overdue_invoice",
+  "missing_customer_info",
+  "empty_schedule",
+  "tomorrow_gap",
+  "failed_automation",
+  "pricing_missing",
+  "schedule_conflict"
+] as const;
+
+export function getActionSuggestionGroup(category: string) {
+  return actionSuggestionCategoryLabels[category as ActionSuggestionInput["category"]] ?? "Operations";
+}
+
+export function getActionSuggestionPriorityRank(priority: string) {
+  return actionSuggestionPriorityRank[priority as ActionSuggestionInput["priority"]] ?? 99;
+}
+
+export function getActionSuggestionDisplayStatus(
+  status: string,
+  snoozedUntil: Date | string | null | undefined,
+  now: Date = new Date()
+) {
+  if (status === "dismissed") return "dismissed";
+  const snoozeDate = snoozedUntil ? new Date(snoozedUntil) : null;
+  if (status === "open" && snoozeDate && snoozeDate > now) return "snoozed";
+  return "open";
+}
+
+function getActionSuggestionSourceKey(source: string, sourceId: string | null | undefined) {
+  return `${source}:${sourceId ?? "none"}`;
+}
+
+function sortActionSuggestions<T extends { priority: string; createdAt: Date }>(items: T[]) {
+  return [...items].sort((a, b) => {
+    const priorityDiff = getActionSuggestionPriorityRank(a.priority) - getActionSuggestionPriorityRank(b.priority);
+    if (priorityDiff !== 0) return priorityDiff;
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  });
+}
+
 export async function upsertActionSuggestions(tenantId: string, suggestions: ActionSuggestionInput[]) {
+  const now = new Date();
+  const incomingKeys = new Set(suggestions.map((item) => getActionSuggestionSourceKey(item.source, item.sourceId ?? null)));
+  const sourceFilters = suggestions.map((item) => ({
+    source: item.source,
+    sourceId: item.sourceId ?? null
+  }));
+
+  const preservedResolved = sourceFilters.length > 0
+    ? await prisma.actionSuggestion.findMany({
+        where: {
+          tenantId,
+          AND: [
+            { OR: sourceFilters },
+            {
+              OR: [
+                { status: "dismissed" },
+                { status: "open", snoozedUntil: { gt: now } }
+              ]
+            }
+          ]
+        },
+        select: { source: true, sourceId: true }
+      })
+    : [];
+
+  const preservedKeys = new Set(
+    preservedResolved.map((item) => getActionSuggestionSourceKey(item.source, item.sourceId))
+  );
+
   await prisma.actionSuggestion.deleteMany({
     where: {
       tenantId,
       status: "open",
-      source: { in: suggestions.map((item) => item.source) }
+      source: { in: [...deterministicActionSuggestionSources] },
+      OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }]
     }
   });
 
   if (suggestions.length === 0) return [];
 
+  const suggestionsToCreate = suggestions.filter((item) => {
+    const key = getActionSuggestionSourceKey(item.source, item.sourceId ?? null);
+    return incomingKeys.has(key) && !preservedKeys.has(key);
+  });
+
+  if (suggestionsToCreate.length === 0) return getTenantActionSuggestions(tenantId);
+
   await prisma.actionSuggestion.createMany({
-    data: suggestions.map((item) => ({
+    data: suggestionsToCreate.map((item) => ({
       tenantId,
       category: item.category,
       priority: item.priority,
@@ -1675,23 +1773,67 @@ export async function getTenantActionSuggestions(tenantId: string, opts: { refre
   }
 
   const now = new Date();
-  return prisma.actionSuggestion.findMany({
+  const suggestions = await prisma.actionSuggestion.findMany({
     where: {
       tenantId,
       status: "open",
       OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }]
     },
-    orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
-    take: opts.limit ?? 25
+    orderBy: { createdAt: "desc" },
+    take: 100
   });
+
+  return sortActionSuggestions(suggestions).slice(0, opts.limit ?? 25);
+}
+
+export async function getTenantActionInbox(
+  tenantId: string,
+  opts: {
+    refresh?: boolean;
+    limit?: number;
+    priority?: string;
+    category?: string;
+    status?: ActionSuggestionStatusFilter;
+  } = {}
+) {
+  if (opts.refresh) {
+    await generateTenantActionSuggestions(tenantId);
+  }
+
+  const now = new Date();
+  const status = opts.status ?? "open";
+  const statusWhere =
+    status === "all"
+      ? {}
+      : status === "dismissed"
+        ? { status: "dismissed" }
+        : status === "snoozed"
+          ? { status: "open", snoozedUntil: { gt: now } }
+          : {
+              status: "open",
+              OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }]
+            };
+
+  const suggestions = await prisma.actionSuggestion.findMany({
+    where: {
+      tenantId,
+      ...statusWhere,
+      ...(opts.priority && opts.priority !== "all" ? { priority: opts.priority } : {}),
+      ...(opts.category && opts.category !== "all" ? { category: opts.category } : {})
+    },
+    orderBy: { createdAt: "desc" },
+    take: 200
+  });
+
+  return sortActionSuggestions(suggestions).slice(0, opts.limit ?? 50);
 }
 
 export async function resolveActionSuggestion(input: { tenantId: string; id: string; action: "dismiss" | "snooze" }) {
   return prisma.actionSuggestion.updateMany({
     where: { id: input.id, tenantId: input.tenantId },
     data: input.action === "dismiss"
-      ? { status: "dismissed" }
-      : { status: "snoozed", snoozedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000) }
+      ? { status: "dismissed", snoozedUntil: null }
+      : { status: "open", snoozedUntil: new Date(Date.now() + 24 * 60 * 60 * 1000) }
   });
 }
 
@@ -1701,7 +1843,7 @@ export async function generateTenantActionSuggestions(tenantId: string) {
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const weekAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  const [openEnquiries, staleQuotes, missingCustomers, overdueInvoices, upcomingJobs, failedAutomations, pricingRate, serviceTemplates] = await Promise.all([
+  const [openEnquiries, staleQuotes, missingCustomers, overdueInvoices, upcomingJobs, workSchedule, commitments, timeOff, failedAutomations, pricingRate, serviceTemplates] = await Promise.all([
     prisma.enquiry.findMany({
       where: { tenantId, status: "new" },
       orderBy: { createdAt: "asc" },
@@ -1742,6 +1884,9 @@ export async function generateTenantActionSuggestions(tenantId: string) {
       take: 20,
       include: { customer: true }
     }),
+    prisma.workSchedule.findMany({ where: { tenantId } }),
+    prisma.personalCommitment.findMany({ where: { tenantId } }),
+    prisma.timeOff.findMany({ where: { tenantId, endAt: { gte: now } } }),
     prisma.automationJob.findMany({
       where: { tenantId, status: { in: ["failed", "dead_letter"] } },
       orderBy: { updatedAt: "desc" },
@@ -1826,6 +1971,36 @@ export async function generateTenantActionSuggestions(tenantId: string) {
       suggestedAction: "Pull suitable work into tomorrow's schedule",
       source: "tomorrow_gap",
       sourceId: null
+    });
+  }
+
+  for (const job of upcomingJobs) {
+    if (!job.scheduledFor) continue;
+    const scheduled = dateToDayAndMinutes(job.scheduledFor);
+    const workWindow = workSchedule.find((slot) => slot.dayOfWeek === scheduled.dayOfWeek);
+    const outsideWorkWindow = !workWindow ||
+      scheduled.minutes < timeStringToMinutes(workWindow.startTime) ||
+      scheduled.minutes > timeStringToMinutes(workWindow.endTime);
+    const commitment = commitments.find((entry) => {
+      if (entry.dayOfWeek !== scheduled.dayOfWeek) return false;
+      return scheduled.minutes >= timeStringToMinutes(entry.startTime) && scheduled.minutes <= timeStringToMinutes(entry.endTime);
+    });
+    const unavailable = timeOff.find((entry) => job.scheduledFor && job.scheduledFor >= entry.startAt && job.scheduledFor <= entry.endAt);
+    if (!outsideWorkWindow && !commitment && !unavailable) continue;
+
+    suggestions.push({
+      category: "schedule",
+      priority: unavailable ? "high" : "medium",
+      title: `Review schedule for ${job.customer.firstName}`,
+      reason: unavailable
+        ? `This job falls during time off: ${unavailable.title}.`
+        : commitment
+          ? `This job conflicts with ${commitment.title}.`
+          : "This job sits outside the configured working window.",
+      targetUrl: `/dashboard/jobs/${job.id}`,
+      suggestedAction: "Open job and review schedule",
+      source: "schedule_conflict",
+      sourceId: job.id
     });
   }
 

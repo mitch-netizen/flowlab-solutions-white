@@ -26,11 +26,14 @@ export default async function SchedulerPage() {
         description="See upcoming jobs alongside your availability, personal commitments, and time off — all in one view."
         section="jobs"
         actions={(
-          <form action="/api/tenant/scheduler/analyze" method="post">
-            <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
-              Queue schedule analysis
-            </button>
-          </form>
+          <>
+            <Link className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" href="/dashboard/actions?category=schedule">Schedule actions</Link>
+            <form action="/api/tenant/scheduler/analyze" method="post">
+              <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
+                Queue schedule analysis
+              </button>
+            </form>
+          </>
         )}
       >
 
@@ -59,8 +62,9 @@ export default async function SchedulerPage() {
           <div className="space-y-2">
             <div className="eyebrow">Recommendations</div>
             <h2>Scheduling recommendations</h2>
-            <p>Jobs flagged by the analysis as needing attention — check the reason, then open the job to take action.</p>
+            <p>Jobs flagged by the analysis as needing attention. Schedule conflicts also surface in the Action Inbox so operators can triage them beside quote, customer, and billing work.</p>
           </div>
+          <Link href="/dashboard/actions?category=schedule" className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold">Open schedule actions</Link>
         </div>
 
         <div className="space-y-3">
