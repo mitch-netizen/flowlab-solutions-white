@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { businessTypeSchema, getPricingModel, getTradePreset, tradePresetOptions } from "@flowlab/contracts";
-import { getDefaultIntegrationManagementMode } from "@flowlab/db";
+import {
+  getActionSuggestionDisplayStatus,
+  getActionSuggestionGroup,
+  getActionSuggestionPriorityRank,
+  getDefaultIntegrationManagementMode
+} from "@flowlab/db";
 import { buildServiceAreaPreview, suggestServiceAreaSuburbs } from "@flowlab/integrations/google-maps";
 
 describe("expanded trade presets", () => {
@@ -58,5 +63,30 @@ describe("service area maps helpers", () => {
     delete process.env.GOOGLE_MAPS_API_KEY;
     expect(buildServiceAreaPreview({ address: "Tannum Sands QLD", radiusKm: 25 })).toBeNull();
     if (saved !== undefined) process.env.GOOGLE_MAPS_API_KEY = saved;
+  });
+});
+
+describe("action inbox helpers", () => {
+  it("orders priorities by operator urgency", () => {
+    expect(getActionSuggestionPriorityRank("high")).toBeLessThan(getActionSuggestionPriorityRank("medium"));
+    expect(getActionSuggestionPriorityRank("medium")).toBeLessThan(getActionSuggestionPriorityRank("low"));
+    expect(getActionSuggestionPriorityRank("unknown")).toBeGreaterThan(getActionSuggestionPriorityRank("low"));
+  });
+
+  it("groups deterministic categories into operator-friendly areas", () => {
+    expect(getActionSuggestionGroup("quotes")).toBe("Revenue");
+    expect(getActionSuggestionGroup("pricing")).toBe("Revenue");
+    expect(getActionSuggestionGroup("crm")).toBe("Customers");
+    expect(getActionSuggestionGroup("schedule")).toBe("Schedule");
+    expect(getActionSuggestionGroup("capacity")).toBe("Schedule");
+    expect(getActionSuggestionGroup("billing")).toBe("Billing");
+    expect(getActionSuggestionGroup("automation")).toBe("Operations");
+  });
+
+  it("shows snoozed actions as hidden until their snooze expires", () => {
+    const now = new Date("2026-05-10T10:00:00Z");
+    expect(getActionSuggestionDisplayStatus("open", new Date("2026-05-10T11:00:00Z"), now)).toBe("snoozed");
+    expect(getActionSuggestionDisplayStatus("open", new Date("2026-05-10T09:00:00Z"), now)).toBe("open");
+    expect(getActionSuggestionDisplayStatus("dismissed", null, now)).toBe("dismissed");
   });
 });
