@@ -29,6 +29,8 @@ export interface XeroCredentials {
 export interface XeroContact {
   ContactID: string;
   Name: string;
+  FirstName?: string;
+  LastName?: string;
   EmailAddress?: string;
   Phones?: Array<{ PhoneType: string; PhoneNumber: string }>;
   Addresses?: Array<{ AddressType: string; AddressLine1?: string; City?: string }>;
@@ -115,6 +117,39 @@ function xeroHeaders(credentials: XeroCredentials) {
 }
 
 // ── Contacts ─────────────────────────────────────────────────────────────────
+
+/**
+ * Fetch all contacts from Xero, paginating until exhausted.
+ * Skips archived contacts. Returns up to 5000 contacts (50 pages × 100).
+ */
+export async function listXeroContacts(
+  rawCredentials: XeroCredentials
+): Promise<XeroSyncResult<XeroContact[]>> {
+  const credentials = await ensureValidToken(rawCredentials);
+  const all: XeroContact[] = [];
+  const pageSize = 100;
+  let page = 1;
+
+  while (page <= 50) {
+    const res = await fetch(
+      `${XERO_API_BASE}/api.xro/2.0/Contacts?page=${page}&pageSize=${pageSize}&where=IsCustomer%3Dtrue`,
+      { headers: xeroHeaders(credentials) }
+    );
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Xero list contacts failed (${res.status}): ${body}`);
+    }
+
+    const data = await res.json() as { Contacts: XeroContact[] };
+    const batch = data.Contacts ?? [];
+    all.push(...batch);
+    if (batch.length < pageSize) break;
+    page++;
+  }
+
+  return { data: all, credentials };
+}
 
 /**
  * Upsert a customer as a Xero Contact.

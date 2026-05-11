@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getActionSuggestionDisplayStatus, getActionSuggestionGroup } from "@flowlab/db";
 import { Badge, formatDateTime } from "@flowlab/ui";
 
+import SubmitButton from "../../../components/submit-button";
+
 type ActionSuggestionView = {
   id: string;
   category: string;
@@ -40,10 +42,14 @@ export default function ActionSuggestionCard({
     <div className="setup-row">
       <div className="setup-row-main">
         <div className="setup-row-meta">
-          <Badge tone={getPriorityTone(action.priority)}>{action.priority}</Badge>
-          <Badge tone={visibleStatus === "Open" ? "neutral" : "warning"}>{visibleStatus}</Badge>
+          <span title={action.priority === "high" ? "Act on this today" : action.priority === "medium" ? "Worth doing this week" : "Low urgency — do when convenient"}>
+            <Badge tone={getPriorityTone(action.priority)}>{action.priority.charAt(0).toUpperCase() + action.priority.slice(1)}</Badge>
+          </span>
+          <span title={visibleStatus === "Open" ? "Waiting for action" : visibleStatus === "Snoozed" ? "Hidden until the snooze period expires" : "Closed — kept for reference"}>
+            <Badge tone={visibleStatus === "Open" ? "neutral" : "warning"}>{visibleStatus}</Badge>
+          </span>
           <span>{getActionSuggestionGroup(action.category)}</span>
-          {!compact ? <span>{formatDateTime(action.createdAt)}</span> : null}
+          {!compact ? <span title="When this action was raised">Raised {formatDateTime(action.createdAt)}</span> : null}
         </div>
         <h3>{action.title}</h3>
         <p>{action.reason}</p>
@@ -55,21 +61,23 @@ export default function ActionSuggestionCard({
         <Link className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={action.targetUrl}>
           {action.suggestedAction}
         </Link>
-        {action.status !== "dismissed" ? (
+        {visibleStatus !== "Dismissed" ? (
           <>
-            <form action={`/api/tenant/actions/${action.id}/resolve`} method="post">
-              <input type="hidden" name="action" value="snooze" />
-              <input type="hidden" name="returnTo" value={returnTo} />
-              <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">
-                Snooze
-              </button>
-            </form>
+            {visibleStatus !== "Snoozed" ? (
+              <form action={`/api/tenant/actions/${action.id}/resolve`} method="post">
+                <input type="hidden" name="action" value="snooze" />
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" loadingText="Snoozing…">
+                  Snooze
+                </SubmitButton>
+              </form>
+            ) : null}
             <form action={`/api/tenant/actions/${action.id}/resolve`} method="post">
               <input type="hidden" name="action" value="dismiss" />
               <input type="hidden" name="returnTo" value={returnTo} />
-              <button className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" type="submit">
+              <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold" loadingText="Dismissing…">
                 Dismiss
-              </button>
+              </SubmitButton>
             </form>
           </>
         ) : null}
