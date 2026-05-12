@@ -1,32 +1,33 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import {
   createSupabaseServerClient,
   IMPERSONATION_SESSION_COOKIE,
   verifyImpersonationToken
 } from "@flowlab/auth";
-import { prisma, resolveTenantContext } from "@flowlab/db";
+import { prisma } from "@flowlab/db";
 import type { TenantSession } from "@flowlab/contracts";
 
-export async function getTenantSession(): Promise<TenantSession | null> {
+import { getCurrentTenantContext } from "./tenant";
+
+// cache() deduplicates calls within the same request render tree —
+// layout + page both call requireTenantSession() but only one DB round-trip fires.
+export const getTenantSession = cache(async (): Promise<TenantSession | null> => {
   const supabase = await createSupabaseServerClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (error || !user) return null;
+  // Parallelise: auth token validation and tenant context resolution are independent.
+  const [{ data: { user }, error }, tenantContext] = await Promise.all([
+    supabase.auth.getUser(),
+    getCurrentTenantContext()
+  ]);
 
-  // Resolve which tenant this request is for via the x-flowlab-host header
-  // (set by middleware from the original Host header)
-  const headerStore = await headers();
-  const host =
-    headerStore.get("x-flowlab-host") ?? headerStore.get("host") ?? "";
-
-  const tenantContext = await resolveTenantContext(host);
-  if (!tenantContext) return null;
+  if (error || !user || !tenantContext) return null;
 
   // Find the TenantUser that links this Supabase auth user to this tenant
   const tenantUser = await prisma.tenantUser.findFirst({
-    where: { authUserId: user.id, tenantId: tenantContext.tenantId },
+    where: { authUserId: user.id, tenantId: tenantContext.tenantId }
   });
 
   if (!tenantUser) return null;
@@ -60,7 +61,7 @@ export async function getTenantSession(): Promise<TenantSession | null> {
     tenantId: tenantUser.tenantId,
     impersonatedBy: impersonatedBy ?? undefined,
   } satisfies TenantSession;
-}
+});
 
 export async function requireTenantSession() {
   const session = await getTenantSession();

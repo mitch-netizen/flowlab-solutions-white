@@ -7,7 +7,10 @@ const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@flowlab/auth", "@flowlab/branding", "@flowlab/contracts", "@flowlab/db", "@flowlab/events", "@flowlab/integrations"],
-  outputFileTracingRoot: workspaceRoot
+  outputFileTracingRoot: workspaceRoot,
+  experimental: {
+    optimizePackageImports: ["@flowlab/ui", "@flowlab/branding", "@flowlab/contracts"]
+  }
 };
 
 export default withSentryConfig(nextConfig, {
