@@ -13,10 +13,15 @@ export default function SubmitButton({ children, loadingText = "Saving...", onCl
       type="submit"
       disabled={disabled}
       onClick={(e) => {
-        const form = e.currentTarget.form;
+        const btn = e.currentTarget;
+        const form = btn.form;
         if (form && !form.reportValidity()) return;
-        e.currentTarget.disabled = true;
-        e.currentTarget.textContent = loadingText;
+        // Defer the disable so the browser fires the submit event first.
+        // Setting disabled=true synchronously in onClick cancels form submission.
+        setTimeout(() => {
+          btn.disabled = true;
+          btn.textContent = loadingText;
+        }, 0);
         onClick?.(e);
       }}
     >
