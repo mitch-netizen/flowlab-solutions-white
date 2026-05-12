@@ -172,6 +172,16 @@ export default async function MarketingPage() {
           </div>
         </div>
       </section>
+
+      <footer style={{ borderTop: "1px solid var(--border-subtle)", padding: "2rem 0" }}>
+        <div className="marketing-container" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+          <p className="muted" style={{ fontSize: 13, margin: 0 }}>© {new Date().getFullYear()} FlowLab Solutions Pty Ltd. All rights reserved.</p>
+          <nav style={{ display: "flex", gap: "1.5rem" }}>
+            <Link href="/privacy" className="muted" style={{ fontSize: 13 }}>Privacy Policy</Link>
+            <Link href="/terms" className="muted" style={{ fontSize: 13 }}>Terms of Service</Link>
+          </nav>
+        </div>
+      </footer>
     </main>
   );
 }

@@ -1,9 +1,18 @@
 import { headers } from "next/headers";
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
 import { getBrandingTheme, toStyleAttribute } from "@flowlab/branding";
 import { resolveTenantContext } from "@flowlab/db";
 import { getCanonicalRootDomain } from "@flowlab/contracts/server";
+
+// Cross-request cache: host→tenant mapping is stable (changes only when a
+// custom domain is added). 60s TTL keeps it fresh without hammering the DB.
+const resolveTenantContextCached = unstable_cache(
+  (host: string) => resolveTenantContext(host),
+  ["tenant-context-by-host"],
+  { revalidate: 60 }
+);
 
 const resolveCurrentTenantContext = cache(async (incomingHost: string) => {
   const host = incomingHost.replace(/^https?:\/\//, "").toLowerCase();
@@ -12,14 +21,14 @@ const resolveCurrentTenantContext = cache(async (incomingHost: string) => {
     host === "localhost" ||
     host.startsWith("127.0.0.1");
 
-  const resolved = await resolveTenantContext(host);
+  const resolved = await resolveTenantContextCached(host);
 
   if (resolved) {
     return resolved;
   }
 
   if (isLocal) {
-    return await resolveTenantContext(`tenant.${getCanonicalRootDomain()}`);
+    return await resolveTenantContextCached(`tenant.${getCanonicalRootDomain()}`);
   }
 
   return null;
