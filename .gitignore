@@ -12,3 +12,4 @@ output/
 packages/db/prisma/dev.db
 packages/db/prisma/dev.db-journal
 .env.sentry-build-plugin
+.claude/settings.local.json
