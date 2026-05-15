@@ -1,4 +1,5 @@
 .vercel
+tsconfig.tsbuildinfo
 
 # Sentry Config File
 .env.sentry-build-plugin
