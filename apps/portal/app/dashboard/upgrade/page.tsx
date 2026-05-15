@@ -2,6 +2,7 @@ import { prisma } from "@flowlab/db";
 
 import DashboardPageScaffold from "../../../components/dashboard/page-scaffold";
 import { requireTenantSession } from "../../../lib/session";
+import { CheckoutButton } from "./checkout-button";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,7 @@ export default async function UpgradePage() {
       plan: true,
       status: true,
       trialEndsAt: true,
+      stripeSubscriptionStatus: true,
       profile: { select: { businessName: true } }
     }
   });
@@ -71,22 +73,23 @@ export default async function UpgradePage() {
   const trialDaysLeft = trialEndsAt
     ? Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
+  const hasActiveSubscription =
+    tenant?.stripeSubscriptionStatus === "active" ||
+    tenant?.stripeSubscriptionStatus === "trialing";
 
   return (
-    
-      <DashboardPageScaffold
-        eyebrow="Setup"
-        title="Choose the plan that matches the next stage of the business."
-        description={
-          status === "trial" && trialDaysLeft !== null && trialDaysLeft > 0
-            ? `You have ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left in your free trial. This page should make the differences between plans obvious at a glance.`
-            : status === "trial" && (trialDaysLeft === null || trialDaysLeft <= 0)
-              ? "Your trial has ended. Pick a plan below to restore full access."
-              : `You are currently on ${currentPlan}. Upgrading should be straightforward, with your data, automations, and setup carrying over intact.`
-        }
-        section="setup"
-      >
-
+    <DashboardPageScaffold
+      eyebrow="Setup"
+      title="Choose the plan that matches the next stage of the business."
+      description={
+        status === "trial" && trialDaysLeft !== null && trialDaysLeft > 0
+          ? `You have ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left in your free trial. This page should make the differences between plans obvious at a glance.`
+          : status === "trial" && (trialDaysLeft === null || trialDaysLeft <= 0)
+            ? "Your trial has ended. Pick a plan below to restore full access."
+            : `You are currently on ${currentPlan}. Upgrading should be straightforward, with your data, automations, and setup carrying over intact.`
+      }
+      section="setup"
+    >
       <div className="rounded-lg border bg-card p-4">
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
@@ -151,12 +154,12 @@ export default async function UpgradePage() {
                   {isCurrent ? (
                     <span className="text-sm text-muted-foreground">You&apos;re on this plan.</span>
                   ) : (
-                    <a
-                      href={`mailto:hello@flowlabsolutions.au?subject=Upgrade to ${plan.name}&body=Hi, I'd like to upgrade ${tenant?.profile?.businessName ?? "my account"} to the ${plan.name} plan.`}
-                      className={plan.highlight ? "inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" : "inline-flex items-center justify-center rounded-lg border bg-secondary/40 px-4 py-2 text-sm font-semibold"}
-                    >
-                      {status === "trial" || currentPlan === "starter" ? `Get ${plan.name}` : `Switch to ${plan.name}`}
-                    </a>
+                    <CheckoutButton
+                      plan={plan.key}
+                      label={status === "trial" || currentPlan === "starter" ? `Get ${plan.name}` : `Switch to ${plan.name}`}
+                      highlight={plan.highlight}
+                      disabled={hasActiveSubscription && isCurrent}
+                    />
                   )}
                 </div>
               </div>

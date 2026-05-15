@@ -26,9 +26,14 @@ export default async function AdminPage() {
       description="Track tenant health, monitor platform-wide events, and spin up new branded operator workspaces."
       meta={<span className="pill">Platform overview</span>}
       actions={(
-        <Link href="/admin/tenants/new" className="cta">
-          Create tenant
-        </Link>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <Link href="/admin/support" className="cta ghost">
+            Support inbox
+          </Link>
+          <Link href="/admin/tenants/new" className="cta">
+            Create tenant
+          </Link>
+        </div>
       )}
     >
         <div className="metrics">

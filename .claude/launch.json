@@ -2,27 +2,13 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Web (flowlabsolutions.au)",
-      "runtimeExecutable": "/usr/local/bin/node",
-      "runtimeArgs": [
-        "--env-file=/Users/mitch/Documents/GitHub/flowlab-solutions-white/.env.local",
-        "/Users/mitch/Documents/GitHub/flowlab-solutions-white/node_modules/next/dist/bin/next",
-        "dev",
-        "/Users/mitch/Documents/GitHub/flowlab-solutions-white/apps/web",
-        "--port",
-        "3000"
-      ],
-      "port": 3000,
-      "autoPort": false
-    },
-    {
       "name": "Portal (tenant dashboard)",
       "runtimeExecutable": "/usr/local/bin/node",
       "runtimeArgs": [
-        "--env-file=/Users/mitch/Documents/GitHub/flowlab-solutions-white/.env.local",
-        "/Users/mitch/Documents/GitHub/flowlab-solutions-white/node_modules/next/dist/bin/next",
+        "--env-file=/Users/mitch/flowlab-solutions-white-current/.env.local",
+        "/Users/mitch/flowlab-solutions-white-current/node_modules/next/dist/bin/next",
         "dev",
-        "/Users/mitch/Documents/GitHub/flowlab-solutions-white/apps/portal",
+        "/Users/mitch/flowlab-solutions-white-current/apps/portal",
         "--port",
         "3001"
       ],
@@ -30,15 +16,18 @@
       "autoPort": false
     },
     {
-      "name": "Worker (automation processor)",
+      "name": "Web (admin + marketing)",
       "runtimeExecutable": "/usr/local/bin/node",
       "runtimeArgs": [
-        "--env-file=/Users/mitch/Documents/GitHub/flowlab-solutions-white/.env.local",
-        "/Users/mitch/Documents/GitHub/flowlab-solutions-white/node_modules/tsx/dist/cli.mjs",
-        "watch",
-        "/Users/mitch/Documents/GitHub/flowlab-solutions-white/apps/worker/src/index.ts"
+        "--env-file=/Users/mitch/flowlab-solutions-white-current/.env.local",
+        "/Users/mitch/flowlab-solutions-white-current/node_modules/next/dist/bin/next",
+        "dev",
+        "/Users/mitch/flowlab-solutions-white-current/apps/web",
+        "--port",
+        "3000"
       ],
-      "port": 3002
+      "port": 3000,
+      "autoPort": false
     }
   ]
 }

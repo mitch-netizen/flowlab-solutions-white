@@ -169,6 +169,7 @@ model Tenant {
   apiKeys               TenantApiKey[]
   automationJobs        AutomationJob[]
   automationPreferences AutomationPreference[]
+  supportThreads        SupportThread[]
 }
 
 model TenantProfile {
@@ -688,4 +689,29 @@ model RateLimitBucket {
   updatedAt    DateTime @updatedAt
 
   @@index([scope, windowStart])
+}
+
+model SupportThread {
+  id        String           @id @default(uuid())
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  tenantId  String
+  subject   String
+  status    String           @default("open")
+  messages  SupportMessage[]
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([status, updatedAt])
+}
+
+model SupportMessage {
+  id        String        @id @default(uuid())
+  createdAt DateTime      @default(now())
+  threadId  String
+  body      String
+  fromAdmin Boolean       @default(false)
+  thread    SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
 }

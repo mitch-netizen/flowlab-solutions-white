@@ -49,6 +49,9 @@ export default async function TenantLoginPage({
           <button className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" type="submit">
             Open dashboard
           </button>
+          <a href="/forgot-password" className="block text-sm text-center mt-2" style={{ color: "#94a3b8" }}>
+            Forgot your password?
+          </a>
         </form>
       </section>
     </main>

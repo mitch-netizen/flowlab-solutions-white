@@ -73,11 +73,17 @@ export default function PortalSidebarNav({
       })}
 
       <div className="portal-nav__utility">
-        {dashboardUtilityLinks.map((item) => (
-          <Link key={item.href} className="portal-nav__utility-link" href={item.href} target="_blank" rel="noopener">
-            {item.label} ↗
-          </Link>
-        ))}
+        {dashboardUtilityLinks.map((item) =>
+          item.external !== false ? (
+            <Link key={item.href} className="portal-nav__utility-link" href={item.href} target="_blank" rel="noopener">
+              {item.label} ↗
+            </Link>
+          ) : (
+            <Link key={item.href} className={["portal-nav__utility-link", isDashboardHrefActive(pathname, item.href) ? "is-active" : ""].filter(Boolean).join(" ")} href={item.href}>
+              {item.label}
+            </Link>
+          )
+        )}
       </div>
     </div>
   );

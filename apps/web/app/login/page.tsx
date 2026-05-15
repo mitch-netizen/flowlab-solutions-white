@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getCanonicalRootDomain } from "@flowlab/contracts/server";
 
 import { FlowLabBrandLink } from "../../components/flowlab-brand";
-import { SubdomainForm } from "./subdomain-form";
+import { SubdomainForm, FindPortalForm } from "./subdomain-form";
 
 export default function LoginPage() {
   const root = getCanonicalRootDomain();
@@ -33,16 +33,12 @@ export default function LoginPage() {
             </p>
           </div>
 
+          <FindPortalForm root={root} />
+
           <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
             <Link href="/signup" className="marketing-button marketing-button--primary auth-button">
               Start a free trial
             </Link>
-            <a
-              href={`mailto:hello@flowlabsolutions.au?subject=Can't find my login`}
-              className="marketing-button marketing-button--secondary auth-button"
-            >
-              Can't find your portal?
-            </a>
           </div>
         </div>
       </section>

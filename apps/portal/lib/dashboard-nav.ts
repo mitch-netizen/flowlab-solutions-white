@@ -2,6 +2,7 @@ export type DashboardNavItem = {
   href: string;
   label: string;
   description?: string;
+  external?: boolean;
 };
 
 export type DashboardNavGroup = {
@@ -63,7 +64,8 @@ export const dashboardNavGroups: DashboardNavGroup[] = [
 ];
 
 export const dashboardUtilityLinks: DashboardNavItem[] = [
-  { href: "/enquiry", label: "Customer enquiry link", description: "Open your public intake page" }
+  { href: "/enquiry", label: "Customer enquiry link", description: "Open your public intake page", external: true },
+  { href: "/dashboard/support", label: "Support", description: "Chat with the FlowLab team", external: false }
 ];
 
 /**
