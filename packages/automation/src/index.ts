@@ -188,13 +188,21 @@ async function processJob(job: ClaimedJob) {
 
   switch (job.kind) {
     case "quote.accepted": {
-      const [makeCredentials, tenant, customer] = await Promise.all([
+      const [makeCredentials, brevoEmailCredentials, tenant, customer] = await Promise.all([
         getCredentials(tenantId, "make_com"),
+        getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE),
         getTenantWithProfile(tenantId),
         getCustomer(payload.customerId)
       ]);
 
       const businessName = tenant?.profile?.businessName ?? "Your service provider";
+      const tenantSlug = tenant?.slug ?? "";
+      const agreementLink = buildFeedbackLink({
+        tenantSlug,
+        tenantId,
+        jobId: payload.agreementId
+      }).replace("/feedback/", "/sign/");
+
       await fireTenantMakeWebhook({
         tenantId,
         credentials: makeCredentials,
@@ -217,6 +225,71 @@ async function processJob(job: ClaimedJob) {
           }
         }
       });
+
+      if (customer?.email) {
+        const subject = `Quote accepted — ${payload.title} · ${businessName}`;
+        try {
+          const html = buildBrandedEmailHtml({
+            businessName,
+            logoUrl: tenant?.profile?.logoUrl,
+            primaryColour: tenant?.profile?.primaryColour,
+            bodyHtml: `
+              <p>Hi ${customer.firstName},</p>
+              <p>Thanks for accepting your quote from <strong>${businessName}</strong>.</p>
+              <p>Quote: <strong>${payload.title}</strong></p>
+              <p>Your service agreement is ready to review and sign.</p>
+              ${buildActionSection(
+                "🖊️ Review & Sign",
+                "Review the agreement and sign electronically to confirm.",
+                [
+                  { label: "Sign Agreement", href: agreementLink, variant: "success" },
+                  { label: "View Quote", href: `https://${tenantSlug}.${getCanonicalRootDomain()}/quote/${payload.quoteId}`, variant: "secondary" }
+                ]
+              )}
+            `,
+            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+          });
+
+          await sendEmail(brevoEmailCredentials, customer.email, subject, html);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject,
+            body: `Quote ${payload.title} accepted — agreement ready for signature.`,
+            status: "sent"
+          });
+          await logPlatformEvent({
+            tenantId,
+            eventType: "api_call",
+            service: EMAIL_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "success",
+            requestSummary: `Quote accepted email to ${customer.firstName} ${customer.lastName}`,
+            responseSummary: "Quote acceptance confirmation delivered",
+            triggeredBy: "worker_quote_accepted"
+          });
+        } catch (emailError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            channel: "email",
+            subject: `Quote accepted — ${payload.title}`,
+            body: `Quote ${payload.title} accepted.`,
+            status: "failed"
+          });
+          await logPlatformEvent({
+            tenantId,
+            eventType: "error",
+            service: EMAIL_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "failed",
+            requestSummary: "Quote accepted email failed",
+            errorMessage: emailError instanceof Error ? emailError.message : String(emailError),
+            triggeredBy: "worker_quote_accepted"
+          });
+        }
+      }
 
       if (customer?.phone) {
         const smsBody = `Hi ${customer.firstName}, thanks for accepting your quote from ${businessName}. Your service agreement will arrive shortly — please check your email.`;
@@ -300,6 +373,13 @@ async function processJob(job: ClaimedJob) {
       if (customer?.email) {
         const subject = `Agreement signed — ${businessName}`;
         try {
+          const tenantSlug = tenant?.slug ?? "";
+          const agreementLink = buildFeedbackLink({
+            tenantSlug,
+            tenantId,
+            jobId: payload.agreementId
+          }).replace("/feedback/", "/sign/");
+
           const html = buildBrandedEmailHtml({
             businessName,
             logoUrl: tenant?.profile?.logoUrl,
@@ -309,7 +389,14 @@ async function processJob(job: ClaimedJob) {
               <p>Your service agreement with <strong>${businessName}</strong> has been signed successfully.</p>
               <p>Agreement: <strong>${payload.title}</strong></p>
               <p>We'll be in touch shortly to confirm your booking details.</p>
-              <p>Thanks for choosing ${businessName}!</p>
+              ${buildActionSection(
+                "✅ Next Steps",
+                "Review your agreement or contact us with any questions.",
+                [
+                  { label: "View Agreement", href: agreementLink, variant: "primary" },
+                  { label: "Contact Support", href: `https://${tenantSlug}.${getCanonicalRootDomain()}/support`, variant: "secondary" }
+                ]
+              )}
             `,
             footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
           });
@@ -2044,9 +2131,17 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
       if (customer?.email) {
         const subject = `Final notice: invoice overdue — ${businessName}`;
         try {
-          const payButton = invoice?.paymentLink
-            ? `<p style="margin-top:24px;"><a href="${invoice.paymentLink}" style="background:#ef4444;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Pay ${amount} Now</a></p>`
-            : "";
+          const invoiceLink = buildInvoiceViewLink({
+            tenantSlug: tenant?.slug ?? "",
+            tenantId,
+            invoiceId: invoice?.id ?? payload.invoiceId
+          });
+          const paymentLink = invoice?.paymentLink ?? buildInvoicePaymentLink({
+            tenantSlug: tenant?.slug ?? "",
+            tenantId,
+            invoiceId: invoice?.id ?? payload.invoiceId
+          });
+
           const html = buildBrandedEmailHtml({
             businessName,
             logoUrl: tenant?.profile?.logoUrl,
@@ -2055,7 +2150,14 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
               <p>Hi ${customer.firstName},</p>
               <p>Your invoice <strong>${invoice?.number ?? payload.invoiceNumber}</strong>${amount ? ` for <strong>${amount}</strong>` : ""} from <strong>${businessName}</strong> is now <strong>14 days overdue</strong>.</p>
               <p>This is a final notice. Please arrange payment immediately or contact us to discuss a resolution.</p>
-              ${payButton}
+              ${buildActionSection(
+                "🚨 URGENT: Payment Required Now",
+                "Immediate action needed to avoid service suspension.",
+                [
+                  { label: "Pay Immediately", href: paymentLink, variant: "danger" },
+                  { label: "Contact Support", href: `https://${tenant?.slug}.${getCanonicalRootDomain()}/support`, variant: "secondary" }
+                ]
+              )}
             `,
             footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
           });
@@ -2072,13 +2174,30 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
       if (tenant?.profile?.email) {
         const operatorSubject = `⚠ Invoice ${invoice?.number ?? payload.invoiceNumber} is 14 days overdue`;
         try {
+          const tenantSlug = tenant?.slug ?? "";
+          const dashboardUrl = `https://${tenantSlug}.${getCanonicalRootDomain()}/dashboard`;
+          const invoiceLink = buildInvoiceViewLink({
+            tenantSlug,
+            tenantId,
+            invoiceId: invoice?.id ?? payload.invoiceId
+          });
+          const customerLink = customer ? `${dashboardUrl}/crm/customers/${customer.id}` : `${dashboardUrl}/crm`;
+
           const html = buildBrandedEmailHtml({
             businessName,
             logoUrl: tenant.profile.logoUrl,
             primaryColour: tenant.profile.primaryColour,
             bodyHtml: `
               <p>Invoice <strong>${invoice?.number ?? payload.invoiceNumber}</strong>${amount ? ` for <strong>${amount}</strong>` : ""} from customer <strong>${customer ? `${customer.firstName} ${customer.lastName}` : "Unknown"}</strong> is now <strong>14 days overdue</strong>.</p>
-              <p>A final notice has been sent to the customer. You may want to follow up directly.</p>
+              <p>A final notice has been sent to the customer. You may want to follow up directly to arrange payment or discuss the situation.</p>
+              ${buildActionSection(
+                "⚠️ Immediate Action Needed",
+                "Contact the customer directly to collect this payment.",
+                [
+                  { label: "View Invoice", href: invoiceLink, variant: "danger" },
+                  { label: "Contact Customer", href: customerLink, variant: "primary" }
+                ]
+              )}
             `,
             footerText: businessName
           });
