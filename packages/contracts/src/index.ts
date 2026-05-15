@@ -508,6 +508,7 @@ export const automationPreferenceKeySchema = z.enum([
   "enquiry_confirmation",
   "booking_confirmation",
   "day_before_reminder",
+  "job_completion",
   "invoice_reminders",
   "feedback_requests",
   "review_requests",
@@ -675,6 +676,14 @@ export const automationPreferenceDescriptors: AutomationPreferenceDescriptor[] =
     group: "built_in",
     defaultEnabled: true,
     channels: "SMS"
+  },
+  {
+    key: "job_completion",
+    title: "Send job completion notification",
+    description: "Notify the customer when their job is complete and invite them to leave feedback.",
+    group: "built_in",
+    defaultEnabled: true,
+    channels: "SMS + Email"
   },
   {
     key: "morning_digest",

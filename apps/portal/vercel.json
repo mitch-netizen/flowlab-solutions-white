@@ -2,5 +2,18 @@
   "installCommand": "cd ../.. && npm install",
   "buildCommand": "cd ../.. && npx prisma generate --schema=packages/db/prisma/schema.prisma && npm run build:portal",
   "framework": "nextjs",
-  "crons": []
+  "crons": [
+    {
+      "path": "/api/internal/automation/process",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/internal/automation/enqueue-recurring",
+      "schedule": "3 * * * *"
+    },
+    {
+      "path": "/api/internal/retention/run",
+      "schedule": "15 8 * * *"
+    }
+  ]
 }

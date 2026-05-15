@@ -158,6 +158,7 @@ const automationPreferenceKinds: Record<AutomationPreferenceKey, string[]> = {
   enquiry_confirmation: ["enquiry.received"],
   booking_confirmation: ["job.scheduled"],
   day_before_reminder: ["job.day_before_reminder"],
+  job_completion: ["job.complete"],
   invoice_reminders: ["billing.payment_reminder", "billing.payment_reminder_day3", "billing.payment_reminder_day7", "billing.payment_overdue_day14"],
   feedback_requests: ["retention.feedback_request"],
   review_requests: ["retention.review_request"],

@@ -1443,6 +1443,34 @@ export function getStripeClient(secretKey: string) {
 // Outbound communication helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Build a CTA button for email templates
+ */
+export function buildEmailButton(label: string, href: string, variant: "primary" | "success" | "danger" | "secondary" = "primary") {
+  const colors = {
+    primary: "#3b82f6",
+    success: "#10b981",
+    danger: "#ef4444",
+    secondary: "#6b7280"
+  };
+  const bgColor = colors[variant];
+  return `<a href="${href}" style="display:inline-block;background:${bgColor};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;margin:8px 0;">${label}</a>`;
+}
+
+/**
+ * Build an action section with heading and button(s)
+ */
+export function buildActionSection(title: string, description: string, buttons: Array<{ label: string; href: string; variant?: "primary" | "success" | "danger" | "secondary" }>) {
+  const buttonHtml = buttons.map(btn => buildEmailButton(btn.label, btn.href, btn.variant ?? "primary")).join("");
+  return `
+    <div style="background:#f0fdf4;border-left:4px solid #10b981;padding:15px;margin:20px 0;border-radius:4px;">
+      <h4 style="color:#166534;margin-bottom:10px;font-size:14px;margin-top:0;">${title}</h4>
+      <p style="color:#15803d;font-size:13px;margin-bottom:10px;margin-top:0;">${description}</p>
+      ${buttonHtml}
+    </div>
+  `;
+}
+
 export function buildBrandedEmailHtml(input: {
   businessName: string;
   logoUrl?: string | null;

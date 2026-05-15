@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowLab Enhanced Email Templates with CTAs</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: #f8fafc; padding: 40px 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #0f172a; margin-bottom: 10px; }
+        .subtitle { color: #64748b; margin-bottom: 30px; font-size: 16px; }
+        .section-header { background: #f1f5f9; padding: 20px; margin-top: 40px; margin-bottom: 20px; border-left: 4px solid #3b82f6; border-radius: 4px; }
+        .section-header h2 { color: #0f172a; font-size: 18px; margin-bottom: 5px; }
+        .section-header p { color: #64748b; font-size: 14px; }
+        .template-card { background: #ffffff; border-radius: 8px; margin-bottom: 30px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+        .template-header { background: #f1f5f9; padding: 20px; border-bottom: 1px solid #e2e8f0; }
+        .template-title { font-size: 16px; font-weight: 600; color: #0f172a; margin-bottom: 8px; }
+        .template-meta { display: flex; gap: 15px; flex-wrap: wrap; font-size: 12px; }
+        .meta-badge { display: inline-block; background: #dbeafe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+        .email-preview { background: #f8fafc; padding: 24px; border-radius: 4px; }
+        .email-content { width: 100%; max-width: 580px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+        .email-header { padding: 24px 32px; text-align: center; color: #ffffff; font-weight: 700; font-size: 20px; }
+        .email-body { padding: 32px; color: #0f172a; line-height: 1.7; font-size: 15px; }
+        .email-body p { margin-bottom: 16px; }
+        .email-body strong { font-weight: 600; }
+        .email-footer { padding: 16px 32px 24px; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0; }
+        .btn { display: inline-block; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; margin: 8px 0; }
+        .btn-primary { background: #3b82f6; color: #ffffff; }
+        .btn-success { background: #10b981; color: #ffffff; }
+        .btn-danger { background: #ef4444; color: #ffffff; }
+        .btn-secondary { background: #6b7280; color: #ffffff; }
+        .btn-group { margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+        .action-section { background: #f0fdf4; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .action-section h4 { color: #166534; margin-bottom: 10px; font-size: 14px; }
+        .action-section p { color: #15803d; font-size: 13px; margin-bottom: 10px; }
+        .integration-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 500; margin-right: 8px; margin-bottom: 8px; }
+        .xero-badge { background: #fef3c7; color: #92400e; }
+        .supabase-badge { background: #dbeafe; color: #0369a1; }
+        .note { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-top: 15px; border-radius: 4px; font-size: 13px; color: #78350f; }
+        .table-responsive { overflow-x: auto; margin: 20px 0; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Courier New', monospace; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f1f5f9; padding: 12px; text-align: left; font-weight: 600; color: #0f172a; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+        @media (max-width: 768px) {
+            .email-content { width: 100%; }
+            .email-body { padding: 20px; }
+            .btn { display: block; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✉️ FlowLab Email Templates with Action Buttons & CTA Links</h1>
+        <p class="subtitle">Enhanced templates with portal links, payment CTAs, and integration notifications</p>
+
+        <!-- CUSTOMER NOTIFICATIONS -->
+        <div class="section-header">
+            <h2>👥 Customer Notifications</h2>
+            <p>Templates with action buttons linking to public portal pages and payment flows</p>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">💼 Booking Confirmation (with portal link)</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                    <div class="email-body">
+                        <p>Hi John,</p>
+                        <p>Your job with <strong>Plumbing Co</strong> has been scheduled.</p>
+                        <p><strong>When:</strong> Saturday, 18 May 2026, 10:00 AM</p>
+                        <p><strong>Work:</strong> Blocked kitchen sink clearing</p>
+                        <div class="action-section">
+                            <h4>✓ What's next?</h4>
+                            <p>View your booking details, track job status, and receive real-time updates in your customer portal.</p>
+                            <a href="https://plumbing-co.flowlabsolutions.au/jobs/job_abc123" class="btn btn-primary">View Booking Details</a>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        Plumbing Co | (02) 9876 5432 | hello@plumbing.com.au
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">✅ Job Complete (with feedback & review link)</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                    <div class="email-body">
+                        <p>Hi John,</p>
+                        <p>We're pleased to let you know that your job with <strong>Plumbing Co</strong> is now complete.</p>
+                        <p><strong>Work completed:</strong> Blocked kitchen sink clearing</p>
+                        <p>If you have any questions or concerns, please don't hesitate to reach out.</p>
+                        <div class="action-section">
+                            <h4>⭐ Share Your Feedback</h4>
+                            <p>Your feedback helps us improve. Rate your experience and earn a $10 discount on your next service.</p>
+                            <a href="https://flowlab.app/feedback/job_abc123?token=xyz" class="btn btn-success">Leave Feedback (2 min)</a>
+                        </div>
+                        <div class="action-section">
+                            <h4>📱 View Job Details</h4>
+                            <a href="https://plumbing-co.flowlabsolutions.au/jobs/job_abc123" class="btn btn-secondary">View in Portal</a>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        Plumbing Co | (02) 9876 5432 | hello@plumbing.com.au
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">💳 Invoice Payment (with payment link)</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                    <div class="email-body">
+                        <p>Hi John,</p>
+                        <p>Your invoice <strong>INV-2024-001</strong> for <strong>$250.00</strong> is now ready.</p>
+                        <p><strong>Due:</strong> 30 days from invoice date</p>
+                        <p><strong>Services:</strong> Blocked kitchen sink clearing</p>
+                        <div class="action-section">
+                            <h4>💰 Pay Now</h4>
+                            <p>Secure online payment — credit card or bank transfer</p>
+                            <a href="https://flowlab.app/invoice/inv_abc123/pay?token=xyz" class="btn btn-success">Pay $250.00 Now</a>
+                        </div>
+                        <div class="action-section">
+                            <h4>📄 View Invoice Details</h4>
+                            <a href="https://flowlab.app/invoice/inv_abc123?token=xyz" class="btn btn-secondary">Download PDF</a>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        Plumbing Co | (02) 9876 5432 | hello@plumbing.com.au
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPERATOR NOTIFICATIONS -->
+        <div class="section-header">
+            <h2>👔 Operator Notifications</h2>
+            <p>Internal alerts with direct links to dashboard actions</p>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">📋 New Enquiry (with quick quote action)</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                    <div class="email-body">
+                        <p>A new enquiry just landed in FlowLab.</p>
+                        <p><strong>Customer:</strong> John Smith</p>
+                        <p><strong>Phone:</strong> 0412 345 678</p>
+                        <p><strong>Request:</strong> Blocked kitchen sink needs clearing</p>
+                        <p><strong>Received:</strong> 2 minutes ago</p>
+                        <div class="action-section">
+                            <h4>⚡ Next Steps</h4>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/crm/customers/cust_abc123" class="btn btn-primary">View Customer</a>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/quotes/new?enquiry=enq_abc123" class="btn btn-success">Create Quote</a>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        Plumbing Co
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">📊 Morning Digest (with action shortcuts)</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                    <div class="email-body">
+                        <p>Good morning. Here's your daily brief for <strong>Plumbing Co</strong>.</p>
+                        <h3 style="margin-top:24px">Tomorrow's run sheet (3 jobs)</h3>
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>Time</th><th>Customer</th><th>Suburb</th><th>Job</th><th>Action</th></tr></thead>
+                                <tbody>
+                                    <tr><td>10:00</td><td>John Smith</td><td>Strathfield</td><td>Sink clearing</td><td><a href="https://[tenant-slug].flowlabsolutions.au/dashboard/jobs/job_1">View</a></td></tr>
+                                    <tr><td>2:30 PM</td><td>Sarah Lee</td><td>Parramatta</td><td>Tap repair</td><td><a href="https://[tenant-slug].flowlabsolutions.au/dashboard/jobs/job_2">View</a></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <h3 style="margin-top:24px">Overdue invoices (2) — Total: $430</h3>
+                        <div class="action-section">
+                            <h4>💰 Payment Tracking</h4>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/invoices?filter=overdue" class="btn btn-primary">View All Overdue</a>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/invoices/inv_001?action=send-reminder" class="btn btn-secondary">Send Reminders</a>
+                        </div>
+                        <div class="action-section">
+                            <h4>📍 Routing & Scheduling</h4>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/scheduler" class="btn btn-primary">Open Scheduler</a>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        Plumbing Co · Daily brief
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">⚠️ Automation Failure (with diagnostic & retry)</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #ef4444;">FlowLab</div>
+                    <div class="email-body">
+                        <p>An automation job has failed after 5 retry attempts and been moved to dead letter status.</p>
+                        <p><strong>Automation Type:</strong> job.complete</p>
+                        <p><strong>Job ID:</strong> job_12345</p>
+                        <p><strong>Customer:</strong> John Smith</p>
+                        <p><strong>Error:</strong> Brevo API rate limit exceeded (HTTP 429)</p>
+                        <div class="action-section">
+                            <h4>🔧 Troubleshooting</h4>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/system-health/logs?job=job_12345" class="btn btn-primary">View Error Logs</a>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/integrations/brevo" class="btn btn-secondary">Check Brevo Config</a>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/automations" class="btn btn-success">Retry Job</a>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        FlowLab Solutions
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- XERO INTEGRATION NOTIFICATIONS -->
+        <div class="section-header">
+            <h2>🧾 Xero Integration Notifications</h2>
+            <p><span class="integration-badge xero-badge">XERO MCP</span> Automated invoicing and reconciliation alerts</p>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">✅ Invoice Synced to Xero</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                    <div class="email-body">
+                        <p>Invoice synced to Xero successfully.</p>
+                        <p><strong>Invoice:</strong> INV-2024-001</p>
+                        <p><strong>Xero Ref:</strong> <code>INV-2024-001</code></p>
+                        <p><strong>Amount:</strong> $250.00</p>
+                        <p><strong>Customer:</strong> John Smith</p>
+                        <p><strong>Status:</strong> DRAFT (awaiting approval)</p>
+                        <div class="action-section">
+                            <h4>🔗 Actions</h4>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/invoices/inv_abc123" class="btn btn-primary">View in FlowLab</a>
+                            <a href="https://go.xero.com/invoice/INV-2024-001" class="btn btn-secondary">View in Xero</a>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/invoices/inv_abc123?action=send-xero" class="btn btn-success">Send to Customer</a>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        Plumbing Co · Powered by Xero
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">💰 Payment Received (from Xero)</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #10b981;">Plumbing Co</div>
+                    <div class="email-body">
+                        <p>Payment received! Invoice marked as paid in Xero.</p>
+                        <p><strong>Invoice:</strong> INV-2024-001</p>
+                        <p><strong>Customer:</strong> John Smith</p>
+                        <p><strong>Amount:</strong> $250.00</p>
+                        <p><strong>Payment Date:</strong> 15 May 2026</p>
+                        <p><strong>Payment Method:</strong> Online Transfer</p>
+                        <div class="action-section">
+                            <h4>✓ Updated Status</h4>
+                            <p>Invoice status: <strong>PAID</strong> ✓</p>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/invoices/inv_abc123" class="btn btn-secondary">View Details</a>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        Plumbing Co · Synced with Xero
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">⚠️ Sync Error (Xero API failed)</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #ef4444;">FlowLab</div>
+                    <div class="email-body">
+                        <p>Invoice failed to sync to Xero. Manual action required.</p>
+                        <p><strong>Invoice:</strong> INV-2024-005</p>
+                        <p><strong>Xero Error:</strong> "Invalid contact reference"</p>
+                        <p><strong>Status:</strong> Stuck in pending (not yet in Xero)</p>
+                        <div class="action-section">
+                            <h4>🔧 Fix Required</h4>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/integrations/xero" class="btn btn-primary">Check Xero Connection</a>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/crm/customers?search=name" class="btn btn-secondary">Verify Customer in Xero</a>
+                            <a href="https://[tenant-slug].flowlabsolutions.au/dashboard/invoices/inv_abc123?action=retry-sync" class="btn btn-success">Retry Sync</a>
+                        </div>
+                        <div class="note">
+                            <strong>💡 Tip:</strong> Ensure the customer exists in Xero with the same ABN/ACN before retrying.
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        FlowLab Solutions
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUPABASE AUTH NOTIFICATIONS -->
+        <div class="section-header">
+            <h2>🔐 Supabase Authentication Emails</h2>
+            <p><span class="integration-badge supabase-badge">SUPABASE MCP</span> Account management via Supabase Auth</p>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">✉️ Signup Confirmation (Supabase managed)</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #3b82f6;">FlowLab</div>
+                    <div class="email-body">
+                        <p>Welcome to FlowLab! Confirm your email to get started.</p>
+                        <p><strong>Account:</strong> john@example.com</p>
+                        <p><strong>Business:</strong> Plumbing Co</p>
+                        <div class="action-section">
+                            <h4>✓ Verify Your Email</h4>
+                            <p>Click the button below to confirm your email and activate your account.</p>
+                            <a href="https://flowlab.app/auth/callback?token_hash=xyz&type=email_change" class="btn btn-success">Verify Email Address</a>
+                            <p style="font-size: 12px; color: #666; margin-top: 10px;">Link expires in 24 hours</p>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        FlowLab Solutions
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">🔑 Password Reset (Supabase managed)</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #3b82f6;">FlowLab</div>
+                    <div class="email-body">
+                        <p>Reset your password to regain access to your FlowLab account.</p>
+                        <p><strong>Account:</strong> john@example.com</p>
+                        <p><strong>Requested:</strong> 15 May 2026, 2:45 PM</p>
+                        <div class="action-section">
+                            <h4>🔐 Reset Password</h4>
+                            <p>Click below to create a new password for your account.</p>
+                            <a href="https://plumbing-co.flowlabsolutions.au/reset-password?token=xyz" class="btn btn-primary">Set New Password</a>
+                            <p style="font-size: 12px; color: #666; margin-top: 10px;">Link expires in 1 hour. Didn't request this? Ignore this email.</p>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        FlowLab Solutions
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">👤 Email Change Confirmation (Supabase)</div>
+            </div>
+            <div class="email-preview">
+                <div class="email-content">
+                    <div class="email-header" style="background: #3b82f6;">FlowLab</div>
+                    <div class="email-body">
+                        <p>Confirm your new email address to complete the email change.</p>
+                        <p><strong>Current Email:</strong> john@example.com</p>
+                        <p><strong>New Email:</strong> john.smith@example.com</p>
+                        <div class="action-section">
+                            <h4>✓ Verify New Email</h4>
+                            <p>Click below to confirm the new email address.</p>
+                            <a href="https://flowlab.app/auth/callback?token_hash=xyz&type=email_change" class="btn btn-success">Confirm Email Change</a>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        FlowLab Solutions
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INTEGRATION SUMMARY -->
+        <div class="section-header">
+            <h2>📡 Integration & CTA Summary</h2>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">Link Types & Portal Routes</div>
+            </div>
+            <div style="padding: 20px;">
+                <h3 style="margin-bottom: 15px; color: #0f172a;">Customer Public Links (unauthenticated)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>URL Pattern</th>
+                            <th>Authentication</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>View booking</td>
+                            <td><code>flowlab.app/jobs/[token]</code></td>
+                            <td>Public token in URL</td>
+                        </tr>
+                        <tr>
+                            <td>Pay invoice</td>
+                            <td><code>flowlab.app/invoice/[token]/pay</code></td>
+                            <td>Public token in URL</td>
+                        </tr>
+                        <tr>
+                            <td>Leave feedback</td>
+                            <td><code>flowlab.app/feedback/[token]</code></td>
+                            <td>Public token in URL</td>
+                        </tr>
+                        <tr>
+                            <td>Accept quote</td>
+                            <td><code>flowlab.app/quote/[token]/accept</code></td>
+                            <td>Public token in URL</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #0f172a;">Operator Dashboard Links (authenticated)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>URL Pattern</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>View job</td>
+                            <td><code>[tenant].flowlabsolutions.au/dashboard/jobs/[id]</code></td>
+                            <td>Full job details, status updates</td>
+                        </tr>
+                        <tr>
+                            <td>View invoice</td>
+                            <td><code>[tenant].flowlabsolutions.au/dashboard/invoices/[id]</code></td>
+                            <td>Payment status, sync history</td>
+                        </tr>
+                        <tr>
+                            <td>View customer</td>
+                            <td><code>[tenant].flowlabsolutions.au/dashboard/crm/customers/[id]</code></td>
+                            <td>Contact info, job history</td>
+                        </tr>
+                        <tr>
+                            <td>Morning digest</td>
+                            <td><code>[tenant].flowlabsolutions.au/dashboard</code></td>
+                            <td>Main dashboard overview</td>
+                        </tr>
+                        <tr>
+                            <td>Automation health</td>
+                            <td><code>[tenant].flowlabsolutions.au/dashboard/system-health</code></td>
+                            <td>Error logs, dead letters</td>
+                        </tr>
+                        <tr>
+                            <td>Xero integration</td>
+                            <td><code>[tenant].flowlabsolutions.au/dashboard/integrations/xero</code></td>
+                            <td>Config, sync status, auth</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="note" style="margin-top: 20px;">
+                    <strong>🔗 Dynamic URLs:</strong> Replace <code>[tenant]</code> with tenant slug (e.g., <code>plumbing-co</code>) and <code>[id]</code>/<code>[token]</code> with actual IDs/tokens from database.
+                </div>
+            </div>
+        </div>
+
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">Integration Checklist</div>
+            </div>
+            <div style="padding: 20px;">
+                <h3 style="margin-bottom: 15px; color: #0f172a;">✅ Customer Notifications</h3>
+                <ul style="margin-left: 20px; color: #475569; line-height: 1.8;">
+                    <li>✓ Booking confirmation → View portal link</li>
+                    <li>✓ Job complete → Feedback form link + public portal</li>
+                    <li>✓ Invoice issued → Payment link (Stripe/gateway)</li>
+                    <li>✓ Payment reminder → Payment link</li>
+                </ul>
+
+                <h3 style="margin-top: 20px; margin-bottom: 15px; color: #0f172a;">✅ Operator Notifications</h3>
+                <ul style="margin-left: 20px; color: #475569; line-height: 1.8;">
+                    <li>✓ New enquiry → View in CRM + Quick quote action</li>
+                    <li>✓ Morning digest → Scheduler link, invoice dashboard</li>
+                    <li>✓ Automation failure → Logs, config, retry button</li>
+                    <li>✓ Payment received → Dashboard invoice view</li>
+                </ul>
+
+                <h3 style="margin-top: 20px; margin-bottom: 15px; color: #0f172a;">✅ Xero Integration (MCP)</h3>
+                <ul style="margin-left: 20px; color: #475569; line-height: 1.8;">
+                    <li>✓ Invoice synced → View in Xero + FlowLab</li>
+                    <li>✓ Payment received → Auto-mark paid (webhook)</li>
+                    <li>✓ Sync error → Debug links, retry action</li>
+                    <li>✓ Daily sync report → Sync status dashboard</li>
+                </ul>
+
+                <h3 style="margin-top: 20px; margin-bottom: 15px; color: #0f172a;">✅ Supabase Auth (MCP)</h3>
+                <ul style="margin-left: 20px; color: #475569; line-height: 1.8;">
+                    <li>✓ Email verification → Supabase managed</li>
+                    <li>✓ Password reset → Tenant-specific redirect</li>
+                    <li>✓ Email change → Supabase managed</li>
+                    <li>✓ Session management → Supabase dashboard</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

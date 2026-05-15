@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowLab Email Templates Review</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: #f8fafc; padding: 40px 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #0f172a; margin-bottom: 10px; }
+        .subtitle { color: #64748b; margin-bottom: 30px; font-size: 16px; }
+        .toc { background: #ffffff; border-radius: 8px; padding: 20px; margin-bottom: 30px; border-left: 4px solid #3b82f6; }
+        .toc h2 { font-size: 14px; color: #64748b; margin-bottom: 15px; }
+        .toc-list { list-style: none; }
+        .toc-list li { margin: 8px 0; }
+        .toc-list a { color: #3b82f6; text-decoration: none; font-size: 14px; }
+        .toc-list a:hover { text-decoration: underline; }
+        .template-card { background: #ffffff; border-radius: 8px; margin-bottom: 30px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+        .template-header { background: #f1f5f9; padding: 20px; border-bottom: 1px solid #e2e8f0; }
+        .template-title { font-size: 18px; font-weight: 600; color: #0f172a; margin-bottom: 8px; }
+        .template-meta { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; }
+        .meta-item { display: flex; align-items: center; gap: 6px; color: #64748b; }
+        .meta-label { font-weight: 500; color: #475569; }
+        .meta-badge { display: inline-block; background: #dbeafe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+        .template-preview { padding: 20px; }
+        .email-frame { width: 100%; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; }
+        .email-preview { background: #f8fafc; padding: 32px 0; }
+        .email-content { width: 580px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+        .email-header { padding: 24px 32px; text-align: center; color: #ffffff; font-weight: 700; font-size: 20px; }
+        .email-body { padding: 32px; color: #0f172a; line-height: 1.7; font-size: 15px; }
+        .email-body p { margin-bottom: 16px; }
+        .email-body strong { font-weight: 600; }
+        .email-footer { padding: 16px 32px 24px; color: #64748b; font-size: 13px; border-top: 1px solid #e2e8f0; }
+        .sms-preview { background: #f8fafc; padding: 20px; border-radius: 4px; }
+        .sms-bubble { background: #e0e7ff; color: #3730a3; padding: 12px 16px; border-radius: 12px; margin-bottom: 10px; max-width: 80%; line-height: 1.5; }
+        .template-type { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 500; margin-right: 8px; }
+        .type-email { background: #dcfce7; color: #166534; }
+        .type-sms { background: #fef08a; color: #78350f; }
+        .type-webhook { background: #f3e8ff; color: #6b21a8; }
+        .code-section { background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 4px; font-family: 'Monaco', 'Courier New', monospace; font-size: 12px; overflow-x: auto; margin-top: 15px; }
+        .note { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin-top: 15px; border-radius: 4px; font-size: 13px; color: #78350f; }
+        .note strong { color: #d97706; }
+        @media (max-width: 768px) {
+            .email-content { width: 100%; }
+            .template-meta { flex-direction: column; }
+            .sms-bubble { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📧 FlowLab Email & SMS Templates Review</h1>
+        <p class="subtitle">Complete audit of all customer-facing and operator notifications</p>
+
+        <div class="toc">
+            <h2>📋 TEMPLATE INDEX</h2>
+            <ul class="toc-list">
+                <li style="font-weight: 600; color: #0f172a; margin-bottom: 10px;">Customer Notifications</li>
+                <li style="padding-left: 20px;"><a href="#enquiry-received">Enquiry Received (Customer)</a></li>
+                <li style="padding-left: 20px;"><a href="#job-scheduled">Job Scheduled (Booking Confirmation)</a></li>
+                <li style="padding-left: 20px;"><a href="#job-on-way">Job On My Way (SMS)</a></li>
+                <li style="padding-left: 20px;"><a href="#job-complete">Job Complete (Customer)</a></li>
+                <li style="padding-left: 20px;"><a href="#day-before">Day Before Reminder</a></li>
+
+                <li style="font-weight: 600; color: #0f172a; margin-top: 15px; margin-bottom: 10px;">Billing & Payment</li>
+                <li style="padding-left: 20px;"><a href="#payment-day3">Payment Reminder (Day 3)</a></li>
+                <li style="padding-left: 20px;"><a href="#payment-day7">Payment Reminder (Day 7)</a></li>
+                <li style="padding-left: 20px;"><a href="#payment-day14">Payment Overdue (Day 14 - Final Notice)</a></li>
+
+                <li style="font-weight: 600; color: #0f172a; margin-top: 15px; margin-bottom: 10px;">Operator Alerts</li>
+                <li style="padding-left: 20px;"><a href="#enquiry-operator">Enquiry Received (Operator)</a></li>
+                <li style="padding-left: 20px;"><a href="#morning-digest">Morning Digest (Daily Brief)</a></li>
+                <li style="padding-left: 20px;"><a href="#automation-failure">Automation Failure Alert</a></li>
+
+                <li style="font-weight: 600; color: #0f172a; margin-top: 15px; margin-bottom: 10px;">Account & Billing</li>
+                <li style="padding-left: 20px;"><a href="#trial-expired">Trial Expired (Upgrade Prompt)</a></li>
+                <li style="padding-left: 20px;"><a href="#supabase-templates">Supabase Auth Emails (Signup, Password Reset)</a></li>
+            </ul>
+        </div>
+
+        <!-- Template 1: Enquiry Received - Customer -->
+        <div class="template-card" id="enquiry-received">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-email">EMAIL</span>
+                    <span class="template-type type-sms">SMS</span>
+                    Enquiry Received — Customer Confirmation
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> New enquiry submitted</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Customer (email + SMS)</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">Email</span> <span class="meta-badge">SMS</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">Email Preview:</h3>
+                    <div class="email-preview">
+                        <div class="email-content">
+                            <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                            <div class="email-body">
+                                <p>Hi John,</p>
+                                <p>Thanks for reaching out to <strong>Plumbing Co</strong>. We've received your enquiry and will review it shortly.</p>
+                                <p><strong>Your request:</strong> Blocked kitchen sink needs clearing</p>
+                                <p>We'll be back in touch with next steps as soon as we can.</p>
+                            </div>
+                            <div class="email-footer">
+                                Plumbing Co | (02) 9876 5432 | hello@plumbing.com.au
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">SMS Preview:</h3>
+                    <div class="sms-preview">
+                        <div class="sms-bubble">Hi John, thanks for your enquiry with Plumbing Co. We've received it and will get back to you soon.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template 2: Enquiry Received - Operator -->
+        <div class="template-card" id="enquiry-operator">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-email">EMAIL</span>
+                    Enquiry Received — Operator Alert
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> New enquiry submitted</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Business owner/operator</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">Email</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div class="email-preview">
+                    <div class="email-content">
+                        <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                        <div class="email-body">
+                            <p>A new enquiry just landed in FlowLab.</p>
+                            <p><strong>Customer:</strong> John Smith</p>
+                            <p><strong>Request:</strong> Blocked kitchen sink needs clearing</p>
+                            <p>Open the CRM to convert it into a quote.</p>
+                        </div>
+                        <div class="email-footer">
+                            Plumbing Co
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template 3: Job Scheduled -->
+        <div class="template-card" id="job-scheduled">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-email">EMAIL</span>
+                    <span class="template-type type-sms">SMS</span>
+                    Job Scheduled — Booking Confirmation
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> Job scheduled in system</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Customer (email + SMS)</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">Email</span> <span class="meta-badge">SMS</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">Email Preview:</h3>
+                    <div class="email-preview">
+                        <div class="email-content">
+                            <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                            <div class="email-body">
+                                <p>Hi John,</p>
+                                <p>Your job with <strong>Plumbing Co</strong> has been scheduled.</p>
+                                <p><strong>When:</strong> Saturday, 18 May 2026, 10:00 AM</p>
+                                <p><strong>Work:</strong> Blocked kitchen sink clearing</p>
+                            </div>
+                            <div class="email-footer">
+                                Plumbing Co | (02) 9876 5432 | hello@plumbing.com.au
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">SMS Preview:</h3>
+                    <div class="sms-preview">
+                        <div class="sms-bubble">Hi John, your job with Plumbing Co is booked for Saturday, 18 May 2026, 10:00 AM.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template 4: On My Way -->
+        <div class="template-card" id="job-on-way">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-sms">SMS</span>
+                    On My Way — ETA Notification
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> Operator marks job "on my way"</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Customer (SMS only)</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">SMS</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div class="sms-preview">
+                    <div class="sms-bubble">Hi John, Plumbing Co is on the way to you now. We'll see you shortly!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template 5: Job Complete -->
+        <div class="template-card" id="job-complete">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-email">EMAIL</span>
+                    <span class="template-type type-sms">SMS</span>
+                    Job Complete — Completion & Feedback
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> Job marked complete in system</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Customer (email + SMS)</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">Email</span> <span class="meta-badge">SMS</span></div>
+                    <div class="meta-item"><span class="meta-label">NEW:</span> <span style="color: #dc2626; font-weight: 500;">Added in this fix</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">Email Preview:</h3>
+                    <div class="email-preview">
+                        <div class="email-content">
+                            <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                            <div class="email-body">
+                                <p>Hi John,</p>
+                                <p>We're pleased to let you know that your job with <strong>Plumbing Co</strong> is now complete.</p>
+                                <p><strong>Work completed:</strong> Blocked kitchen sink clearing</p>
+                                <p>If you have any questions or concerns, please don't hesitate to reach out.</p>
+                                <p>Thank you for choosing Plumbing Co!</p>
+                            </div>
+                            <div class="email-footer">
+                                Plumbing Co | (02) 9876 5432 | hello@plumbing.com.au
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">SMS Preview (with feedback link):</h3>
+                    <div class="sms-preview">
+                        <div class="sms-bubble">Hi John, your job with Plumbing Co is complete. How did we do? https://flowlab.app/feedback/...</div>
+                    </div>
+                </div>
+                <div class="note">
+                    <strong>✓ Includes feedback link</strong> — SMS contains personalized feedback URL so customers can rate the job directly from their phone.
+                </div>
+            </div>
+        </div>
+
+        <!-- Template 6: Day Before Reminder -->
+        <div class="template-card" id="day-before">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-email">EMAIL</span>
+                    <span class="template-type type-sms">SMS</span>
+                    Day Before Reminder — Schedule Confirmation
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> Automated 24 hours before scheduled job</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Customer (email + SMS)</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">Email</span> <span class="meta-badge">SMS</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">Email Preview:</h3>
+                    <div class="email-preview">
+                        <div class="email-content">
+                            <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                            <div class="email-body">
+                                <p>Hi John,</p>
+                                <p>Just a friendly reminder that your job with <strong>Plumbing Co</strong> is coming up.</p>
+                                <p><strong>When:</strong> Saturday, 18 May 2026 at 10:00 AM</p>
+                                <p><strong>Work:</strong> Blocked kitchen sink clearing</p>
+                                <p><strong>Location:</strong> Strathfield NSW</p>
+                                <p>If you need to reschedule, please contact us as soon as possible.</p>
+                            </div>
+                            <div class="email-footer">
+                                Plumbing Co | (02) 9876 5432 | hello@plumbing.com.au
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">SMS Preview:</h3>
+                    <div class="sms-preview">
+                        <div class="sms-bubble">Hi John, just a reminder that your blocked kitchen sink clearing job with Plumbing Co is booked for Saturday, 18 May 2026, 10:00 AM. See you then!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template 7: Payment Reminder Day 3 -->
+        <div class="template-card" id="payment-day3">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-sms">SMS</span>
+                    Payment Reminder — Day 3 Overdue
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> Invoice 3 days overdue</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Customer (SMS)</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">SMS</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div class="sms-preview">
+                    <div class="sms-bubble">Hi John, a reminder that invoice INV-2024-001 for $250.00 from Plumbing Co is overdue. Pay now: https://payment-link...</div>
+                </div>
+                <div class="note">
+                    <strong>ℹ️ Includes payment link</strong> — When available, the SMS includes a direct payment link for quick settlement.
+                </div>
+            </div>
+        </div>
+
+        <!-- Template 8: Payment Reminder Day 7 -->
+        <div class="template-card" id="payment-day7">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-email">EMAIL</span>
+                    <span class="template-type type-sms">SMS</span>
+                    <span class="template-type type-webhook">WEBHOOK</span>
+                    Payment Reminder — Day 7 Overdue
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> Invoice 7 days overdue</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Customer + Make.com webhook</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">SMS</span> <span class="meta-badge">Email</span> <span class="meta-badge">Webhook</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">SMS Preview:</h3>
+                    <div class="sms-preview">
+                        <div class="sms-bubble">Hi John, a reminder that invoice INV-2024-001 for $250.00 from Plumbing Co is 7 days overdue. Pay now: https://payment-link...</div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">Make.com Webhook:</h3>
+                    <div class="code-section">
+{
+  "event_key": "paymentReminderDay7",
+  "invoice_id": "inv_12345",
+  "invoice_number": "INV-2024-001",
+  "amount": 250.00,
+  "days_overdue": 7,
+  "customer_name": "John Smith",
+  "customer_email": "john@example.com",
+  "payment_link": "https://..."
+}
+                    </div>
+                </div>
+                <div class="note">
+                    <strong>⚙️ Advanced Integration</strong> — Day 7 also sends a webhook to Make.com for custom integrations (Slack alerts, Airtable logs, etc.).
+                </div>
+            </div>
+        </div>
+
+        <!-- Template 8: Payment Overdue Day 14 -->
+        <div class="template-card" id="payment-day14">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-email">EMAIL</span>
+                    <span class="template-type type-sms">SMS</span>
+                    <span class="template-type type-webhook">WEBHOOK</span>
+                    Payment Overdue — Day 14 Final Notice
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> Invoice 14 days overdue</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Customer + Operator + Make.com</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">SMS</span> <span class="meta-badge">Email</span> <span class="meta-badge">Webhook</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">Customer Email Preview (Final Notice):</h3>
+                    <div class="email-preview">
+                        <div class="email-content">
+                            <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                            <div class="email-body">
+                                <p>Hi John,</p>
+                                <p>Your invoice <strong>INV-2024-001</strong> for <strong>$250.00</strong> from <strong>Plumbing Co</strong> is now <strong>14 days overdue</strong>.</p>
+                                <p>This is a final notice. Please arrange payment immediately or contact us to discuss a resolution.</p>
+                                <p style="margin-top:24px;"><a href="https://payment-link" style="background:#ef4444;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Pay $250.00 Now</a></p>
+                            </div>
+                            <div class="email-footer">
+                                Plumbing Co | (02) 9876 5432 | hello@plumbing.com.au
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">Customer SMS Preview:</h3>
+                    <div class="sms-preview">
+                        <div class="sms-bubble">Hi John, invoice INV-2024-001 for $250.00 from Plumbing Co is now 14 days overdue. Please contact us urgently to arrange payment. Pay now: https://payment-link</div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">Operator Alert Email:</h3>
+                    <div class="email-preview">
+                        <div class="email-content">
+                            <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                            <div class="email-body">
+                                <p>Invoice <strong>INV-2024-001</strong> for <strong>$250.00</strong> from customer <strong>John Smith</strong> is now <strong>14 days overdue</strong>.</p>
+                                <p>A final notice has been sent to the customer. You may want to follow up directly.</p>
+                            </div>
+                            <div class="email-footer">
+                                Plumbing Co
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="note">
+                    <strong>⚠️ Escalation Protocol:</strong> Day 14 sends final notice to customer, alerts operator, and triggers Make.com webhook for CRM updates or Slack alerts.
+                </div>
+            </div>
+        </div>
+
+        <!-- Template: Morning Digest -->
+        <div class="template-card" id="morning-digest">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-email">EMAIL</span>
+                    <span class="template-type type-sms">SMS</span>
+                    <span class="template-type type-webhook">WEBHOOK</span>
+                    Operator Morning Digest — Daily Brief
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> Daily at 6:00 AM (scheduled cron)</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Business owner/operator</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">Email</span> <span class="meta-badge">SMS</span> <span class="meta-badge">Webhook</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">SMS Brief (Concise):</h3>
+                    <div class="sms-preview">
+                        <div class="sms-bubble">Good morning — here's your Plumbing Co brief. Tomorrow: 3 jobs. • John Smith (Strathfield) @ 10:00 AM • Sarah Lee (Parramatta) @ 2:30 PM • Mike Jones (Manly) @ 9:00 AM Overdue invoices: 2. New enquiries waiting: 1. ⚠ 1 automation failure in last 24h.</div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 10px; color: #0f172a;">Email Brief (Detailed with tables):</h3>
+                    <div class="email-preview">
+                        <div class="email-content">
+                            <div class="email-header" style="background: #3b82f6;">Plumbing Co</div>
+                            <div class="email-body">
+                                <p>Good morning. Here's your daily brief for <strong>Plumbing Co</strong>.</p>
+                                <p style="color:#fca5a5">⚠ 1 automation failure in the last 24 hours — check System Health.</p>
+                                <h3 style="margin-top:24px">Tomorrow's run sheet (3 jobs)</h3>
+                                <table style="width:100%;border-collapse:collapse;font-size:14px">
+                                    <thead><tr style="color:#94a3b8"><th align="left">Time</th><th align="left">Customer</th><th align="left">Suburb</th><th align="left">Job</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>10:00 AM</td><td>John Smith</td><td>Strathfield</td><td>Blocked kitchen sink clearing</td></tr>
+                                        <tr><td>2:30 PM</td><td>Sarah Lee</td><td>Parramatta</td><td>Tap repair</td></tr>
+                                        <tr><td>9:00 AM</td><td>Mike Jones</td><td>Manly</td><td>Drain maintenance</td></tr>
+                                    </tbody>
+                                </table>
+                                <h3 style="margin-top:24px">Overdue invoices (2)</h3>
+                                <table style="width:100%;border-collapse:collapse;font-size:14px">
+                                    <thead><tr style="color:#94a3b8"><th align="left">Invoice</th><th align="left">Customer</th><th align="left">Amount</th><th align="left">Status</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>INV-2024-001</td><td>John Smith</td><td>$250.00</td><td>7d overdue</td></tr>
+                                        <tr><td>INV-2024-005</td><td>Sarah Lee</td><td>$180.00</td><td>3d overdue</td></tr>
+                                    </tbody>
+                                </table>
+                                <p style="margin-top:16px">1 new enquiry waiting in your CRM.</p>
+                            </div>
+                            <div class="email-footer">
+                                Plumbing Co · Daily brief
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="note">
+                    <strong>✓ Actionable Intelligence</strong> — SMS is quick updates for quick decisions; email provides detailed tables for full situational awareness. Automation failures flagged prominently in both.
+                </div>
+            </div>
+        </div>
+
+        <!-- Template: Automation Failure Alert -->
+        <div class="template-card" id="automation-failure">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-email">EMAIL</span>
+                    Automation Failure Alert — Dead Letter
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> Job reaches dead-letter after 5 failed retries</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Operator billing email</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">Email</span></div>
+                    <div class="meta-item"><span class="meta-label">NEW:</span> <span style="color: #dc2626; font-weight: 500;">Added in this fix</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div class="email-preview">
+                    <div class="email-content">
+                        <div class="email-header" style="background: #ef4444;">FlowLab</div>
+                        <div class="email-body">
+                            <p>An automation job has failed after 5 retry attempts and been moved to dead letter status.</p>
+                            <p><strong>Automation Type:</strong> job.complete</p>
+                            <p><strong>Job ID:</strong> job_12345</p>
+                            <p><strong>Customer:</strong> John Smith</p>
+                            <p><strong>Error:</strong> Brevo API rate limit exceeded</p>
+                            <p>Please investigate the error and retry the job from your dashboard, or check your integration credentials.</p>
+                        </div>
+                        <div class="email-footer">
+                            FlowLab Solutions
+                        </div>
+                    </div>
+                </div>
+                <div class="note">
+                    <strong>🚨 Operator Visibility</strong> — Dead-letter failures now notify operators immediately instead of silent degradation. Critical for maintaining delivery SLAs.
+                </div>
+            </div>
+        </div>
+
+        <!-- Template: Trial Expired -->
+        <div class="template-card" id="trial-expired">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-email">EMAIL</span>
+                    Trial Expired — Upgrade Prompt
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Trigger:</span> 14-day trial ends, account suspended</div>
+                    <div class="meta-item"><span class="meta-label">Recipient:</span> Billing contact email</div>
+                    <div class="meta-item"><span class="meta-label">Channels:</span> <span class="meta-badge">Email</span></div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <div class="email-preview">
+                    <div class="email-content">
+                        <div class="email-header" style="background: #3b82f6;">FlowLab</div>
+                        <div class="email-body">
+                            <p>Hi Plumbing Co,</p>
+                            <p>Your 14-day free trial has ended and your account has been temporarily suspended.</p>
+                            <p>To continue using FlowLab and keep all your automations, data, and integrations running, please upgrade to a paid plan.</p>
+                            <p>Reply to this email or log in to your dashboard to upgrade.</p>
+                            <p>If you have any questions, we're happy to help.</p>
+                        </div>
+                        <div class="email-footer">
+                            FlowLab Solutions
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template: Supabase Auth Emails -->
+        <div class="template-card" id="supabase-templates">
+            <div class="template-header">
+                <div class="template-title">
+                    <span class="template-type type-email">EMAIL</span>
+                    Supabase Authentication Emails
+                </div>
+                <div class="template-meta">
+                    <div class="meta-item"><span class="meta-label">Provider:</span> Supabase Auth (managed)</div>
+                    <div class="meta-item"><span class="meta-label">Customization:</span> Via Supabase dashboard email templates</div>
+                </div>
+            </div>
+            <div class="template-preview">
+                <p style="margin-bottom: 15px; color: #0f172a;"><strong>Three auth emails are handled by Supabase:</strong></p>
+                <ol style="margin-left: 20px; color: #475569; line-height: 1.8; margin-bottom: 20px;">
+                    <li style="margin-bottom: 12px;">
+                        <strong>Sign Up Confirmation</strong> — Sent when user creates account
+                        <div style="color: #64748b; font-size: 13px; margin-top: 5px;">Contains email verification link; user must click to confirm account</div>
+                    </li>
+                    <li style="margin-bottom: 12px;">
+                        <strong>Password Reset</strong> — Sent when user requests password reset via forgot-password page
+                        <div style="color: #64748b; font-size: 13px; margin-top: 5px;">Contains reset link; configurable redirect URL (sent to tenant-specific subdomain)</div>
+                    </li>
+                    <li style="margin-bottom: 12px;">
+                        <strong>Email Change Confirmation</strong> — Sent when user updates account email in settings
+                        <div style="color: #64748b; font-size: 13px; margin-top: 5px;">Contains verification link for new email address</div>
+                    </li>
+                </ol>
+                <div class="note">
+                    <strong>📧 Configuration:</strong> Supabase email templates are customized in the Supabase project dashboard under Authentication > Email Templates. These can be branded with your logo and messaging.
+                </div>
+                <div class="note" style="margin-top: 15px;">
+                    <strong>🔄 Redirect URLs:</strong> Password reset link redirects to <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 3px;">https://[tenant-slug].flowlabsolutions.au/reset-password</code> in production or <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 3px;">http://[tenant-slug].localhost:3001/reset-password</code> in development.
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">📊 Template Summary</div>
+            </div>
+            <div class="template-preview">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #0f172a;">Template</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #0f172a;">Trigger</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #0f172a;">Channels</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #0f172a;">Recipient</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">Enquiry Received (Customer)</td>
+                            <td style="padding: 12px;">New enquiry submitted</td>
+                            <td style="padding: 12px;">📧 Email + 📱 SMS</td>
+                            <td style="padding: 12px;">Customer</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">Enquiry Received (Operator)</td>
+                            <td style="padding: 12px;">New enquiry submitted</td>
+                            <td style="padding: 12px;">📧 Email</td>
+                            <td style="padding: 12px;">Business Owner</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">Job Scheduled</td>
+                            <td style="padding: 12px;">Job scheduled</td>
+                            <td style="padding: 12px;">📧 Email + 📱 SMS</td>
+                            <td style="padding: 12px;">Customer</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">On My Way</td>
+                            <td style="padding: 12px;">Operator departing</td>
+                            <td style="padding: 12px;">📱 SMS</td>
+                            <td style="padding: 12px;">Customer</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">Job Complete <span style="color: #dc2626;">✨ NEW</span></td>
+                            <td style="padding: 12px;">Job marked complete</td>
+                            <td style="padding: 12px;">📧 Email + 📱 SMS</td>
+                            <td style="padding: 12px;">Customer</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">Day Before Reminder</td>
+                            <td style="padding: 12px;">24 hours before job</td>
+                            <td style="padding: 12px;">📧 Email + 📱 SMS</td>
+                            <td style="padding: 12px;">Customer</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">Payment Reminder (Day 3)</td>
+                            <td style="padding: 12px;">Invoice 3 days overdue</td>
+                            <td style="padding: 12px;">📱 SMS</td>
+                            <td style="padding: 12px;">Customer</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">Payment Reminder (Day 7)</td>
+                            <td style="padding: 12px;">Invoice 7 days overdue</td>
+                            <td style="padding: 12px;">📧 Email + 📱 SMS + 🔗 Webhook</td>
+                            <td style="padding: 12px;">Customer + Make.com</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">Payment Overdue (Day 14)</td>
+                            <td style="padding: 12px;">Invoice 14 days overdue</td>
+                            <td style="padding: 12px;">📧 Email + 📱 SMS + 🔗 Webhook</td>
+                            <td style="padding: 12px;">Customer + Operator + Make.com</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">Morning Digest</td>
+                            <td style="padding: 12px;">Daily at 6:00 AM</td>
+                            <td style="padding: 12px;">📧 Email + 📱 SMS + 🔗 Webhook</td>
+                            <td style="padding: 12px;">Operator</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">Automation Failure Alert <span style="color: #dc2626;">✨ NEW</span></td>
+                            <td style="padding: 12px;">Job fails 5x (dead letter)</td>
+                            <td style="padding: 12px;">📧 Email</td>
+                            <td style="padding: 12px;">Operator</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 12px;">Trial Expired</td>
+                            <td style="padding: 12px;">Trial ends (day 14)</td>
+                            <td style="padding: 12px;">📧 Email</td>
+                            <td style="padding: 12px;">Billing Contact</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px;">Supabase Auth Emails</td>
+                            <td style="padding: 12px;">Signup, password reset</td>
+                            <td style="padding: 12px;">📧 Email</td>
+                            <td style="padding: 12px;">User (managed by Supabase)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="note" style="margin-top: 20px;">
+                    <strong>📋 Status:</strong> All 14+ templates are in production. Job completion email/SMS and automation failure alerts are new and enabled by default. Supabase auth emails are managed separately in the Supabase dashboard.
+                </div>
+            </div>
+        </div>
+
+        <!-- Branding System -->
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-title">🎨 Email Branding System</div>
+            </div>
+            <div class="template-preview">
+                <p style="margin-bottom: 15px; color: #0f172a;">All emails are automatically branded with tenant settings:</p>
+                <ul style="margin-left: 20px; color: #475569; line-height: 1.8;">
+                    <li><strong>Logo:</strong> Tenant's custom logo URL or business name fallback</li>
+                    <li><strong>Primary Colour:</strong> Tenant's primary brand colour (header background), defaults to #3B82F6</li>
+                    <li><strong>Business Name:</strong> Auto-populated from tenant profile</li>
+                    <li><strong>Contact Details:</strong> Phone and email from tenant profile footer</li>
+                </ul>
+                <div class="note" style="margin-top: 15px;">
+                    <strong>✓ Responsive Design:</strong> All templates use mobile-first HTML tables for reliable rendering across email clients (Gmail, Outlook, Apple Mail, mobile).
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
