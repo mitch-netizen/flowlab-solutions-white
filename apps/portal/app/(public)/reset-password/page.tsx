@@ -5,9 +5,20 @@ import { createBrowserClient } from "@supabase/ssr";
 
 type Stage = "loading" | "form" | "success" | "error";
 
+function parseRecoveryHash() {
+  if (typeof window === "undefined") return { accessToken: null, refreshToken: null, valid: false };
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+  const valid = !!(accessToken && refreshToken && params.get("type") === "recovery");
+  return { accessToken, refreshToken, valid };
+}
+
 export default function ResetPasswordPage() {
-  const [stage, setStage] = useState<Stage>("loading");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [stage, setStage] = useState<Stage>(() => (parseRecoveryHash().valid ? "loading" : "error"));
+  const [errorMsg, setErrorMsg] = useState<string>(() =>
+    parseRecoveryHash().valid ? "" : "This reset link is invalid or has expired. Please request a new one."
+  );
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -23,34 +34,23 @@ export default function ResetPasswordPage() {
   );
 
   useEffect(() => {
+    if (stage !== "loading") return;
     if (initialized.current) return;
     initialized.current = true;
 
-    const hash = window.location.hash.slice(1);
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get("access_token");
-    const refreshToken = params.get("refresh_token");
-    const type = params.get("type");
-
-    if (!accessToken || !refreshToken || type !== "recovery") {
-      setErrorMsg("This reset link is invalid or has expired. Please request a new one.");
-      setStage("error");
-      return;
-    }
-
+    const { accessToken, refreshToken } = parseRecoveryHash();
     supabase.auth
-      .setSession({ access_token: accessToken, refresh_token: refreshToken })
+      .setSession({ access_token: accessToken!, refresh_token: refreshToken! })
       .then(({ error }) => {
         if (error) {
           setErrorMsg("This reset link has expired. Please request a new one.");
           setStage("error");
         } else {
-          // Clear the tokens from the URL so they can't be bookmarked or reused
           window.history.replaceState(null, "", window.location.pathname);
           setStage("form");
         }
       });
-  }, [supabase]);
+  }, [supabase, stage]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
