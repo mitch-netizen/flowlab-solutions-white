@@ -19,7 +19,9 @@ import {
 } from "@flowlab/db";
 import { logPlatformEvent } from "@flowlab/events";
 import {
+  buildActionSection,
   buildBrandedEmailHtml,
+  buildEmailButton,
   fireMakeWebhook,
   sendEmail,
   sendSms
@@ -85,6 +87,32 @@ function buildFeedbackLink(input: { tenantSlug: string; tenantId: string; jobId:
   });
 
   return `https://${input.tenantSlug}.${rootDomain}/feedback/${token}`;
+}
+
+function buildInvoicePaymentLink(input: { tenantSlug: string; tenantId: string; invoiceId: string }) {
+  const rootDomain = getCanonicalRootDomain();
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 90).toISOString();
+  const token = signCustomerToken({
+    tenantId: input.tenantId,
+    resourceId: input.invoiceId,
+    resourceType: "invoice",
+    expiresAt
+  });
+
+  return `https://${input.tenantSlug}.${rootDomain}/invoice/${token}/pay`;
+}
+
+function buildInvoiceViewLink(input: { tenantSlug: string; tenantId: string; invoiceId: string }) {
+  const rootDomain = getCanonicalRootDomain();
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 90).toISOString();
+  const token = signCustomerToken({
+    tenantId: input.tenantId,
+    resourceId: input.invoiceId,
+    resourceType: "invoice",
+    expiresAt
+  });
+
+  return `https://${input.tenantSlug}.${rootDomain}/invoice/${token}`;
 }
 
 async function getCredentials(
@@ -347,7 +375,17 @@ async function processJob(job: ClaimedJob) {
 
       const businessName = tenant?.profile?.businessName ?? "Your service provider";
       const amount = invoice?.amount ? `$${invoice.amount.toFixed(2)}` : "an amount";
-      const paymentLink = invoice?.paymentLink ?? null;
+      const paymentLink = invoice?.paymentLink ?? buildInvoicePaymentLink({
+        tenantSlug: tenant?.slug ?? "",
+        tenantId,
+        invoiceId: invoice?.id ?? payload.invoiceId
+      });
+      const invoiceLink = buildInvoiceViewLink({
+        tenantSlug: tenant?.slug ?? "",
+        tenantId,
+        invoiceId: invoice?.id ?? payload.invoiceId
+      });
+
       await fireTenantMakeWebhook({
         tenantId,
         credentials: makeCredentials,
@@ -375,10 +413,6 @@ async function processJob(job: ClaimedJob) {
       if (customer?.email) {
         const subject = `Invoice ${invoice?.number ?? payload.invoiceNumber} from ${businessName}`;
         try {
-          const payButton = paymentLink
-            ? `<p style="margin-top:24px;"><a href="${paymentLink}" style="background:${tenant?.profile?.primaryColour ?? "#3B82F6"};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Pay Invoice ${amount}</a></p>`
-            : `<p>Invoice amount: <strong>${amount}</strong></p>`;
-
           const html = buildBrandedEmailHtml({
             businessName,
             logoUrl: tenant?.profile?.logoUrl,
@@ -386,9 +420,16 @@ async function processJob(job: ClaimedJob) {
             bodyHtml: `
               <p>Hi ${customer?.firstName ?? "there"},</p>
               <p>Your invoice from <strong>${businessName}</strong> is ready.</p>
-              <p>Invoice number: <strong>${invoice?.number ?? payload.invoiceNumber}</strong></p>
-              ${payButton}
-              <p style="margin-top:16px;color:#64748b;font-size:13px;">Payment is due within 7 days. Thank you!</p>
+              <p><strong>Invoice number:</strong> ${invoice?.number ?? payload.invoiceNumber}<br/><strong>Amount due:</strong> ${amount}</p>
+              <p style="color:#64748b;font-size:13px;">Payment is due within 7 days.</p>
+              ${buildActionSection(
+                "💳 Ready to Pay?",
+                "View your invoice details and pay securely online.",
+                [
+                  { label: "Pay Now", href: paymentLink, variant: "success" },
+                  { label: "View Invoice", href: invoiceLink, variant: "secondary" }
+                ]
+              )}
             `,
             footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
           });
@@ -530,6 +571,12 @@ async function processJob(job: ClaimedJob) {
         const amount = invoice?.amount ? `$${invoice.amount.toFixed(2)}` : "the amount";
         const subject = `Payment received — ${businessName}`;
         try {
+          const invoiceLink = buildInvoiceViewLink({
+            tenantSlug: tenant?.slug ?? "",
+            tenantId,
+            invoiceId: invoice?.id ?? payload.invoiceId
+          });
+
           const html = buildBrandedEmailHtml({
             businessName,
             logoUrl: tenant?.profile?.logoUrl,
@@ -539,6 +586,14 @@ async function processJob(job: ClaimedJob) {
               <p>✅ Your payment of <strong>${amount}</strong> to <strong>${businessName}</strong> has been received.</p>
               <p>Invoice: <strong>${invoice?.number ?? payload.invoiceNumber}</strong></p>
               <p>Thank you for your business — we look forward to working with you again!</p>
+              ${buildActionSection(
+                "📄 Receipt & Next Steps",
+                "View your receipt or book your next service.",
+                [
+                  { label: "View Receipt", href: invoiceLink, variant: "primary" },
+                  { label: "Book Again", href: `https://${tenant?.slug}.${getCanonicalRootDomain()}/booking`, variant: "success" }
+                ]
+              )}
             `,
             footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
           });
@@ -939,6 +994,10 @@ async function processJob(job: ClaimedJob) {
       if (tenant?.profile?.email) {
         const subject = `New enquiry from ${customer ? `${customer.firstName} ${customer.lastName}` : "a customer"}`;
         try {
+          const tenantSlug = tenant?.slug ?? "";
+          const dashboardUrl = `https://${tenantSlug}.${getCanonicalRootDomain()}/dashboard`;
+          const crmCustomerUrl = customer ? `${dashboardUrl}/crm/customers/${customer.id}` : `${dashboardUrl}/crm`;
+
           const html = buildBrandedEmailHtml({
             businessName,
             logoUrl: tenant?.profile?.logoUrl,
@@ -947,7 +1006,14 @@ async function processJob(job: ClaimedJob) {
               <p>A new enquiry just landed in FlowLab.</p>
               <p><strong>Customer:</strong> ${customer ? `${customer.firstName} ${customer.lastName}` : "Unknown"}</p>
               <p><strong>Request:</strong> ${enquiryText}</p>
-              <p>Open the CRM to convert it into a quote.</p>
+              ${buildActionSection(
+                "💼 Ready to Quote?",
+                "Create a quote and send it to the customer.",
+                [
+                  { label: "Create Quote", href: `${dashboardUrl}/quotes/new${customer ? `?enquiry=${payload.customerId}` : ""}`, variant: "success" },
+                  { label: "View Customer", href: crmCustomerUrl, variant: "secondary" }
+                ]
+              )}
             `,
             footerText: businessName
           });
@@ -1016,6 +1082,12 @@ async function processJob(job: ClaimedJob) {
       if (customer?.email) {
         const subject = `Booking confirmed — ${businessName}`;
         try {
+          const jobLink = buildFeedbackLink({
+            tenantSlug: tenant?.slug ?? "",
+            tenantId,
+            jobId: payload.jobId
+          }).replace("/feedback/", "/jobs/");
+
           const html = buildBrandedEmailHtml({
             businessName,
             logoUrl: tenant?.profile?.logoUrl,
@@ -1025,6 +1097,14 @@ async function processJob(job: ClaimedJob) {
               <p>Your job with <strong>${businessName}</strong> has been scheduled.</p>
               <p><strong>When:</strong> ${scheduledText}</p>
               <p><strong>Work:</strong> ${jobRecord?.summary ?? payload.summary ?? "Scheduled service"}</p>
+              ${buildActionSection(
+                "✅ Booking Confirmed",
+                "Save this to your calendar. Contact us if you need to reschedule.",
+                [
+                  { label: "View Booking", href: jobLink, variant: "primary" },
+                  { label: "Add to Calendar", href: `${jobLink}?action=calendar`, variant: "secondary" }
+                ]
+              )}
             `,
             footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
           });
@@ -1155,6 +1235,140 @@ async function processJob(job: ClaimedJob) {
             requestSummary: "On my way SMS failed",
             errorMessage: smsError instanceof Error ? smsError.message : String(smsError),
             triggeredBy: "worker_on_my_way"
+          });
+        }
+      }
+      break;
+    }
+
+    case "job.complete": {
+      const [brevoSmsCredentials, brevoEmailCredentials, tenant, customer, jobRecord] = await Promise.all([
+        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
+        getCredentials(tenantId, BREVO_EMAIL_INTEGRATION_SERVICE),
+        getTenantWithProfile(tenantId),
+        getCustomer(payload.customerId),
+        getJob(payload.jobId)
+      ]);
+
+      const businessName = tenant?.profile?.businessName ?? "Your service provider";
+      const feedbackLink = tenant?.slug ? buildFeedbackLink({
+        tenantSlug: tenant.slug,
+        tenantId,
+        jobId: payload.jobId
+      }) : null;
+
+      if (customer?.email) {
+        const subject = `Your job is complete — ${businessName}`;
+        try {
+          const html = buildBrandedEmailHtml({
+            businessName,
+            logoUrl: tenant?.profile?.logoUrl,
+            primaryColour: tenant?.profile?.primaryColour,
+            bodyHtml: `
+              <p>Hi ${customer.firstName},</p>
+              <p>We're pleased to let you know that your job with <strong>${businessName}</strong> is now complete.</p>
+              <p><strong>Work completed:</strong> ${jobRecord?.summary ?? "Service completed"}</p>
+              <p>If you have any questions or concerns, please don't hesitate to reach out.</p>
+              <p>Thank you for choosing ${businessName}!</p>
+              ${feedbackLink ? buildActionSection(
+                "⭐ Share Your Feedback",
+                "Your feedback helps us improve. Rate your experience and earn a $10 discount on your next service.",
+                [{ label: "Leave Feedback (2 min)", href: feedbackLink, variant: "success" }]
+              ) : ""}
+              ${feedbackLink ? buildActionSection(
+                "📱 View Job Details",
+                "",
+                [{ label: "View in Portal", href: `https://${tenant?.slug}.flowlabsolutions.au/jobs/${payload.jobId}`, variant: "secondary" }]
+              ) : ""}
+            `,
+            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+          });
+
+          await sendEmail(brevoEmailCredentials, customer.email, subject, html);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            jobId: payload.jobId,
+            channel: "email",
+            subject,
+            body: `Job completed: ${jobRecord?.summary ?? "Service"}`,
+            status: "sent"
+          });
+          await logPlatformEvent({
+            tenantId,
+            eventType: "api_call",
+            service: EMAIL_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "success",
+            requestSummary: `Job completion email to ${customer.firstName} ${customer.lastName}`,
+            responseSummary: "Completion notification delivered",
+            triggeredBy: "worker_job_complete"
+          });
+        } catch (emailError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            jobId: payload.jobId,
+            channel: "email",
+            subject,
+            body: `Job completed: ${jobRecord?.summary ?? "Service"}`,
+            status: "failed"
+          });
+          await logPlatformEvent({
+            tenantId,
+            eventType: "error",
+            service: EMAIL_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "failed",
+            requestSummary: "Job completion email failed",
+            errorMessage: emailError instanceof Error ? emailError.message : String(emailError),
+            triggeredBy: "worker_job_complete"
+          });
+        }
+      }
+
+      if (customer?.phone && feedbackLink) {
+        const smsBody = `Hi ${customer.firstName}, your job with ${businessName} is complete. How did we do? ${feedbackLink}`;
+        try {
+          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            jobId: payload.jobId,
+            channel: "sms",
+            subject: `Job complete · ${payload.jobId}`,
+            body: smsBody,
+            status: "sent"
+          });
+          await logPlatformEvent({
+            tenantId,
+            eventType: "api_call",
+            service: SMS_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "success",
+            requestSummary: `Job completion SMS to ${customer.firstName} ${customer.lastName}`,
+            responseSummary: "Completion notification delivered",
+            triggeredBy: "worker_job_complete"
+          });
+        } catch (smsError) {
+          await recordCommunication({
+            tenantId,
+            customerId: customer.id,
+            jobId: payload.jobId,
+            channel: "sms",
+            subject: `Job complete · ${payload.jobId}`,
+            body: smsBody,
+            status: "failed"
+          });
+          await logPlatformEvent({
+            tenantId,
+            eventType: "error",
+            service: SMS_PROVIDER_SERVICE,
+            direction: "outbound",
+            status: "failed",
+            requestSummary: "Job completion SMS failed",
+            errorMessage: smsError instanceof Error ? smsError.message : String(smsError),
+            triggeredBy: "worker_job_complete"
           });
         }
       }
@@ -1403,6 +1617,23 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
           ? `<p style="color:#fca5a5">⚠ ${recentFailedJobCount} automation failure${recentFailedJobCount === 1 ? "" : "s"} in the last 24 hours — check System Health.</p>`
           : "";
 
+        const tenantSlug = tenant?.slug ?? "";
+        const dashboardUrl = `https://${tenantSlug}.${getCanonicalRootDomain()}/dashboard`;
+
+        const actionButtons: Array<{ label: string; href: string; variant: "primary" | "success" | "danger" | "secondary" }> = [];
+        if (tomorrowJobCount > 0) {
+          actionButtons.push({ label: `📅 View Scheduler (${tomorrowJobCount} jobs)`, href: `${dashboardUrl}/scheduler`, variant: "primary" });
+        }
+        if (overdueInvoiceCount > 0) {
+          actionButtons.push({ label: `💰 Collect Payment (${overdueInvoiceCount} overdue)`, href: `${dashboardUrl}/invoices?status=overdue`, variant: "danger" });
+        }
+        if (openEnquiryCount > 0) {
+          actionButtons.push({ label: `📬 Review Enquiries (${openEnquiryCount})`, href: `${dashboardUrl}/crm/enquiries`, variant: "primary" });
+        }
+        if (recentFailedJobCount > 0) {
+          actionButtons.push({ label: `⚠️ Check System Health`, href: `${dashboardUrl}/system-health`, variant: "danger" });
+        }
+
         const bodyHtml = `
           <p>Good morning. Here's your daily brief for <strong>${businessName}</strong>.</p>
           ${alertsHtml}
@@ -1419,6 +1650,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
           </table>` : ""}
           ${openEnquiryCount > 0 ? `<p style="margin-top:16px">${openEnquiryCount} new enquir${openEnquiryCount === 1 ? "y" : "ies"} waiting in your CRM.</p>` : ""}
           ${pendingQuoteCount > 0 ? `<p>${pendingQuoteCount} quote${pendingQuoteCount === 1 ? "" : "s"} sitting in draft — worth reviewing before the day starts.</p>` : ""}
+          ${actionButtons.length > 0 ? buildActionSection("🚀 Quick Actions", "Jump directly to the areas that need your attention.", actionButtons) : ""}
         `;
 
         const html = buildBrandedEmailHtml({
@@ -1606,6 +1838,12 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
       if (customer?.email) {
         const subject = `Reminder: your job with ${businessName} is tomorrow`;
         try {
+          const jobLink = buildFeedbackLink({
+            tenantSlug: tenant?.slug ?? "",
+            tenantId,
+            jobId: payload.jobId
+          }).replace("/feedback/", "/jobs/");
+
           const html = buildBrandedEmailHtml({
             businessName,
             logoUrl: tenant?.profile?.logoUrl,
@@ -1616,7 +1854,14 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
               <p><strong>When:</strong> ${scheduledText}</p>
               <p><strong>Work:</strong> ${payload.summary ?? "Scheduled service"}</p>
               ${payload.suburb ? `<p><strong>Location:</strong> ${payload.suburb}</p>` : ""}
-              <p>If you need to reschedule, please contact us as soon as possible.</p>
+              ${buildActionSection(
+                "📅 Job Confirmed?",
+                "View your job details or contact us to reschedule.",
+                [
+                  { label: "View Job", href: jobLink, variant: "primary" },
+                  { label: "Contact Us", href: `https://${tenant?.slug}.${getCanonicalRootDomain()}/contact`, variant: "secondary" }
+                ]
+              )}
             `,
             footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
           });
@@ -1631,29 +1876,6 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
       break;
     }
 
-    case "job.on_my_way": {
-      const [brevoSmsCredentials, tenant, customer] = await Promise.all([
-        getCredentials(tenantId, BREVO_SMS_INTEGRATION_SERVICE),
-        getTenantWithProfile(tenantId),
-        getCustomer(payload.customerId)
-      ]);
-
-      const businessName = tenant?.profile?.businessName ?? "Your service provider";
-      const etaText = payload.etaMinutes ? ` in about ${payload.etaMinutes} minutes` : " shortly";
-
-      if (customer?.phone) {
-        const smsBody = `Hi ${customer.firstName}, your ${businessName} team member is on their way and will arrive${etaText}. See you soon!`;
-        try {
-          await sendSms(brevoSmsCredentials, customer.phone, smsBody);
-          await recordCommunication({ tenantId, customerId: customer.id, jobId: payload.jobId ?? null, channel: "sms", subject: `On my way · ${payload.jobId ?? customer.id}`, body: smsBody, status: "sent" });
-          await logPlatformEvent({ tenantId, eventType: "api_call", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "success", requestSummary: `On my way SMS to ${customer.firstName} ${customer.lastName}`, responseSummary: "ETA notification delivered", triggeredBy: "worker_on_my_way" });
-        } catch (smsError) {
-          await recordCommunication({ tenantId, customerId: customer.id, jobId: payload.jobId ?? null, channel: "sms", subject: `On my way · ${payload.jobId ?? customer.id}`, body: smsBody, status: "failed" });
-          await logPlatformEvent({ tenantId, eventType: "error", service: SMS_PROVIDER_SERVICE, direction: "outbound", status: "failed", requestSummary: "On my way SMS failed", errorMessage: smsError instanceof Error ? smsError.message : String(smsError), triggeredBy: "worker_on_my_way" });
-        }
-      }
-      break;
-    }
 
     case "billing.payment_reminder_day3": {
       const [brevoSmsCredentials, tenant, customer, invoice] = await Promise.all([
@@ -1730,9 +1952,17 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
       if (customer?.email) {
         const subject = `Invoice overdue — ${businessName}`;
         try {
-          const payButton = invoice?.paymentLink
-            ? `<p style="margin-top:24px;"><a href="${invoice.paymentLink}" style="background:${tenant?.profile?.primaryColour ?? "#3B82F6"};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Pay ${amount} Now</a></p>`
-            : "";
+          const invoiceLink = buildInvoiceViewLink({
+            tenantSlug: tenant?.slug ?? "",
+            tenantId,
+            invoiceId: invoice?.id ?? payload.invoiceId
+          });
+          const paymentLink = invoice?.paymentLink ?? buildInvoicePaymentLink({
+            tenantSlug: tenant?.slug ?? "",
+            tenantId,
+            invoiceId: invoice?.id ?? payload.invoiceId
+          });
+
           const html = buildBrandedEmailHtml({
             businessName,
             logoUrl: tenant?.profile?.logoUrl,
@@ -1741,7 +1971,14 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
               <p>Hi ${customer.firstName},</p>
               <p>Your invoice <strong>${invoice?.number ?? payload.invoiceNumber}</strong>${amount ? ` for <strong>${amount}</strong>` : ""} from <strong>${businessName}</strong> is now <strong>7 days overdue</strong>.</p>
               <p>Please arrange payment at your earliest convenience to avoid further follow-up.</p>
-              ${payButton}
+              ${buildActionSection(
+                "⚠️ Payment Required",
+                "Please settle this invoice now to avoid suspension of services.",
+                [
+                  { label: "Pay Now", href: paymentLink, variant: "danger" },
+                  { label: "View Invoice", href: invoiceLink, variant: "secondary" }
+                ]
+              )}
             `,
             footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
           });
@@ -1987,6 +2224,42 @@ export async function processAutomationBatch(limit = 25) {
           errorMessage: message,
           service: "worker"
         });
+
+        // Email operator alert
+        if (job.tenantId) {
+          try {
+            const tenant = await prisma.tenant.findUnique({
+              where: { id: job.tenantId },
+              include: { profile: true }
+            });
+
+            if (tenant?.billingEmail) {
+              const brevoEmailCredentials = await getCredentials(job.tenantId, BREVO_EMAIL_INTEGRATION_SERVICE);
+              const businessName = tenant.profile?.businessName ?? tenant.slug ?? "Your business";
+              const html = buildBrandedEmailHtml({
+                businessName: "FlowLab",
+                bodyHtml: `
+                  <p>Hi ${businessName},</p>
+                  <p>⚠️ <strong>An automated notification failed after 5 retry attempts.</strong></p>
+                  <p><strong>Issue:</strong> ${job.kind}</p>
+                  <p><strong>Error:</strong> ${message}</p>
+                  <p>This automation is no longer running. Please check your integration settings and re-enable this automation from your dashboard.</p>
+                  <p>If you need help, please contact support.</p>
+                `,
+                footerText: "FlowLab Solutions"
+              });
+
+              await sendEmail(brevoEmailCredentials, tenant.billingEmail, `⚠️ Automation Alert: ${job.kind} Failed`, html);
+            }
+          } catch (alertError) {
+            logger.error("Failed to send operator alert for dead-letter job", {
+              jobId: job.id,
+              kind: job.kind,
+              tenantId: job.tenantId,
+              error: alertError instanceof Error ? alertError.message : String(alertError)
+            });
+          }
+        }
       }
 
       failed += 1;
