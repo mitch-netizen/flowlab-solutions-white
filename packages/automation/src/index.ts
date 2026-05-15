@@ -47,6 +47,21 @@ async function getInvoice(invoiceId: string) {
   return prisma.invoice.findUnique({ where: { id: invoiceId } });
 }
 
+function createTrackingUrl(
+  destinationUrl: string,
+  jobId: string,
+  buttonLabel: string,
+  rootDomain: string
+): string {
+  // Encode tracking data in URL parameters for the tracking endpoint
+  const trackingParams = new URLSearchParams({
+    dest: destinationUrl,
+    job: jobId,
+    btn: buttonLabel
+  });
+  return `https://${rootDomain}/api/track/click?${trackingParams.toString()}`;
+}
+
 async function getJob(jobId: string) {
   return prisma.job.findUnique({ where: { id: jobId } });
 }
@@ -500,6 +515,10 @@ async function processJob(job: ClaimedJob) {
       if (customer?.email) {
         const subject = `Invoice ${invoice?.number ?? payload.number} from ${businessName}`;
         try {
+          const rootDomain = getCanonicalRootDomain();
+          const trackedPaymentLink = createTrackingUrl(paymentLink, job.id, "Pay Now", rootDomain);
+          const trackedInvoiceLink = createTrackingUrl(invoiceLink, job.id, "View Invoice", rootDomain);
+
           const html = buildBrandedEmailHtml({
             businessName,
             logoUrl: tenant?.profile?.logoUrl,
@@ -513,8 +532,8 @@ async function processJob(job: ClaimedJob) {
                 "💳 Ready to Pay?",
                 "View your invoice details and pay securely online.",
                 [
-                  { label: "Pay Now", href: paymentLink, variant: "success" },
-                  { label: "View Invoice", href: invoiceLink, variant: "secondary" }
+                  { label: "Pay Now", href: trackedPaymentLink, variant: "success" },
+                  { label: "View Invoice", href: trackedInvoiceLink, variant: "secondary" }
                 ]
               )}
             `,
@@ -658,11 +677,15 @@ async function processJob(job: ClaimedJob) {
         const amount = invoice?.amount ? `$${invoice.amount.toFixed(2)}` : "the amount";
         const subject = `Payment received — ${businessName}`;
         try {
+          const rootDomain = getCanonicalRootDomain();
           const invoiceLink = buildInvoiceViewLink({
             tenantSlug: tenant?.slug ?? "",
             tenantId,
             invoiceId: invoice?.id ?? payload.invoiceId
           });
+          const bookingLink = `https://${tenant?.slug}.${rootDomain}/booking`;
+          const trackedReceiptLink = createTrackingUrl(invoiceLink, job.id, "View Receipt", rootDomain);
+          const trackedBookingLink = createTrackingUrl(bookingLink, job.id, "Book Again", rootDomain);
 
           const html = buildBrandedEmailHtml({
             businessName,
@@ -677,8 +700,8 @@ async function processJob(job: ClaimedJob) {
                 "📄 Receipt & Next Steps",
                 "View your receipt or book your next service.",
                 [
-                  { label: "View Receipt", href: invoiceLink, variant: "primary" },
-                  { label: "Book Again", href: `https://${tenant?.slug}.${getCanonicalRootDomain()}/booking`, variant: "success" }
+                  { label: "View Receipt", href: trackedReceiptLink, variant: "primary" },
+                  { label: "Book Again", href: trackedBookingLink, variant: "success" }
                 ]
               )}
             `,
@@ -2441,9 +2464,13 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
       if (tenant?.profile?.email && invoice) {
         const subject = `✅ Invoice synced to Xero — ${payload.number}`;
         try {
+          const rootDomain = getCanonicalRootDomain();
           const tenantSlug = tenant?.slug ?? "";
-          const dashboardUrl = `https://${tenantSlug}.${getCanonicalRootDomain()}/dashboard`;
+          const dashboardUrl = `https://${tenantSlug}.${rootDomain}/dashboard`;
           const invoiceLink = `${dashboardUrl}/invoices/${invoice.id}`;
+          const xeroLink = `https://go.xero.com/organisation/invoices/${payload.xeroInvoiceId}`;
+          const trackedInvoiceLink = createTrackingUrl(invoiceLink, job.id, "View in FlowLab", rootDomain);
+          const trackedXeroLink = createTrackingUrl(xeroLink, job.id, "View in Xero", rootDomain);
 
           const html = buildBrandedEmailHtml({
             businessName,
@@ -2457,8 +2484,8 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
                 "📋 Xero Sync Complete",
                 "The invoice is now in your Xero account and ready for payment tracking.",
                 [
-                  { label: "View in FlowLab", href: invoiceLink, variant: "primary" },
-                  { label: "View in Xero", href: `https://go.xero.com/organisation/invoices/${payload.xeroInvoiceId}`, variant: "secondary" }
+                  { label: "View in FlowLab", href: trackedInvoiceLink, variant: "primary" },
+                  { label: "View in Xero", href: trackedXeroLink, variant: "secondary" }
                 ]
               )}
             `,
