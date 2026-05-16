@@ -488,6 +488,11 @@ export interface TenantSession extends AuthClaims {
   authUserId: string;
   /** Set when a superadmin is impersonating this tenant — stores the superadmin's userId */
   impersonatedBy?: string;
+  onboardingCompleted: boolean;
+  onboardingStep: number;
+  tenantStatus: TenantStatus;
+  tenantPlan: TenantPlan;
+  trialEndsAt: string | null;
 }
 
 export interface CustomerTokenPayload {

@@ -44,9 +44,23 @@ export async function requireTenantSession() {
   const tenantContext = await resolveTenantContext(host);
   if (!tenantContext) redirect("/login");
 
-  const tenantUser = await prisma.tenantUser.findFirst({
-    where: { authUserId: user.id, tenantId: tenantContext.tenantId },
-  });
+  const [tenantUser, tenantRecord] = await Promise.all([
+    prisma.tenantUser.findFirst({
+      where: { authUserId: user.id, tenantId: tenantContext.tenantId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        tenantId: true,
+        onboardingCompleted: true,
+        onboardingStep: true,
+      },
+    }),
+    prisma.tenant.findUnique({
+      where: { id: tenantContext.tenantId },
+      select: { status: true, plan: true, trialEndsAt: true },
+    }),
+  ]);
 
   if (!tenantUser) redirect("/login");
 
@@ -57,5 +71,10 @@ export async function requireTenantSession() {
     scope: "tenant",
     role: tenantUser.role,
     tenantId: tenantUser.tenantId,
+    onboardingCompleted: tenantUser.onboardingCompleted,
+    onboardingStep: tenantUser.onboardingStep,
+    tenantStatus: tenantRecord?.status ?? "trial",
+    tenantPlan: tenantRecord?.plan ?? tenantContext.plan,
+    trialEndsAt: tenantRecord?.trialEndsAt?.toISOString() ?? null,
   } satisfies TenantSession;
 }

@@ -25,10 +25,26 @@ export const getTenantSession = cache(async (): Promise<TenantSession | null> =>
 
   if (error || !user || !tenantContext) return null;
 
-  // Find the TenantUser that links this Supabase auth user to this tenant
-  const tenantUser = await prisma.tenantUser.findFirst({
-    where: { authUserId: user.id, tenantId: tenantContext.tenantId }
-  });
+  // Fetch the TenantUser and the Tenant's billing/plan state in parallel —
+  // both are needed to build the session and previously caused two separate
+  // round-trips in the dashboard layout on every navigation.
+  const [tenantUser, tenantRecord] = await Promise.all([
+    prisma.tenantUser.findFirst({
+      where: { authUserId: user.id, tenantId: tenantContext.tenantId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        tenantId: true,
+        onboardingCompleted: true,
+        onboardingStep: true,
+      },
+    }),
+    prisma.tenant.findUnique({
+      where: { id: tenantContext.tenantId },
+      select: { status: true, plan: true, trialEndsAt: true },
+    }),
+  ]);
 
   if (!tenantUser) return null;
 
@@ -60,6 +76,11 @@ export const getTenantSession = cache(async (): Promise<TenantSession | null> =>
     role: tenantUser.role,
     tenantId: tenantUser.tenantId,
     impersonatedBy: impersonatedBy ?? undefined,
+    onboardingCompleted: tenantUser.onboardingCompleted,
+    onboardingStep: tenantUser.onboardingStep,
+    tenantStatus: tenantRecord?.status ?? "trial",
+    tenantPlan: tenantRecord?.plan ?? tenantContext.plan,
+    trialEndsAt: tenantRecord?.trialEndsAt?.toISOString() ?? null,
   } satisfies TenantSession;
 });
 
