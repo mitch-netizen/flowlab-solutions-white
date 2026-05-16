@@ -6,6 +6,7 @@ import {
 } from "@flowlab/contracts";
 import { prisma, resolveIntegrationCredentials } from "@flowlab/db";
 import { sendEmail, sendSms, buildBrandedEmailHtml, buildEmailSignature } from "@flowlab/integrations";
+
 import { logPlatformEvent } from "@flowlab/events";
 
 import { requireTenantSession } from "../../../../../lib/session";
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
   const channel = String(formData.get("channel") ?? "").trim();
   const subject = String(formData.get("subject") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
+  const includeSignature = formData.get("includeSignature") === "1";
 
   if (!customerId || !body || !["email", "sms"].includes(channel)) {
     return NextResponse.redirect(new URL(`${returnTo}?error=invalid_message`, request.url), 303);
@@ -82,26 +84,38 @@ export async function POST(request: Request) {
         envFallback: { apiKey: process.env.BREVO_API_KEY, fromEmail: process.env.BREVO_FROM_EMAIL, fromName: process.env.BREVO_FROM_NAME }
       });
       const businessName = tenant?.profile?.businessName ?? "FlowLab";
+      const profile = tenant?.profile;
+      const signatureFooter = includeSignature
+        ? buildEmailSignature({
+            businessName,
+            logoUrl: profile?.logoUrl,
+            primaryColour: profile?.primaryColour,
+            phone: profile?.phone,
+            email: profile?.email,
+            address: profile?.address,
+            suburb: profile?.suburb,
+            state: profile?.state,
+            postcode: profile?.postcode,
+            abn: profile?.abn,
+            customHtml: profile?.emailSignatureCustomHtml
+          })
+        : `<strong>${businessName}</strong>`;
       const html = buildBrandedEmailHtml({
         businessName,
-        logoUrl: tenant?.profile?.logoUrl,
-        primaryColour: tenant?.profile?.primaryColour,
+        logoUrl: profile?.logoUrl,
+        primaryColour: profile?.primaryColour,
         bodyHtml: `<p>${escapeHtml(body).replace(/\n/g, "<br />")}</p>`,
-        footerText: buildEmailSignature({
-          businessName,
-          logoUrl: tenant?.profile?.logoUrl,
-          primaryColour: tenant?.profile?.primaryColour,
-          phone: tenant?.profile?.phone,
-          email: tenant?.profile?.email,
-          address: tenant?.profile?.address,
-          suburb: tenant?.profile?.suburb,
-          state: tenant?.profile?.state,
-          postcode: tenant?.profile?.postcode,
-          abn: tenant?.profile?.abn
-        })
+        footerText: signatureFooter
       });
 
-      await sendEmail(emailCredentials, customer.email, subject || `Message from ${businessName}`, html);
+      const replyToEmail = profile?.email;
+      await sendEmail(
+        emailCredentials,
+        customer.email,
+        subject || `Message from ${businessName}`,
+        html,
+        replyToEmail ? { replyTo: { email: replyToEmail, name: businessName } } : undefined
+      );
     } else {
       if (!customer.phone) {
         throw new Error("Customer phone is missing");

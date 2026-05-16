@@ -90,7 +90,10 @@ function toTenantProfile(record: Prisma.TenantProfileGetPayload<{ include: { ten
     serviceBaseLng: record.serviceBaseLng,
     serviceRadiusKm: record.serviceRadiusKm,
     businessType: record.businessType,
-    timezone: record.timezone
+    timezone: record.timezone,
+    emailSignatureEnabled: record.emailSignatureEnabled,
+    emailSignatureAdHocDefault: record.emailSignatureAdHocDefault,
+    emailSignatureCustomHtml: record.emailSignatureCustomHtml
   };
 }
 
@@ -2923,6 +2926,22 @@ export async function updateTenantProfileSettings(input: {
   });
 
   return updated;
+}
+
+export async function updateEmailSignatureSettings(input: {
+  tenantId: string;
+  emailSignatureEnabled: boolean;
+  emailSignatureAdHocDefault: boolean;
+  emailSignatureCustomHtml: string | null;
+}) {
+  await prisma.tenantProfile.update({
+    where: { tenantId: input.tenantId },
+    data: {
+      emailSignatureEnabled: input.emailSignatureEnabled,
+      emailSignatureAdHocDefault: input.emailSignatureAdHocDefault,
+      emailSignatureCustomHtml: input.emailSignatureCustomHtml || null
+    }
+  });
 }
 
 export async function saveTenantPricingSettings(input: {

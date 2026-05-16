@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { getCustomerCrmRecord } from "@flowlab/db";
+import { getCustomerCrmRecord, prisma } from "@flowlab/db";
 
 import CustomerLink from "../../../../components/customer-link";
 import DashboardPageScaffold from "../../../../components/dashboard/page-scaffold";
@@ -21,7 +21,10 @@ export default async function CustomerRecordPage({
   const session = await requireTenantSession();
   const { customerId } = await params;
   const query = await searchParams;
-  const record = await getCustomerCrmRecord(session.tenantId, customerId);
+  const [record, tenantProfile] = await Promise.all([
+    getCustomerCrmRecord(session.tenantId, customerId),
+    prisma.tenantProfile.findUnique({ where: { tenantId: session.tenantId }, select: { emailSignatureAdHocDefault: true } })
+  ]);
 
   if (!record) {
     notFound();
@@ -229,6 +232,7 @@ export default async function CustomerRecordPage({
           customerId={customer.id}
           returnTo={`/dashboard/crm/${customer.id}`}
           title="Send manual message"
+          includeSignatureDefault={tenantProfile?.emailSignatureAdHocDefault ?? true}
         />
 
         <div className="rounded-lg border bg-card p-4 space-y-4">

@@ -198,9 +198,12 @@ model TenantProfile {
   serviceBaseLat       Float?
   serviceBaseLng       Float?
   serviceRadiusKm      Float?
-  businessType         BusinessType
-  timezone             String       @default("Australia/Brisbane")
-  tenant               Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessType                BusinessType
+  timezone                    String       @default("Australia/Brisbane")
+  emailSignatureEnabled       Boolean      @default(true)
+  emailSignatureAdHocDefault  Boolean      @default(true)
+  emailSignatureCustomHtml    String?
+  tenant                      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([customDomain])
 }

@@ -1458,7 +1458,10 @@ export function buildEmailSignature(params: {
   state?: string | null;
   postcode?: string | null;
   abn?: string | null;
+  customHtml?: string | null;
 }): string {
+  if (params.customHtml) return params.customHtml;
+
   const colour = params.primaryColour ?? "#3B82F6";
 
   const addressParts = [params.address, params.suburb, params.state, params.postcode]
@@ -1606,7 +1609,8 @@ export async function sendEmail(
   credentials: Record<string, string>,
   to: string,
   subject: string,
-  html: string
+  html: string,
+  options?: { replyTo?: { email: string; name?: string } }
 ): Promise<void> {
   const apiKey = credentials.apiKey || process.env.BREVO_API_KEY || "";
   const fromEmail = credentials.fromEmail || process.env.BREVO_FROM_EMAIL || "";
@@ -1632,6 +1636,7 @@ export async function sendEmail(
       subject,
       htmlContent: html,
       textContent: stripHtml(html),
+      ...(options?.replyTo ? { replyTo: options.replyTo } : {}),
       ...(sandboxMode === "true" ? { headers: { "X-Sib-Sandbox": "drop" } } : {})
     }),
     signal: AbortSignal.timeout(10_000)

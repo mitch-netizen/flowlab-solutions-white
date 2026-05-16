@@ -13,6 +13,7 @@ type ManualCommunicationFormProps = {
   jobId?: string | null;
   invoiceId?: string | null;
   title?: string;
+  includeSignatureDefault?: boolean;
 };
 
 export default function ManualCommunicationForm({
@@ -20,7 +21,8 @@ export default function ManualCommunicationForm({
   returnTo,
   jobId,
   invoiceId,
-  title = "Send message"
+  title = "Send message",
+  includeSignatureDefault = true
 }: ManualCommunicationFormProps) {
   const [channel, setChannel] = useState<"email" | "sms">("email");
   const [drafting, setDrafting] = useState(false);
@@ -90,6 +92,18 @@ export default function ManualCommunicationForm({
         <Label htmlFor="body">Message</Label>
         <Textarea id="body" name="body" ref={bodyRef} placeholder="Write the message the customer should receive, or use Draft with AI to generate a starting point." required />
       </div>
+      {channel === "email" ? (
+        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14 }}>
+          <input type="hidden" name="includeSignature" value="0" />
+          <input
+            type="checkbox"
+            name="includeSignature"
+            value="1"
+            defaultChecked={includeSignatureDefault}
+          />
+          Include email signature
+        </label>
+      ) : null}
       <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" loadingText="Sending...">Send now</SubmitButton>
     </form>
   );

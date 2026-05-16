@@ -20,12 +20,13 @@ export default async function JobRecordPage({
   const session = await requireTenantSession();
   const { jobId } = await params;
   const query = await searchParams;
-  const [record, pricingRate] = await Promise.all([
+  const [record, pricingRate, tenantProfile] = await Promise.all([
     getTenantJobRecord(session.tenantId, jobId),
     prisma.pricingRate.findFirst({
       where: { tenantId: session.tenantId },
       select: { hourlyRate: true, minimumCharge: true }
-    })
+    }),
+    prisma.tenantProfile.findUnique({ where: { tenantId: session.tenantId }, select: { emailSignatureAdHocDefault: true } })
   ]);
 
   if (!record) {
@@ -282,6 +283,7 @@ export default async function JobRecordPage({
           jobId={job.id}
           returnTo={`/dashboard/jobs/${job.id}`}
           title="Send customer update"
+          includeSignatureDefault={tenantProfile?.emailSignatureAdHocDefault ?? true}
         />
 
         <div className="rounded-lg border bg-card p-4 space-y-4">
