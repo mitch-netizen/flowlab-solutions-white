@@ -493,7 +493,6 @@ model Invoice {
   communications  Communication[]
 
   @@unique([tenantId, number])
-  @@index([tenantId])
   @@index([customerId])
 }
 
@@ -696,6 +695,7 @@ model SupportThread {
   tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, status])
+  @@index([status, updatedAt])
 }
 
 model SupportMessage {
