@@ -5,7 +5,7 @@ import {
   BREVO_SMS_INTEGRATION_SERVICE
 } from "@flowlab/contracts";
 import { prisma, resolveIntegrationCredentials } from "@flowlab/db";
-import { sendEmail, sendSms, buildBrandedEmailHtml } from "@flowlab/integrations";
+import { sendEmail, sendSms, buildBrandedEmailHtml, buildEmailSignature } from "@flowlab/integrations";
 import { logPlatformEvent } from "@flowlab/events";
 
 import { requireTenantSession } from "../../../../../lib/session";
@@ -87,7 +87,18 @@ export async function POST(request: Request) {
         logoUrl: tenant?.profile?.logoUrl,
         primaryColour: tenant?.profile?.primaryColour,
         bodyHtml: `<p>${escapeHtml(body).replace(/\n/g, "<br />")}</p>`,
-        footerText: `${businessName}${tenant?.profile?.email ? ` · ${tenant.profile.email}` : ""}`
+        footerText: buildEmailSignature({
+          businessName,
+          logoUrl: tenant?.profile?.logoUrl,
+          primaryColour: tenant?.profile?.primaryColour,
+          phone: tenant?.profile?.phone,
+          email: tenant?.profile?.email,
+          address: tenant?.profile?.address,
+          suburb: tenant?.profile?.suburb,
+          state: tenant?.profile?.state,
+          postcode: tenant?.profile?.postcode,
+          abn: tenant?.profile?.abn
+        })
       });
 
       await sendEmail(emailCredentials, customer.email, subject || `Message from ${businessName}`, html);
