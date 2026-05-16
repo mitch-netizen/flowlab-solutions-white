@@ -425,7 +425,6 @@ model Quote {
   job            Job?
 
   @@index([tenantId])
-  @@index([customerId])
 }
 
 model Agreement {
@@ -446,8 +445,6 @@ model Agreement {
   tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
-  @@index([customerId])
-  @@index([contractTemplateId])
 }
 
 model TenantAgreementTemplate {
@@ -496,6 +493,7 @@ model Invoice {
   communications  Communication[]
 
   @@unique([tenantId, number])
+  @@index([tenantId])
   @@index([customerId])
 }
 
@@ -519,9 +517,6 @@ model Communication {
   @@index([tenantId, customerId, createdAt])
   @@index([tenantId, jobId, createdAt])
   @@index([tenantId, invoiceId, createdAt])
-  @@index([customerId])
-  @@index([jobId])
-  @@index([invoiceId])
 }
 
 model Feedback {
@@ -675,7 +670,6 @@ model AutomationPreference {
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, key])
-  @@index([tenantId, enabled])
 }
 
 model RateLimitBucket {
@@ -702,7 +696,6 @@ model SupportThread {
   tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, status])
-  @@index([status, updatedAt])
 }
 
 model SupportMessage {
