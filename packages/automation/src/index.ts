@@ -22,6 +22,7 @@ import {
   buildActionSection,
   buildBrandedEmailHtml,
   buildEmailButton,
+  buildEmailSignature,
   fireMakeWebhook,
   sendEmail,
   sendSms
@@ -60,6 +61,26 @@ function createTrackingUrl(
     btn: buttonLabel
   });
   return `https://${rootDomain}/api/track/click?${trackingParams.toString()}`;
+}
+
+function buildTenantSignatureFooter(
+  profile: { businessName: string; logoUrl?: string | null; primaryColour?: string | null; phone?: string | null; email?: string | null; address?: string | null; suburb?: string | null; state?: string | null; postcode?: string | null; abn?: string | null; emailSignatureEnabled: boolean; emailSignatureCustomHtml?: string | null } | null | undefined,
+  businessName: string
+): string {
+  if (!profile?.emailSignatureEnabled) return businessName;
+  return buildEmailSignature({
+    businessName,
+    logoUrl: profile.logoUrl,
+    primaryColour: profile.primaryColour,
+    phone: profile.phone,
+    email: profile.email,
+    address: profile.address,
+    suburb: profile.suburb,
+    state: profile.state,
+    postcode: profile.postcode,
+    abn: profile.abn,
+    customHtml: profile.emailSignatureCustomHtml
+  });
 }
 
 async function getJob(jobId: string) {
@@ -262,7 +283,7 @@ async function processJob(job: ClaimedJob) {
                 ]
               )}
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(brevoEmailCredentials, customer.email, subject, html);
@@ -413,7 +434,7 @@ async function processJob(job: ClaimedJob) {
                 ]
               )}
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(
@@ -537,7 +558,7 @@ async function processJob(job: ClaimedJob) {
                 ]
               )}
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(
@@ -705,7 +726,7 @@ async function processJob(job: ClaimedJob) {
                 ]
               )}
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(
@@ -918,7 +939,7 @@ async function processJob(job: ClaimedJob) {
                 ]
               )}
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(brevoEmailCredentials, customer.email, subject, html);
@@ -1046,7 +1067,7 @@ async function processJob(job: ClaimedJob) {
                 ]
               )}
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(brevoEmailCredentials, customer.email, subject, html);
@@ -1188,7 +1209,7 @@ async function processJob(job: ClaimedJob) {
               <p><strong>Your request:</strong> ${enquiryText}</p>
               <p>We'll be back in touch with next steps as soon as we can.</p>
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(brevoEmailCredentials, customer.email, subject, html);
@@ -1260,7 +1281,7 @@ async function processJob(job: ClaimedJob) {
                 ]
               )}
             `,
-            footerText: businessName
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(brevoEmailCredentials, tenant.profile.email, subject, html);
@@ -1351,7 +1372,7 @@ async function processJob(job: ClaimedJob) {
                 ]
               )}
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(brevoEmailCredentials, customer.email, subject, html);
@@ -1526,7 +1547,7 @@ async function processJob(job: ClaimedJob) {
                 [{ label: "View in Portal", href: `https://${tenant?.slug}.flowlabsolutions.au/jobs/${payload.jobId}`, variant: "secondary" }]
               ) : ""}
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(brevoEmailCredentials, customer.email, subject, html);
@@ -1760,7 +1781,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
               <p>Average job duration variance: <strong>${avgVariance.toFixed(1)}%</strong></p>
               <p>Review and apply the suggestions in your <strong>Settings → Pricing</strong> page.</p>
             `,
-            footerText: businessName
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           if (tenant?.profile?.email) {
@@ -1903,7 +1924,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
           logoUrl: tenant?.profile?.logoUrl,
           primaryColour: tenant?.profile?.primaryColour,
           bodyHtml,
-          footerText: `${businessName} · Daily brief`
+          footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
         });
 
         try {
@@ -2108,7 +2129,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
                 ]
               )}
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
           await sendEmail(brevoEmailCredentials, customer.email, subject, html);
           await recordCommunication({ tenantId, customerId: customer.id, jobId: payload.jobId, channel: "email", subject, body: `Reminder for ${scheduledText}`, status: "sent" });
@@ -2225,7 +2246,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
                 ]
               )}
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
           await sendEmail(brevoEmailCredentials, customer.email, subject, html);
           await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "email", subject, body: `Invoice ${invoice?.number ?? payload.number} overdue 7 days.`, status: "sent" });
@@ -2317,7 +2338,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
                 ]
               )}
             `,
-            footerText: `${businessName} | ${tenant?.profile?.phone ?? ""} | ${tenant?.profile?.email ?? ""}`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
           await sendEmail(brevoEmailCredentials, customer.email, subject, html);
           await recordCommunication({ tenantId, customerId: customer.id, invoiceId: invoice?.id ?? payload.invoiceId, channel: "email", subject, body: `Final notice: invoice ${invoice?.number ?? payload.number} 14 days overdue.`, status: "sent" });
@@ -2357,7 +2378,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
                 ]
               )}
             `,
-            footerText: businessName
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
           await sendEmail(brevoEmailCredentials, tenant.profile.email, operatorSubject, html);
         } catch {
@@ -2489,7 +2510,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
                 ]
               )}
             `,
-            footerText: `${businessName} | Xero Sync`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(brevoEmailCredentials, tenant.profile.email, subject, html);
@@ -2553,7 +2574,7 @@ Return an empty array [] if no changes are recommended. Return ONLY JSON, no mar
                 ]
               )}
             `,
-            footerText: `${businessName} | Xero Integration`
+            footerText: buildTenantSignatureFooter(tenant?.profile, businessName)
           });
 
           await sendEmail(brevoEmailCredentials, tenant.profile.email, subject, html);

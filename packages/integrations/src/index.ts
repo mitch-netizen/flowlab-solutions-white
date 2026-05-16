@@ -1444,6 +1444,61 @@ export function getStripeClient(secretKey: string) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Build an HTML email signature block for tenant-branded transactional emails.
+ * Returns a table-based layout compatible with major email clients.
+ */
+export function buildEmailSignature(params: {
+  businessName: string;
+  logoUrl?: string | null;
+  primaryColour?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  suburb?: string | null;
+  state?: string | null;
+  postcode?: string | null;
+  abn?: string | null;
+  customHtml?: string | null;
+}): string {
+  if (params.customHtml) return params.customHtml;
+
+  const colour = params.primaryColour ?? "#3B82F6";
+
+  const addressParts = [params.address, params.suburb, params.state, params.postcode]
+    .filter(Boolean)
+    .join(", ");
+
+  const logoCell = params.logoUrl
+    ? `<td style="padding-right:16px;vertical-align:middle;">
+        <img src="${params.logoUrl}" alt="${params.businessName}" style="max-height:40px;width:auto;display:block;" />
+      </td>`
+    : "";
+
+  const contactParts: string[] = [];
+  if (params.phone) {
+    contactParts.push(`<a href="tel:${params.phone}" style="color:#64748b;text-decoration:none;">${params.phone}</a>`);
+  }
+  if (params.email) {
+    contactParts.push(`<a href="mailto:${params.email}" style="color:#64748b;text-decoration:none;">${params.email}</a>`);
+  }
+
+  const metaParts: string[] = [];
+  if (addressParts) metaParts.push(addressParts);
+  if (params.abn) metaParts.push(`ABN ${params.abn}`);
+
+  return `<table cellpadding="0" cellspacing="0" style="border-top:2px solid ${colour};padding-top:12px;margin-top:4px;width:100%;">
+    <tr>
+      ${logoCell}
+      <td style="vertical-align:middle;">
+        <strong style="color:#0f172a;font-size:14px;display:block;">${params.businessName}</strong>
+        ${contactParts.length ? `<span style="font-size:13px;color:#64748b;">${contactParts.join(" &nbsp;&middot;&nbsp; ")}</span>` : ""}
+        ${metaParts.length ? `<br><span style="font-size:12px;color:#94a3b8;">${metaParts.join(" &nbsp;&middot;&nbsp; ")}</span>` : ""}
+      </td>
+    </tr>
+  </table>`;
+}
+
+/**
  * Build a CTA button for email templates
  */
 export function buildEmailButton(label: string, href: string, variant: "primary" | "success" | "danger" | "secondary" = "primary") {
@@ -1554,7 +1609,8 @@ export async function sendEmail(
   credentials: Record<string, string>,
   to: string,
   subject: string,
-  html: string
+  html: string,
+  options?: { replyTo?: { email: string; name?: string } }
 ): Promise<void> {
   const apiKey = credentials.apiKey || process.env.BREVO_API_KEY || "";
   const fromEmail = credentials.fromEmail || process.env.BREVO_FROM_EMAIL || "";
@@ -1580,6 +1636,7 @@ export async function sendEmail(
       subject,
       htmlContent: html,
       textContent: stripHtml(html),
+      ...(options?.replyTo ? { replyTo: options.replyTo } : {}),
       ...(sandboxMode === "true" ? { headers: { "X-Sib-Sandbox": "drop" } } : {})
     }),
     signal: AbortSignal.timeout(10_000)

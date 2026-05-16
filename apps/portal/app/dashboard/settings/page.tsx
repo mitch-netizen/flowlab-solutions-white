@@ -289,6 +289,120 @@ export default async function SettingsPage({
         <RateSuggestionsPanel suggestions={rateSuggestions} />
       ) : null}
 
+      {params.signature === "saved" ? (
+        <div className="rounded-lg border bg-card p-4 border-l-4 pl-4 border-l-emerald-500">
+          <p style={{ color: "#86efac" }}>Email signature settings saved.</p>
+        </div>
+      ) : null}
+
+      <form className="surface form-grid space-y-4" action="/api/tenant/settings/signature" method="post">
+        <div className="setup-section-copy">
+          <div className="eyebrow">Email signature</div>
+          <h2 style={{ marginBottom: 8 }}>Outgoing email signature</h2>
+          <p>FlowLab automatically builds your email signature from your business profile — name, phone, email, address, and ABN. Control when it appears and optionally replace it with your own HTML.</p>
+        </div>
+
+        <div className="setup-field-grid">
+          <div className="space-y-4 is-full">
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}>
+                <input
+                  type="hidden"
+                  name="emailSignatureEnabled"
+                  value="0"
+                />
+                <input
+                  type="checkbox"
+                  name="emailSignatureEnabled"
+                  value="1"
+                  defaultChecked={snapshot.profile?.emailSignatureEnabled ?? true}
+                  style={{ marginTop: 3, flexShrink: 0 }}
+                />
+                <span>
+                  <strong style={{ display: "block", fontSize: 14 }}>Include in automated emails</strong>
+                  <span className="text-sm text-muted-foreground">Appended to all system-triggered emails — booking confirmations, invoices, reminders, and so on.</span>
+                </span>
+              </label>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}>
+                <input
+                  type="hidden"
+                  name="emailSignatureAdHocDefault"
+                  value="0"
+                />
+                <input
+                  type="checkbox"
+                  name="emailSignatureAdHocDefault"
+                  value="1"
+                  defaultChecked={snapshot.profile?.emailSignatureAdHocDefault ?? true}
+                  style={{ marginTop: 3, flexShrink: 0 }}
+                />
+                <span>
+                  <strong style={{ display: "block", fontSize: 14 }}>Include by default in ad-hoc messages</strong>
+                  <span className="text-sm text-muted-foreground">Pre-ticks the &ldquo;Include signature&rdquo; checkbox when you send a manual message from the CRM, job, or invoice screen. You can override it per-send.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-4 is-full">
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <Label htmlFor="emailSignatureCustomHtml">
+                Custom signature HTML <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 400 }}>optional — overrides the auto-generated one</span>
+              </Label>
+              <textarea
+                id="emailSignatureCustomHtml"
+                name="emailSignatureCustomHtml"
+                rows={6}
+                defaultValue={snapshot.profile?.emailSignatureCustomHtml ?? ""}
+                placeholder={"Leave blank to use the auto-generated signature built from your business profile.\n\nOr enter custom HTML here, e.g.:\n<strong>Jane Smith</strong><br>0400 000 000 · jane@example.com"}
+                className="w-full rounded-lg border bg-background px-3 py-2 text-sm font-mono"
+              />
+              <p className="text-sm text-muted-foreground">
+                When filled in, this replaces the auto-generated block entirely. Basic HTML is supported. The signature content is only rendered inside outgoing emails — not in the browser.
+              </p>
+            </div>
+          </div>
+
+          {snapshot.profile && (
+            <div className="space-y-4 is-full">
+              <Label>Signature preview <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 400 }}>auto-generated from your profile</span></Label>
+              <div style={{ background: "#f8fafc", borderRadius: 8, padding: "16px 20px", border: "1px solid #e2e8f0" }}>
+                <table cellPadding={0} cellSpacing={0} style={{ borderTop: `2px solid ${snapshot.profile.primaryColour ?? "#3B82F6"}`, paddingTop: 12, marginTop: 0, width: "100%" }}>
+                  <tbody>
+                    <tr>
+                      {snapshot.profile.logoUrl ? (
+                        <td style={{ paddingRight: 16, verticalAlign: "middle" }}>
+                          <img src={snapshot.profile.logoUrl} alt={snapshot.profile.businessName} style={{ maxHeight: 40, width: "auto", display: "block" }} />
+                        </td>
+                      ) : null}
+                      <td style={{ verticalAlign: "middle" }}>
+                        <strong style={{ color: "#0f172a", fontSize: 14, display: "block" }}>{snapshot.profile.businessName}</strong>
+                        {(snapshot.profile.phone || snapshot.profile.email) ? (
+                          <span style={{ fontSize: 13, color: "#64748b" }}>
+                            {[snapshot.profile.phone, snapshot.profile.email].filter(Boolean).join(" · ")}
+                          </span>
+                        ) : null}
+                        {[snapshot.profile.address, snapshot.profile.suburb, snapshot.profile.state, snapshot.profile.postcode].some(Boolean) ? (
+                          <><br /><span style={{ fontSize: 12, color: "#94a3b8" }}>{[snapshot.profile.address, snapshot.profile.suburb, snapshot.profile.state, snapshot.profile.postcode].filter(Boolean).join(", ")}</span></>
+                        ) : null}
+                        {snapshot.profile.abn ? (
+                          <><br /><span style={{ fontSize: 12, color: "#94a3b8" }}>ABN {snapshot.profile.abn}</span></>
+                        ) : null}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-sm text-muted-foreground">Update phone, email, address, or ABN in the Business details section above and the signature will reflect the change automatically.</p>
+            </div>
+          )}
+        </div>
+
+        <SubmitButton className="inline-flex items-center justify-center rounded-lg border bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+          Save signature settings
+        </SubmitButton>
+      </form>
+
       <CustomDomainSection
         currentDomain={snapshot.profile?.customDomain ?? null}
         isVerified={snapshot.profile?.customDomainVerified ?? false}

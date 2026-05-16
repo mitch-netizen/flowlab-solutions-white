@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { getTenantInvoiceRecord } from "@flowlab/db";
+import { getTenantInvoiceRecord, prisma } from "@flowlab/db";
 
 import CustomerLink from "../../../../components/customer-link";
 import DashboardPageScaffold from "../../../../components/dashboard/page-scaffold";
@@ -20,7 +20,10 @@ export default async function InvoiceRecordPage({
   const session = await requireTenantSession();
   const { invoiceId } = await params;
   const query = await searchParams;
-  const record = await getTenantInvoiceRecord(session.tenantId, invoiceId);
+  const [record, tenantProfile] = await Promise.all([
+    getTenantInvoiceRecord(session.tenantId, invoiceId),
+    prisma.tenantProfile.findUnique({ where: { tenantId: session.tenantId }, select: { emailSignatureAdHocDefault: true } })
+  ]);
 
   if (!record) {
     notFound();
@@ -198,6 +201,7 @@ export default async function InvoiceRecordPage({
           invoiceId={invoice.id}
           returnTo={`/dashboard/invoices/${invoice.id}`}
           title="Send invoice follow-up"
+          includeSignatureDefault={tenantProfile?.emailSignatureAdHocDefault ?? true}
         />
 
         <div className="rounded-lg border bg-card p-4 space-y-4">

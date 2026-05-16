@@ -418,6 +418,9 @@ export interface TenantProfile {
   serviceRadiusKm: number | null;
   businessType: BusinessType;
   timezone: string;
+  emailSignatureEnabled: boolean;
+  emailSignatureAdHocDefault: boolean;
+  emailSignatureCustomHtml: string | null;
 }
 
 export interface TenantContext {
