@@ -3,8 +3,6 @@ import { headers } from "next/headers";
 import { DM_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
-export const dynamic = "force-dynamic";
-
 import { ensureAppEnv } from "@flowlab/contracts/server";
 import { getFlowLabLogoAsset } from "@flowlab/branding";
 import { getCurrentTheme } from "../lib/tenant";

@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { getFlowLabLogoAsset } from "@flowlab/branding";
-import { prisma } from "@flowlab/db";
 import { getPlanFeatures } from "@flowlab/contracts";
 import TenantUnavailable from "../../components/tenant-unavailable";
 import PortalSidebarNav from "../../components/portal-sidebar-nav";
@@ -20,25 +19,15 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     return <TenantUnavailable title="Tenant dashboard unavailable" message="Your session is valid, but this host is not mapped to your tenant. Sign in through the correct tenant domain." />;
   }
 
-  const [tenantUser, tenantRecord] = await Promise.all([
-    session?.sub
-      ? prisma.tenantUser.findUnique({ where: { id: session.sub } })
-      : Promise.resolve(null),
-    prisma.tenant.findUnique({
-      where: { id: session.tenantId },
-      select: { status: true, plan: true, trialEndsAt: true }
-    })
-  ]);
-
-  const onboardingComplete = tenantUser?.onboardingCompleted ?? false;
-  const onboardingStep = tenantUser?.onboardingStep ?? 1;
+  const onboardingComplete = session.onboardingCompleted;
+  const onboardingStep = session.onboardingStep;
   const isImpersonating = !!session?.impersonatedBy;
 
-  const status = tenantRecord?.status ?? "trial";
-  const plan = tenantRecord?.plan ?? tenant.plan;
-  const trialEndsAt = tenantRecord?.trialEndsAt ?? null;
+  const status = session.tenantStatus;
+  const plan = session.tenantPlan;
+  const trialEndsAt = session.trialEndsAt ? new Date(session.trialEndsAt) : null;
   const trialDaysLeft = trialEndsAt
-    ? Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((trialEndsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
   const trialExpired = trialDaysLeft !== null && trialDaysLeft <= 0;
   const trialExpiringSoon = trialDaysLeft !== null && trialDaysLeft > 0 && trialDaysLeft <= 5;
