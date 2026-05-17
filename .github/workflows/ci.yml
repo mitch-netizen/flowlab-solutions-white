@@ -79,6 +79,13 @@ jobs:
         env:
           NEXT_PUBLIC_APP_ENV: "ci"
 
+      - name: Create Sentry release and associate commits
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: npm run sentry:release
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: flowlab-solutions
+
   e2e:
     name: E2E smoke tests
     runs-on: ubuntu-latest
