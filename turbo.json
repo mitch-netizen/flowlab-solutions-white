@@ -8,20 +8,24 @@
       "outputs": [
         ".next/**",
         "dist/**"
-      ]
+      ],
+      "outputMode": "hash-only"
     },
     "typecheck": {
       "dependsOn": [
         "^build"
       ],
-      "outputs": []
+      "outputs": [],
+      "outputMode": "hash-only"
     },
     "lint": {
-      "outputs": []
+      "outputs": [],
+      "outputMode": "hash-only"
     },
     "dev": {
       "cache": false,
       "persistent": true
     }
-  }
+  },
+  "cacheDir": ".turbo"
 }
