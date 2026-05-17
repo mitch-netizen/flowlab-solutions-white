@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "sentry-nextjs-sdk": {
+      "source": "getsentry/sentry-for-ai",
+      "sourceType": "github",
+      "skillPath": "skills/sentry-nextjs-sdk/SKILL.md",
+      "computedHash": "b35dc891d943debd1c9ab2cf4a87a4ee9a335c3e4dead4c91b70f5c9535c9f7c"
+    },
     "supabase": {
       "source": "supabase/agent-skills",
       "sourceType": "github",
