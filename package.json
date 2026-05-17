@@ -26,7 +26,7 @@
     "test:e2e": "playwright test tests/e2e/smoke.test.ts",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
-    "sentry:release": "sentry-cli releases new $npm_package_version && sentry-cli releases set-commits $npm_package_version --auto",
+    "sentry:release": "sentry-cli releases new $npm_package_version -p ${SENTRY_PROJECT} && sentry-cli releases set-commits $npm_package_version --auto -p ${SENTRY_PROJECT}",
     "sentry:deploy": "sentry-cli releases deploys $npm_package_version new -e production"
   },
   "devDependencies": {

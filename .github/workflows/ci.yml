@@ -85,6 +85,7 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: flowlab-solutions
+          SENTRY_PROJECT: flowlab-portal
 
   e2e:
     name: E2E smoke tests
