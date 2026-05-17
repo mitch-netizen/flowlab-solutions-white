@@ -8,19 +8,16 @@
       "outputs": [
         ".next/**",
         "dist/**"
-      ],
-      "outputMode": "hash-only"
+      ]
     },
     "typecheck": {
       "dependsOn": [
         "^build"
       ],
-      "outputs": [],
-      "outputMode": "hash-only"
+      "outputs": []
     },
     "lint": {
-      "outputs": [],
-      "outputMode": "hash-only"
+      "outputs": []
     },
     "dev": {
       "cache": false,
