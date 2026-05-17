@@ -13,10 +13,4 @@ Sentry.init({
   environment: process.env.NEXT_PUBLIC_APP_ENV || process.env.NODE_ENV,
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1,
   enableLogs: process.env.NODE_ENV !== "production",
-
-  // Enable session tracking for release health monitoring
-  autoSessionTracking: true,
-
-  // Capture unhandled rejections
-  attachStacktrace: true,
 });
