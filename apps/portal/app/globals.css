@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --app-bg: #1f2632;
-  --surface-1: color-mix(in srgb, var(--app-bg) 88%, black);
-  --surface-2: color-mix(in srgb, var(--app-bg) 76%, black);
-  --text-primary: #e1e1e1;
+  --app-bg: #ffffff;
+  --surface-1: #ffffff;
+  --surface-2: #f6f8fb;
+  --text-primary: #1f2632;
   --text-secondary: #676767;
   --accent-primary: var(--brand-accent, #00b4a1);
   --accent-secondary: var(--brand-secondary, #04a9ba);
-  --border-subtle: color-mix(in srgb, var(--text-primary) 20%, transparent);
+  --border-subtle: color-mix(in srgb, var(--text-primary) 16%, transparent);
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -27,8 +27,8 @@
   --space-7: 28px;
   --space-8: 32px;
 
-  --shadow-sm: 0 12px 36px color-mix(in srgb, var(--app-bg) 80%, black);
-  --shadow-md: 0 18px 52px color-mix(in srgb, var(--app-bg) 84%, black);
+  --shadow-sm: 0 12px 30px rgb(31 38 50 / 0.07);
+  --shadow-md: 0 24px 70px rgb(31 38 50 / 0.11);
 
   --gradient-primary: linear-gradient(135deg, #00b4a1 0%, #04a9ba 100%);
 
@@ -37,11 +37,11 @@
   --state-danger: #ef4444;
 
   /* Compatibility mapping: keep --brand-* alive */
-  --brand-primary: #1f2632;
+  --brand-primary: var(--app-bg);
   --brand-secondary: #04a9ba;
   --brand-accent: #00b4a1;
-  --brand-background: #1f2632;
-  --brand-foreground: #e1e1e1;
+  --brand-background: var(--app-bg);
+  --brand-foreground: var(--text-primary);
 
   /* Existing local aliases remapped to semantic tokens */
   --background: var(--app-bg);
@@ -53,7 +53,7 @@
   --primary-foreground: var(--app-bg);
   --secondary: var(--surface-2);
   --secondary-foreground: var(--text-primary);
-  --accent: color-mix(in srgb, var(--accent-primary) 18%, var(--surface-2));
+  --accent: color-mix(in srgb, var(--accent-primary) 14%, var(--surface-2));
   --accent-foreground: var(--text-primary);
 }
 
@@ -90,9 +90,9 @@ body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--accent-primary) 20%, transparent), transparent 26%),
-    radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--accent-secondary) 13%, transparent), transparent 30%),
-    linear-gradient(180deg, #121822 0%, color-mix(in srgb, var(--app-bg) 92%, black) 48%, #0d1118 100%);
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--accent-primary) 12%, transparent), transparent 28%),
+    radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--accent-secondary) 8%, transparent), transparent 26%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 62%, #ffffff 100%);
   color: var(--text-primary);
   font-family: var(--font-heading), sans-serif;
 }
@@ -316,10 +316,10 @@ h3 {
   gap: var(--space-4);
   height: fit-content;
   padding: var(--space-5);
-  border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xxl);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-1) 90%, white), color-mix(in srgb, var(--surface-1) 92%, black));
-  box-shadow: 0 26px 80px color-mix(in srgb, #000 36%, transparent);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-md);
 }
 
 .portal-sidebar__brand {
@@ -368,12 +368,12 @@ h3 {
   display: grid;
   gap: var(--space-5);
   padding: clamp(24px, 4vw, 42px);
-  border: 1px solid color-mix(in srgb, var(--text-primary) 11%, transparent);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xxl);
   background:
-    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent-primary) 18%, transparent), transparent 34%),
-    linear-gradient(135deg, color-mix(in srgb, var(--surface-1) 88%, black), color-mix(in srgb, var(--surface-2) 74%, black));
-  box-shadow: 0 28px 90px color-mix(in srgb, #000 34%, transparent);
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent-primary) 12%, transparent), transparent 34%),
+    linear-gradient(135deg, var(--surface-1), var(--surface-2));
+  box-shadow: var(--shadow-md);
   overflow: hidden;
 }
 
@@ -549,17 +549,16 @@ h3 {
 .rounded-lg.border.bg-card\/70,
 .surface,
 .surface-soft {
-  border-color: color-mix(in srgb, var(--text-primary) 10%, transparent) !important;
+  border-color: var(--border-subtle) !important;
   border-radius: var(--radius-xl) !important;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-1) 94%, white), color-mix(in srgb, var(--surface-1) 94%, black)) !important;
-  box-shadow: 0 20px 70px color-mix(in srgb, #000 28%, transparent);
+  background: var(--surface-1) !important;
+  box-shadow: var(--shadow-sm);
 }
 
 .bg-card\/60,
 .bg-card\/70,
 .surface-soft {
-  background: color-mix(in srgb, var(--surface-2) 90%, black) !important;
+  background: var(--surface-2) !important;
 }
 
 .inline-flex.rounded-lg,

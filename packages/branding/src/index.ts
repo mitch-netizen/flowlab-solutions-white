@@ -38,11 +38,11 @@ function buildSemanticTokens(accentPrimary: string, accentSecondary: string) {
     "--state-warning": "#f59e0b",
     "--state-danger": "#ef4444",
     /* Compatibility mapping: keep --brand-* alive as concrete values */
-    "--brand-primary": "#1f2632",
+    "--brand-primary": "#ffffff",
     "--brand-secondary": accentSecondary,
     "--brand-accent": accentPrimary,
-    "--brand-background": "#1f2632",
-    "--brand-foreground": "#e1e1e1",
+    "--brand-background": "#ffffff",
+    "--brand-foreground": "#1f2632",
     /* Existing aliases retained */
     "--background": "var(--app-bg)",
     "--foreground": "var(--text-primary)",
