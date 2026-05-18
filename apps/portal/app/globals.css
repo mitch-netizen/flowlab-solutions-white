@@ -58,6 +58,7 @@
 }
 
 @theme inline {
+  /* Core aliases */
   --color-background: var(--app-bg);
   --color-foreground: var(--text-primary);
   --color-card: var(--surface-1);
@@ -69,6 +70,17 @@
   --color-secondary-foreground: var(--text-primary);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--text-primary);
+
+  /* FlowLab Design System semantic tokens */
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-success: var(--state-success);
+  --color-warning: var(--state-warning);
+  --color-danger: var(--state-danger);
 }
 
 * { box-sizing: border-box; }
