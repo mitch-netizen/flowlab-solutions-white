@@ -30,6 +30,10 @@
 
   --gradient-primary: linear-gradient(135deg, #00b4a1 0%, #04a9ba 100%);
 
+  --state-success: #22c55e;
+  --state-warning: #f59e0b;
+  --state-danger: #ef4444;
+
   /* Compatibility mapping: keep --brand-* alive */
   --brand-primary: var(--app-bg);
   --brand-secondary: var(--surface-1);
@@ -50,6 +54,7 @@
 }
 
 @theme inline {
+  /* Core aliases */
   --color-background: var(--app-bg);
   --color-foreground: var(--text-primary);
   --color-card: var(--surface-1);
@@ -59,6 +64,17 @@
   --color-primary-foreground: var(--app-bg);
   --color-secondary: var(--surface-2);
   --color-secondary-foreground: var(--text-primary);
+
+  /* FlowLab Design System semantic tokens */
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-success: var(--state-success);
+  --color-warning: var(--state-warning);
+  --color-danger: var(--state-danger);
 }
 
 * { box-sizing: border-box; }

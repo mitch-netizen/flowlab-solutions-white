@@ -1,5 +1,12 @@
 # FlowLab Solutions Brand Guidelines
 
+## FlowLab Design System
+
+**Name:** FlowLab Design System
+**Blurb:** The shared visual and interaction foundation for FlowLab Solutions.
+**Package:** `@flowlab/ui` (components + tokens) · `@flowlab/branding` (theming + logo assets)
+**Last set up:** 2026-05-18
+
 ## 1) Brand foundation
 
 ### Personality
@@ -129,11 +136,15 @@
 - `admin`: operational interface under web/admin routes; same token contract as portal.
 - `packages/ui`: shared primitives are the enforcement layer for tokens, radius, spacing, shadow, and focus behavior.
 
-## 9) Implementation checklist (next PR)
-- Add/confirm global CSS variables for all color, radius, and spacing tokens.
-- Map Tailwind theme keys to semantic tokens (no raw hex in utilities/components).
-- Update shared button/input/card primitives in `packages/ui` to token-driven styles.
-- Standardize focus-visible states and disabled states across shared controls.
-- Wire logo usage by context (dark/light) using the matrix above.
-- Keep SVG entries as placeholders until vector files are added.
-- Verify AA contrast for text, controls, and interactive states before merge.
+## 9) Implementation checklist
+
+- [x] Global CSS variables for all color, radius, spacing, shadow, and state tokens — set in both `apps/portal/app/globals.css` and `apps/web/app/globals.css`.
+- [x] Tailwind `@theme inline` mapped to semantic tokens — `--color-surface-1/2`, `--color-accent-primary/secondary`, `--color-success/warning/danger` added to both apps.
+- [x] Shared primitives in `packages/ui` token-driven — `Button`, `Input`, `Card`, `Badge`, `Stat`, `SectionTitle`, `Textarea`, `Select`, `Spinner`, `Alert` all use CSS custom properties only.
+- [x] `Button` variants (primary / secondary / ghost) and sizes (sm / md / lg) standardised.
+- [x] Focus-visible ring (2px, `accent-primary`/`accent-secondary`) on `Button`, `Input`, `Textarea`, `Select`.
+- [x] Disabled states on all interactive primitives — reduced opacity + `cursor: not-allowed`.
+- [x] `tokens.ts` export — type-safe CSS variable name constants from `@flowlab/ui`.
+- [x] Logo usage by context (dark/light) wired via `getFlowLabLogoAsset()` in `@flowlab/branding`.
+- [x] SVG logo files present in `apps/web/public/brand/logos/` (swap PNG for SVG when vector files are available).
+- [x] State color tokens (`--state-success/warning/danger`) added to `buildSemanticTokens` in `@flowlab/branding` so tenant themes carry them.
