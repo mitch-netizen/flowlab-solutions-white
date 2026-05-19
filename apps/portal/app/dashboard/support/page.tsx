@@ -52,7 +52,18 @@ export default function SupportPage() {
     }
   }
 
-  useEffect(() => { loadThreads(); }, []);
+  useEffect(() => {
+    void (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/tenant/support/threads");
+        const data = (await res.json()) as { threads?: SupportThread[] };
+        setThreads(data.threads ?? []);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (view === "thread") {
