@@ -31,7 +31,7 @@ export function getStripeSecretKey() {
 
 export function getStripePriceId(plan: TenantPlan | string) {
   const envKey = `STRIPE_PRICE_${plan.toString().toUpperCase()}`;
-  return process.env[envKey] ?? process.env[`${envKey}_ID`];
+  return (process.env[envKey] ?? process.env[`${envKey}_ID`])?.trim();
 }
 
 export function getPlanFromStripePrice(priceId?: string | null): TenantPlan | null {
