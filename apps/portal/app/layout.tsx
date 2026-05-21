@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { DM_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { ensureAppEnv } from "@flowlab/contracts/server";
 import { getFlowLabLogoAsset } from "@flowlab/branding";
@@ -51,6 +52,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         }}
       >
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
