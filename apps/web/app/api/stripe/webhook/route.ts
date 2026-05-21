@@ -115,7 +115,7 @@ async function sendSubscriptionConfirmationEmail(
   const portalUrl = buildTenantUrl(tenant.slug, "/dashboard");
   const planDisplay = plan.charAt(0).toUpperCase() + plan.slice(1);
 
-  await fetch("https://api.brevo.com/v3/smtp/email", {
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: { "Content-Type": "application/json", "api-key": apiKey },
     body: JSON.stringify({
@@ -142,6 +142,11 @@ async function sendSubscriptionConfirmationEmail(
       `
     })
   });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({})) as { message?: string };
+    throw new Error(`Brevo email send failed (${response.status}): ${body.message ?? "unknown error"}`);
+  }
 }
 
 async function handleCheckoutCompleted(event: StripeWebhookEvent) {
