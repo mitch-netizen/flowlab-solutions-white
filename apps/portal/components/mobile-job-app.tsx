@@ -36,7 +36,7 @@ function writeQueue(queue: MobileJobAction[]) {
 
 export function MobileJobApp({ jobs }: { jobs: JobCard[] }) {
   const [queue, setQueue] = useState<MobileJobAction[]>(readQueue);
-  const [online, setOnline] = useState(() => window.navigator.onLine);
+  const [online, setOnline] = useState(() => typeof window !== "undefined" ? window.navigator.onLine : true);
   const [activeTimers, setActiveTimers] = useState<Record<string, number>>({});
   const [onMyWaySent, setOnMyWaySent] = useState<Record<string, boolean>>({});
   const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({});
