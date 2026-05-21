@@ -49,7 +49,20 @@ export default function AdminSupportPage() {
     if (data.thread) setActiveThread(data.thread);
   }
 
-  useEffect(() => { loadThreads(statusFilter); }, [statusFilter]);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    void (async () => {
+      try {
+        const res = await fetch(`/api/admin/support/threads?status=${statusFilter}`);
+        const data = (await res.json()) as { threads?: SupportThread[] };
+        if (!cancelled) setThreads(data.threads ?? []);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [statusFilter]);
 
   async function handleReply(e: React.FormEvent) {
     e.preventDefault();

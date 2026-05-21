@@ -536,44 +536,48 @@ export async function generateServiceAgreementTemplateDocx(input: {
   return Packer.toBuffer(doc);
 }
 
-function getMasterKey() {
-  const source = process.env.ENCRYPTION_MASTER_KEY;
-
-  if (source) {
-    return crypto.pbkdf2Sync(
-      source,
-      "flowlab-encryption-v1",
-      100_000,
-      32,
-      "sha256"
-    );
-  }
-
-  if (process.env.NODE_ENV !== "test") {
-    throw new Error("ENCRYPTION_MASTER_KEY is required");
-  }
-
-  // PBKDF2 with a fixed salt — proper key stretching over the legacy SHA256 hash.
-  // Salt is non-secret and deterministic so no per-record storage is needed.
-  return crypto.pbkdf2Sync(
-    "test-master-key",
-    "flowlab-encryption-v1",
-    100_000,
-    32,
-    "sha256"
-  );
+function derivePbkdf2Key(source: string): Buffer {
+  return crypto.pbkdf2Sync(source, "flowlab-encryption-v1", 100_000, 32, "sha256");
 }
 
-/** Legacy key used before PBKDF2 migration — retained for decrypting old records. */
-function getLegacyMasterKey() {
+function deriveLegacyKey(source: string): Buffer {
+  return crypto.createHash("sha256").update(source).digest();
+}
+
+function getMasterKey(): Buffer {
   const source = process.env.ENCRYPTION_MASTER_KEY;
-  if (source) {
-    return crypto.createHash("sha256").update(source).digest();
+  if (source) return derivePbkdf2Key(source);
+  if (process.env.NODE_ENV !== "test") throw new Error("ENCRYPTION_MASTER_KEY is required");
+  return derivePbkdf2Key("test-master-key");
+}
+
+/**
+ * Returns all keys to try when decrypting, in priority order:
+ * current key (PBKDF2 + legacy SHA256), then each key listed in
+ * ENCRYPTION_MASTER_KEY_PREVIOUS (comma-separated), also in both formats.
+ *
+ * To rotate: set ENCRYPTION_MASTER_KEY to the new value and
+ * ENCRYPTION_MASTER_KEY_PREVIOUS to the old value, then call the
+ * /api/admin/encryption/reencrypt endpoint. Once migration is complete,
+ * remove ENCRYPTION_MASTER_KEY_PREVIOUS.
+ */
+function getAllDecryptionKeys(): Buffer[] {
+  const keys: Buffer[] = [];
+  const current = process.env.ENCRYPTION_MASTER_KEY ?? (process.env.NODE_ENV === "test" ? "test-master-key" : null);
+  if (!current && process.env.NODE_ENV !== "test") throw new Error("ENCRYPTION_MASTER_KEY is required");
+  if (current) {
+    keys.push(derivePbkdf2Key(current));
+    keys.push(deriveLegacyKey(current));
   }
-  if (process.env.NODE_ENV === "test") {
-    return crypto.createHash("sha256").update("test-master-key").digest();
+  const previous = (process.env.ENCRYPTION_MASTER_KEY_PREVIOUS ?? "")
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+  for (const prev of previous) {
+    keys.push(derivePbkdf2Key(prev));
+    keys.push(deriveLegacyKey(prev));
   }
-  throw new Error("ENCRYPTION_MASTER_KEY is required");
+  return keys;
 }
 
 function decryptBuffer(buffer: Buffer, key: Buffer): string {
@@ -595,14 +599,9 @@ export function encryptJson(payload: Record<string, string>) {
 }
 
 export function decryptJson(input: string | null | undefined): Record<string, string> {
-  if (!input) {
-    return {};
-  }
-
+  if (!input) return {};
   const buffer = Buffer.from(input, "base64");
-
-  // Try current PBKDF2 key first, then fall back to legacy SHA256 key for old records.
-  for (const key of [getMasterKey(), getLegacyMasterKey()]) {
+  for (const key of getAllDecryptionKeys()) {
     try {
       const decrypted = decryptBuffer(buffer, key);
       return JSON.parse(decrypted) as Record<string, string>;
@@ -610,8 +609,19 @@ export function decryptJson(input: string | null | undefined): Record<string, st
       // Try next key
     }
   }
-
   return {};
+}
+
+/**
+ * Re-encrypts a ciphertext blob with the current key.
+ * Returns the original input unchanged if decryption fails (unrecognised format).
+ * Used during key rotation to migrate records to the new key.
+ */
+export function reencryptJson(input: string | null | undefined): string | null {
+  if (!input) return null;
+  const decrypted = decryptJson(input);
+  if (Object.keys(decrypted).length === 0) return input;
+  return encryptJson(decrypted);
 }
 
 export function getDocuSealApiBaseUrl() {
