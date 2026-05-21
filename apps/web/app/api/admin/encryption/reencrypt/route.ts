@@ -25,7 +25,7 @@ export async function POST() {
   let eventLogs = 0;
 
   const [tenantRecords, platformRecords, eventRecords] = await Promise.all([
-    prisma.integration.findMany({
+    prisma.tenantIntegration.findMany({
       where: { credentialsJson: { not: null } },
       select: { id: true, credentialsJson: true }
     }),
@@ -40,17 +40,17 @@ export async function POST() {
   ]);
 
   await Promise.all(
-    tenantRecords.map(async (r) => {
+    tenantRecords.map(async (r: { id: string; credentialsJson: string | null }) => {
       const reencrypted = reencryptJson(r.credentialsJson);
       if (reencrypted && reencrypted !== r.credentialsJson) {
-        await prisma.integration.update({ where: { id: r.id }, data: { credentialsJson: reencrypted } });
+        await prisma.tenantIntegration.update({ where: { id: r.id }, data: { credentialsJson: reencrypted } });
         tenantIntegrations++;
       }
     })
   );
 
   await Promise.all(
-    platformRecords.map(async (r) => {
+    platformRecords.map(async (r: { id: string; credentialsJson: string | null }) => {
       const reencrypted = reencryptJson(r.credentialsJson);
       if (reencrypted && reencrypted !== r.credentialsJson) {
         await prisma.platformIntegration.update({ where: { id: r.id }, data: { credentialsJson: reencrypted } });
@@ -60,7 +60,7 @@ export async function POST() {
   );
 
   await Promise.all(
-    eventRecords.map(async (r) => {
+    eventRecords.map(async (r: { id: string; responseSummary: string | null }) => {
       const reencrypted = reencryptJson(r.responseSummary);
       if (reencrypted && reencrypted !== r.responseSummary) {
         await prisma.platformEventLog.update({ where: { id: r.id }, data: { responseSummary: reencrypted } });
