@@ -35,17 +35,14 @@ function writeQueue(queue: MobileJobAction[]) {
 }
 
 export function MobileJobApp({ jobs }: { jobs: JobCard[] }) {
-  const [queue, setQueue] = useState<MobileJobAction[]>([]);
-  const [online, setOnline] = useState(true);
+  const [queue, setQueue] = useState<MobileJobAction[]>(readQueue);
+  const [online, setOnline] = useState(() => window.navigator.onLine);
   const [activeTimers, setActiveTimers] = useState<Record<string, number>>({});
   const [onMyWaySent, setOnMyWaySent] = useState<Record<string, boolean>>({});
   const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({});
   const syncingRef = useRef(false);
 
   useEffect(() => {
-    setQueue(readQueue());
-    setOnline(window.navigator.onLine);
-
     const handleOnline = () => setOnline(true);
     const handleOffline = () => setOnline(false);
 
