@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { prisma } from "@flowlab/db";
+import { buildTenantUrl } from "@flowlab/contracts/server";
 import {
   getPlanFromStripePrice,
   getTenantStatusFromStripeSubscription,
@@ -62,7 +63,8 @@ async function syncTenantSubscription(subscription: StripeSubscriptionSnapshot, 
   ].filter(Boolean) as Array<{ id: string } | { stripeSubscriptionId: string } | { stripeCustomerId: string }>;
 
   const tenant = await prisma.tenant.findFirst({
-    where: { OR: orConditions }
+    where: { OR: orConditions },
+    include: { profile: { select: { businessName: true } } }
   });
 
   if (!tenant) {
@@ -73,7 +75,7 @@ async function syncTenantSubscription(subscription: StripeSubscriptionSnapshot, 
       summary: `Stripe subscription ${subscription.id} could not be matched to a tenant`,
       errorMessage: "No tenant matched subscription metadata, subscription ID, or customer ID"
     });
-    return;
+    return null;
   }
 
   await prisma.tenant.update({
@@ -96,6 +98,55 @@ async function syncTenantSubscription(subscription: StripeSubscriptionSnapshot, 
     status: "success",
     summary: `Tenant subscription synced from Stripe: ${subscription.status}`
   });
+
+  return tenant;
+}
+
+async function sendSubscriptionConfirmationEmail(
+  tenant: { billingEmail: string; slug: string; profile?: { businessName?: string | null } | null },
+  plan: string
+) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const fromEmail = process.env.BREVO_FROM_EMAIL ?? "hello@flowlabsolutions.au";
+  const fromName = process.env.BREVO_FROM_NAME ?? "FlowLab";
+  if (!apiKey) return;
+
+  const businessName = tenant.profile?.businessName ?? tenant.slug;
+  const portalUrl = buildTenantUrl(tenant.slug, "/dashboard");
+  const planDisplay = plan.charAt(0).toUpperCase() + plan.slice(1);
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "api-key": apiKey },
+    body: JSON.stringify({
+      sender: { name: fromName, email: fromEmail },
+      to: [{ email: tenant.billingEmail }],
+      subject: `You're now on the FlowLab ${planDisplay} plan — ${businessName}`,
+      htmlContent: `
+        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:2rem">
+          <h2 style="margin:0 0 1rem">Subscription confirmed 🎉</h2>
+          <p><strong>${businessName}</strong> is now on the <strong>${planDisplay}</strong> plan.</p>
+          <p>Everything is already running — your automations, data, and setup carry over intact.</p>
+          <p style="margin:1.5rem 0">
+            <a href="${portalUrl}" style="background:#6366f1;color:#fff;padding:0.75rem 1.5rem;border-radius:0.5rem;text-decoration:none;font-weight:600">
+              Open my portal →
+            </a>
+          </p>
+          <p style="color:#888;font-size:0.875rem">
+            If the button doesn't work, copy this link into your browser:<br>
+            <a href="${portalUrl}">${portalUrl}</a>
+          </p>
+          <hr style="border:none;border-top:1px solid #eee;margin:2rem 0">
+          <p style="color:#888;font-size:0.8rem">FlowLab Solutions · <a href="https://flowlabsolutions.au">flowlabsolutions.au</a></p>
+        </div>
+      `
+    })
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({})) as { message?: string };
+    throw new Error(`Brevo email send failed (${response.status}): ${body.message ?? "unknown error"}`);
+  }
 }
 
 async function handleCheckoutCompleted(event: StripeWebhookEvent) {
@@ -116,7 +167,16 @@ async function handleCheckoutCompleted(event: StripeWebhookEvent) {
   }
 
   const subscription = await retrieveStripeSubscription(subscriptionId);
-  await syncTenantSubscription(subscription, event.id, event.type);
+  const tenant = await syncTenantSubscription(subscription, event.id, event.type);
+
+  if (tenant) {
+    const plan = getString((event.data.object.metadata as Record<string, unknown> | undefined)?.plan) ?? "professional";
+    try {
+      await sendSubscriptionConfirmationEmail(tenant, plan);
+    } catch {
+      // Non-fatal — subscription is active, email failure shouldn't block the webhook response
+    }
+  }
 }
 
 async function handleSubscriptionEvent(event: StripeWebhookEvent) {

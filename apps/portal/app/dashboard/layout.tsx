@@ -84,7 +84,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
       )}
 
       {/* Trial expired banner */}
-      {!isSuspended && trialExpired && (
+      {!isSuspended && status !== "active" && trialExpired && (
         <div style={{
           background: "#7f1d1d", color: "#fecaca",
           padding: "12px 24px",
