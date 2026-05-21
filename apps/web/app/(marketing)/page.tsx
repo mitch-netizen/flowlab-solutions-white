@@ -66,7 +66,7 @@ const PRICING_TIERS = [
 ];
 
 export default async function MarketingPage() {
-  const tenantCount = await countPublicTenantTrials();
+  const tenantCount = await countPublicTenantTrials().catch(() => 0);
 
   return (
     <main className="marketing-home">
