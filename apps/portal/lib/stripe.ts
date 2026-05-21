@@ -2,7 +2,7 @@ import type { TenantPlan } from "@flowlab/contracts";
 
 export function getStripePriceId(plan: TenantPlan | string): string | undefined {
   const envKey = `STRIPE_PRICE_${plan.toString().toUpperCase()}`;
-  return process.env[envKey] ?? process.env[`${envKey}_ID`];
+  return (process.env[envKey] ?? process.env[`${envKey}_ID`])?.trim();
 }
 
 export async function stripeRequest<T>(
